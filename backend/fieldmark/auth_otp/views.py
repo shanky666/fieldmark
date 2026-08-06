@@ -57,34 +57,33 @@ class RegisterView(APIView):
         employee_id = request.data.get('employee_id')
         role = request.data.get('role', 'WORKER') # 'WORKER' or 'SUPERVISOR'
         assigned_zone_id = request.data.get('assigned_zone_id')
+        password = request.data.get('password', '123456')
 
         if not phone or not name or not employee_id:
-            return Response({'error': 'Phone, Name, and Employee ID are required'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'invalid_input', 'message': 'Phone, Name, and Employee ID are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         normalized_phone = normalize_phone(phone)
         employee_id = employee_id.strip()
         name = name.strip()
 
-        digits = ''.join(c for c in phone if c.isdigit())[-10:]
+        digits = ''.join(c for c in phone if c.isdigit())[-10:] if any(c.isdigit() for c in str(phone)) else phone
         if Worker.objects.filter(Q(phone=phone) | Q(phone=normalized_phone) | Q(phone__endswith=digits)).exists():
-            return Response({'error': 'phone_exists', 'message': 'Worker with this phone number is already registered'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'phone_exists', 'message': 'An account with this phone number already exists. Please log in directly.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if Worker.objects.filter(employee_id__iexact=employee_id).exists():
-            return Response({'error': 'employee_id_exists', 'message': 'Worker with this Employee ID is already registered'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'employee_id_exists', 'message': 'An account with this Employee ID already exists. Please log in directly.'}, status=status.HTTP_400_BAD_REQUEST)
 
         is_staff = (role.upper() == 'SUPERVISOR')
-        password = request.data.get('password', '123456')
         
-        worker = Worker.objects.create(
+        worker = Worker.objects.create_user(
             phone=normalized_phone,
+            password=password,
             name=name,
             employee_id=employee_id,
             is_staff=is_staff,
             is_active=True,
             assigned_zone_id=assigned_zone_id if assigned_zone_id else None
         )
-        worker.set_password(password)
-        worker.save()
 
         tokens = get_tokens_for_user(worker)
         return Response({
@@ -98,6 +97,7 @@ class RegisterView(APIView):
             },
             **tokens
         }, status=status.HTTP_201_CREATED)
+
 
 
 class UserLoginView(APIView):
