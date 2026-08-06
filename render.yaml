@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: fieldmark-backend
+    env: python
+    rootDir: backend
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn fieldmark.wsgi:application --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: DATABASE_URL
+        value: "postgresql://neondb_owner:npg_3pqDGFmdQN1n@ep-bitter-pond-az2xf4vx.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "*"
+      - key: USE_MOCK_SMS
+        value: "True"
