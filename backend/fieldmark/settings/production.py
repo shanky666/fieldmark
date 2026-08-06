@@ -3,8 +3,9 @@ import os
 
 DEBUG = False
 
-# Read ALLOWED_HOSTS from env in production
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+allowed_env = os.environ.get('ALLOWED_HOSTS', '*')
+ALLOWED_HOSTS = [h.strip() for h in allowed_env.split(',') if h.strip()] if allowed_env and allowed_env != '*' else ['*']
+
 
 # SECURE_SSL_REDIRECT = True
 # SESSION_COOKIE_SECURE = True

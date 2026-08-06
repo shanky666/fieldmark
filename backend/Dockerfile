@@ -26,6 +26,6 @@ RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r re
 COPY . /app/
 
 # Expose port
-EXPOSE 8000
+ENV DJANGO_SETTINGS_MODULE fieldmark.settings.production
 
-CMD ["gunicorn", "fieldmark.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD sh -c "gunicorn fieldmark.wsgi:application --bind 0.0.0.0:${PORT:-8000}"
