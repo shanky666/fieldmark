@@ -18,6 +18,7 @@ export default function Register({ navigation, route }: Props) {
   const [name, setName] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<'WORKER' | 'SUPERVISOR'>(initialRole);
   
   const { registerUser, isLoading } = useAuthStore();
@@ -35,12 +36,17 @@ export default function Register({ navigation, route }: Props) {
       Alert.alert('Required', 'Please enter your Phone Number');
       return;
     }
+    if (!password.trim()) {
+      Alert.alert('Required', 'Please enter a Password');
+      return;
+    }
 
     try {
       await registerUser({
         name: name.trim(),
         employee_id: employeeId.trim(),
         phone: phone.trim(),
+        password: password.trim(),
         role: role
       });
       Alert.alert('Success', 'Account registered successfully!');
@@ -119,6 +125,19 @@ export default function Register({ navigation, route }: Props) {
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>PASSWORD</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Create password"
+                placeholderTextColor="#9BAFA2"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
               />
             </View>
 

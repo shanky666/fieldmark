@@ -70,14 +70,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  loginWorker: async (identifier: string, otp: string, firebaseIdToken?: string) => {
+  loginWorker: async (identifier: string, password: string) => {
     set({ isLoading: true });
     try {
-      const payload: Record<string, string> = firebaseIdToken
-        ? { firebase_id_token: firebaseIdToken }
-        : { phone: identifier, otp };
-
-      const res = await apiClient.post('/api/auth/verify-otp/', payload);
+      const res = await apiClient.post('/api/auth/login/', { identifier, password });
       const { access, refresh, role, worker_id, user } = res.data;
 
       if (access) await secureStorage.setItem('access_token', access);
@@ -104,14 +100,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  loginSupervisor: async (identifier: string, otp: string, firebaseIdToken?: string) => {
+  loginSupervisor: async (identifier: string, password: string) => {
     set({ isLoading: true });
     try {
-      const payload: Record<string, string> = firebaseIdToken
-        ? { firebase_id_token: firebaseIdToken }
-        : { phone: identifier, otp };
-
-      const res = await apiClient.post('/api/auth/verify-otp/', payload);
+      const res = await apiClient.post('/api/auth/login/', { identifier, password });
       const { access, refresh, role, worker_id, user } = res.data;
 
       if (access) await secureStorage.setItem('access_token', access);

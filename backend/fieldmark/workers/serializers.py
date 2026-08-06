@@ -19,10 +19,12 @@ class WorkerSerializer(serializers.ModelSerializer):
     zone_detail = ZoneSerializer(source='assigned_zone', read_only=True)
     shift_detail = ShiftSerializer(source='shift', read_only=True)
 
+    password = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = Worker
         fields = [
-            'id', 'phone', 'name', 'employee_id', 'worker_type', 
+            'id', 'phone', 'name', 'employee_id', 'password', 'worker_type', 
             'assigned_zone', 'zone_detail', 'shift', 'shift_detail',
             'contract_start_date', 'contract_end_date', 'profile_photo_url', 
             'fcm_token', 'preferred_language', 'is_active', 'created_at'
@@ -30,7 +32,7 @@ class WorkerSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
     def create(self, validated_data):
-        # Generate inactive / unusable password by default for workers
+        password = validated_data.pop('password', None) or self.initial_data.get('password') or '123456'
         user = Worker.objects.create_user(
             phone=validated_data['phone'],
             name=validated_data.get('name', ''),
@@ -43,6 +45,8 @@ class WorkerSerializer(serializers.ModelSerializer):
             preferred_language=validated_data.get('preferred_language', Worker.LanguageChoices.EN),
             is_active=validated_data.get('is_active', True)
         )
+        user.set_password(password)
+        user.save()
         return user
 
 

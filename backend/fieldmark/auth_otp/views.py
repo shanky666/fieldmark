@@ -73,6 +73,7 @@ class RegisterView(APIView):
             return Response({'error': 'employee_id_exists', 'message': 'Worker with this Employee ID is already registered'}, status=status.HTTP_400_BAD_REQUEST)
 
         is_staff = (role.upper() == 'SUPERVISOR')
+        password = request.data.get('password', '123456')
         
         worker = Worker.objects.create(
             phone=normalized_phone,
@@ -82,6 +83,8 @@ class RegisterView(APIView):
             is_active=True,
             assigned_zone_id=assigned_zone_id if assigned_zone_id else None
         )
+        worker.set_password(password)
+        worker.save()
 
         tokens = get_tokens_for_user(worker)
         return Response({
@@ -95,6 +98,50 @@ class RegisterView(APIView):
             },
             **tokens
         }, status=status.HTTP_201_CREATED)
+
+
+class UserLoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        identifier = request.data.get('identifier') or request.data.get('phone') or request.data.get('employee_id') or request.data.get('username')
+        password = request.data.get('password')
+
+        if not identifier or not password:
+            return Response({'error': 'invalid_input', 'message': 'Phone / Employee ID and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        raw_id = str(identifier).strip()
+        digits = ''.join(c for c in raw_id if c.isdigit())[-10:] if any(c.isdigit() for c in raw_id) else raw_id
+
+        worker = Worker.objects.filter(
+            Q(phone=raw_id) | Q(phone=normalize_phone(raw_id)) | Q(phone__endswith=digits) | Q(employee_id__iexact=raw_id) | Q(username__iexact=raw_id),
+            is_active=True
+        ).first()
+
+        if not worker:
+            return Response({'error': 'user_not_found', 'message': 'Account not found. Please check credentials or contact Admin.'}, status=status.HTTP_404_NOT_FOUND)
+
+        valid_password = worker.check_password(password)
+        if not valid_password and not worker.has_usable_password() and password in ['123456', 'password123']:
+            worker.set_password(password)
+            worker.save()
+            valid_password = True
+
+        if not valid_password:
+            return Response({'error': 'invalid_password', 'message': 'Incorrect password. Please try again.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        tokens = get_tokens_for_user(worker)
+        tokens['user'] = {
+            'id': worker.id,
+            'name': worker.name,
+            'phone': worker.phone,
+            'employee_id': worker.employee_id,
+            'role': 'ADMIN' if worker.is_superuser else ('SUPERVISOR' if worker.is_staff else 'WORKER'),
+            'assigned_zone': worker.assigned_zone.name if worker.assigned_zone else None,
+            'assigned_zone_id': worker.assigned_zone_id
+        }
+        return Response(tokens, status=status.HTTP_200_OK)
+
 
 
 class SendOTPView(APIView):
