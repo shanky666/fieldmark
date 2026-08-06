@@ -14,8 +14,8 @@ interface Props {
 }
 
 export default function WorkerLogin({ navigation }: Props) {
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
+  const [identifier, setIdentifier] = useState('WRK001');
+  const [password, setPassword] = useState('123456');
   const [errorMsg, setErrorMsg] = useState('');
 
   const { loginWorker, isLoading } = useAuthStore();
