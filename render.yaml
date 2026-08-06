@@ -2,6 +2,7 @@ services:
   - type: web
     name: fieldmark-backend
     env: python
+    plan: free
     rootDir: backend
     buildCommand: "./build.sh"
     startCommand: "gunicorn fieldmark.wsgi:application --bind 0.0.0.0:$PORT"
