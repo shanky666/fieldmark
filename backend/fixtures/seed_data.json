@@ -1,0 +1,400 @@
+[
+  {
+    "model": "workers.shift",
+    "pk": 1,
+    "fields": {
+      "name": "Standard Shift",
+      "window_start": "06:00:00",
+      "window_end": "10:30:00",
+      "applies_to": "ZONE"
+    }
+  },
+  {
+    "model": "workers.shift",
+    "pk": 2,
+    "fields": {
+      "name": "Early Shift",
+      "window_start": "05:00:00",
+      "window_end": "09:00:00",
+      "applies_to": "ZONE"
+    }
+  },
+  {
+    "model": "workers.shift",
+    "pk": 3,
+    "fields": {
+      "name": "Late Shift",
+      "window_start": "08:00:00",
+      "window_end": "12:00:00",
+      "applies_to": "ZONE"
+    }
+  },
+  {
+    "model": "workers.zone",
+    "pk": 1,
+    "fields": {
+      "name": "Zone A - North",
+      "center_lat": 12.9716,
+      "center_lng": 77.5946,
+      "radius_meters": 500.0,
+      "shift": 1,
+      "color_hex": "#3a7c3a"
+    }
+  },
+  {
+    "model": "workers.zone",
+    "pk": 2,
+    "fields": {
+      "name": "Zone B - South",
+      "center_lat": 13.0012,
+      "center_lng": 77.6041,
+      "radius_meters": 500.0,
+      "shift": 2,
+      "color_hex": "#5cb85c"
+    }
+  },
+  {
+    "model": "workers.zone",
+    "pk": 3,
+    "fields": {
+      "name": "Zone C - East",
+      "center_lat": 13.0523,
+      "center_lng": 77.5921,
+      "radius_meters": 500.0,
+      "shift": 3,
+      "color_hex": "#4a90d9"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$mockpbkdf2sha256$password123",
+      "is_superuser": true,
+      "is_staff": true,
+      "is_active": true,
+      "phone": "+919999999991",
+      "name": "Admin Rajesh Kumar",
+      "employee_id": "ADM001",
+      "worker_type": "PERMANENT",
+      "assigned_zone": null,
+      "shift": null,
+      "preferred_language": "EN"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 2,
+    "fields": {
+      "password": "pbkdf2_sha256$600000$mockpbkdf2sha256$password123",
+      "is_superuser": true,
+      "is_staff": true,
+      "is_active": true,
+      "phone": "+919999999992",
+      "name": "Admin 2FA Ramesh",
+      "employee_id": "ADM002",
+      "worker_type": "PERMANENT",
+      "assigned_zone": null,
+      "shift": null,
+      "preferred_language": "HI"
+    }
+  },
+  {
+    "model": "auth_otp.admincredential",
+    "pk": 1,
+    "fields": {
+      "worker": 2,
+      "totp_secret": "JBSWY3DPEHPK3PXP",
+      "two_factor_enabled": true,
+      "backup_codes": ["12345678", "87654321", "11223344", "44332211"]
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 3,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": true,
+      "is_active": true,
+      "phone": "+918888888881",
+      "name": "Supervisor Anand Gowda",
+      "employee_id": "SUP001",
+      "worker_type": "PERMANENT",
+      "assigned_zone": 1,
+      "shift": null,
+      "preferred_language": "KN"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 4,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": true,
+      "is_active": true,
+      "phone": "+918888888882",
+      "name": "Supervisor Selvam",
+      "employee_id": "SUP002",
+      "worker_type": "PERMANENT",
+      "assigned_zone": 3,
+      "shift": null,
+      "preferred_language": "TA"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 5,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+917777777771",
+      "name": "Basappa Patil",
+      "employee_id": "WRK001",
+      "worker_type": "PERMANENT",
+      "assigned_zone": 1,
+      "shift": null,
+      "preferred_language": "KN"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 6,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+917777777772",
+      "name": "Amit Sharma",
+      "employee_id": "WRK002",
+      "worker_type": "PERMANENT",
+      "assigned_zone": 1,
+      "shift": null,
+      "preferred_language": "HI"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 7,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+917777777773",
+      "name": "Karthik Raja",
+      "employee_id": "WRK003",
+      "worker_type": "PERMANENT",
+      "assigned_zone": 2,
+      "shift": null,
+      "preferred_language": "TA"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 8,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+917777777774",
+      "name": "Srinivas Rao",
+      "employee_id": "WRK004",
+      "worker_type": "PERMANENT",
+      "assigned_zone": 3,
+      "shift": null,
+      "preferred_language": "TE"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 9,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+917777777775",
+      "name": "Lokesh M",
+      "employee_id": "WRK005",
+      "worker_type": "PERMANENT",
+      "assigned_zone": 2,
+      "shift": null,
+      "preferred_language": "KN"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 10,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+917777777776",
+      "name": "Sunitha Rao",
+      "employee_id": "WRK006",
+      "worker_type": "PERMANENT",
+      "assigned_zone": 3,
+      "shift": null,
+      "preferred_language": "TE"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 11,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+916666666661",
+      "name": "Manju Contractor",
+      "employee_id": "CON001",
+      "worker_type": "CONTRACTOR",
+      "assigned_zone": 1,
+      "shift": null,
+      "contract_start_date": "2026-07-01",
+      "contract_end_date": "2026-09-29",
+      "preferred_language": "KN"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 12,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+916666666662",
+      "name": "Vijay Contractor",
+      "employee_id": "CON002",
+      "worker_type": "CONTRACTOR",
+      "assigned_zone": 2,
+      "shift": null,
+      "contract_start_date": "2026-07-01",
+      "contract_end_date": "2026-09-29",
+      "preferred_language": "HI"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 13,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+916666666663",
+      "name": "Ramu Contractor",
+      "employee_id": "CON003",
+      "worker_type": "CONTRACTOR",
+      "assigned_zone": 3,
+      "shift": null,
+      "contract_start_date": "2026-07-01",
+      "contract_end_date": "2026-09-29",
+      "preferred_language": "TA"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 14,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+915555555551",
+      "name": "Siddappa Seasonal",
+      "employee_id": "SEA001",
+      "worker_type": "SEASONAL",
+      "assigned_zone": 1,
+      "shift": null,
+      "contract_start_date": "2026-07-01",
+      "contract_end_date": "2026-08-13",
+      "preferred_language": "KN"
+    }
+  },
+  {
+    "model": "workers.worker",
+    "pk": 15,
+    "fields": {
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "phone": "+915555555552",
+      "name": "Rani Seasonal",
+      "employee_id": "SEA002",
+      "worker_type": "SEASONAL",
+      "assigned_zone": 2,
+      "shift": null,
+      "contract_start_date": "2026-07-01",
+      "contract_end_date": "2026-08-13",
+      "preferred_language": "HI"
+    }
+  },
+  {
+    "model": "settings_config.anomalyruleconfig",
+    "pk": 1,
+    "fields": {
+      "rule_name": "GPS_MISMATCH_THRESHOLD_METERS",
+      "is_enabled": true,
+      "threshold_value": 100.0,
+      "threshold_unit": "meters"
+    }
+  },
+  {
+    "model": "settings_config.anomalyruleconfig",
+    "pk": 2,
+    "fields": {
+      "rule_name": "SPEED_VIOLATION_THRESHOLD_KMH",
+      "is_enabled": true,
+      "threshold_value": 50.0,
+      "threshold_unit": "km/h"
+    }
+  },
+  {
+    "model": "settings_config.anomalyruleconfig",
+    "pk": 3,
+    "fields": {
+      "rule_name": "DUPLICATE_PHOTO",
+      "is_enabled": true,
+      "threshold_value": 1.0,
+      "threshold_unit": "boolean"
+    }
+  },
+  {
+    "model": "settings_config.anomalyruleconfig",
+    "pk": 4,
+    "fields": {
+      "rule_name": "DEVICE_CHANGE",
+      "is_enabled": true,
+      "threshold_value": 3.0,
+      "threshold_unit": "devices"
+    }
+  },
+  {
+    "model": "settings_config.anomalyruleconfig",
+    "pk": 5,
+    "fields": {
+      "rule_name": "DEVICE_CHANGE_DAYS",
+      "is_enabled": true,
+      "threshold_value": 7.0,
+      "threshold_unit": "days"
+    }
+  },
+  {
+    "model": "settings_config.anomalyruleconfig",
+    "pk": 6,
+    "fields": {
+      "rule_name": "CUTOFF_PATTERN",
+      "is_enabled": true,
+      "threshold_value": 6.0,
+      "threshold_unit": "consecutive days"
+    }
+  },
+  {
+    "model": "settings_config.anomalyruleconfig",
+    "pk": 7,
+    "fields": {
+      "rule_name": "CUTOFF_MINUTES_THRESHOLD",
+      "is_enabled": true,
+      "threshold_value": 5.0,
+      "threshold_unit": "minutes"
+    }
+  }
+]

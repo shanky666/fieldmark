@@ -1,0 +1,40 @@
+{
+  "cli": {
+    "version": ">= 7.0.0"
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk",
+        "distribution": "internal",
+        "android": {
+          "buildToolsVersion": "34.0.0",
+          "compileSdkVersion": 34,
+          "targetSdkVersion": 34
+        }
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "aab",
+        "distribution": "store",
+        "android": {
+          "buildToolsVersion": "34.0.0",
+          "compileSdkVersion": 34,
+          "targetSdkVersion": 34
+        }
+      },
+      "ios": {
+        "distribution": "store"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-key.json",
+        "track": "internal"
+      }
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "FieldMark Attendance",
+    "slug": "fieldmark-attendance",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.fieldmark.attendance",
+      "infoPlist": {
+        "NSCameraUsageDescription": "FieldMark needs camera to capture attendance photos",
+        "NSLocationWhenInUseUsageDescription": "FieldMark needs your location to verify work zone geotag",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "FieldMark needs background location for attendance sync",
+        "NSPhotoLibraryUsageDescription": "FieldMark saves attendance photos"
+      }
+    },
+    "android": {
+      "package": "com.fieldmark.attendance",
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "VIBRATE"
+      ]
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-location",
+      "expo-media-library",
+      "expo-notifications",
+      "@react-native-firebase/app",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "minSdkVersion": 23
+          }
+        }
+      ]
+    ]
+  }
+}
