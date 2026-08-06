@@ -11,19 +11,20 @@ interface Props {
 }
 
 export default function AdminLogin({ navigation }: Props) {
-  const [email, setEmail] = useState('admin@fieldmark.org');
+  const [identifier, setIdentifier] = useState('ADM001');
   const [password, setPassword] = useState('AdminPass123!');
   const { loginAdmin, isLoading } = useAuthStore();
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Required', 'Please enter Administrator email and password');
+    if (!identifier.trim() || !password.trim()) {
+      Alert.alert('Required', 'Please enter Administrator ID/Phone/Email and password');
       return;
     }
     try {
-      await loginAdmin(email.trim(), password.trim());
+      await loginAdmin(identifier.trim(), password.trim());
     } catch (e: any) {
-      Alert.alert('Authentication Failed', e.message || 'Invalid administrator credentials');
+      const msg = e?.response?.data?.message || e?.message || 'Invalid administrator credentials';
+      Alert.alert('Authentication Failed', msg);
     }
   };
 
@@ -40,19 +41,18 @@ export default function AdminLogin({ navigation }: Props) {
             <Text style={styles.emoji}>🗂</Text>
           </View>
           <Text style={styles.title}>Admin Portal</Text>
-          <Text style={styles.subtitle}>Administrator Firebase Login for Management & Reports</Text>
+          <Text style={styles.subtitle}>Administrator Login for Management & Reports</Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.field}>
-            <Text style={styles.label}>Admin Email</Text>
+            <Text style={styles.label}>Admin ID / Phone / Email</Text>
             <TextInput
               style={styles.input}
-              placeholder="admin@fieldmark.org"
+              placeholder="e.g. ADM001 or admin@fieldmark.org"
               placeholderTextColor="#9BAFA2"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
+              value={identifier}
+              onChangeText={setIdentifier}
               autoCapitalize="none"
             />
           </View>
