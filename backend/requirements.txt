@@ -23,4 +23,6 @@ pytest-django
 dj-database-url
 firebase-admin
 pytz
+python-dotenv
+
 
