@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
-    justify.content: 'center',
+    justifyContent: 'center',
     flexGrow: 1,
   },
   backBtn: {
