@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TextInput, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
 import { apiClient } from '../../api/client';
 
@@ -22,11 +22,28 @@ export default function Workers({ navigation }: any) {
 
   const fetchWorkers = async () => {
     setLoading(true);
+
     try {
+      console.log('[WORKERS] Calling /api/workers/');
+
       const res = await apiClient.get('/api/workers/');
-      setWorkersList(res.data.results || res.data || []);
-    } catch (e) {
-      console.warn("Failed to load workers from DB", e);
+
+      console.log('[WORKERS] STATUS:', res.status);
+      console.log('[WORKERS] DATA TYPE:', typeof res.data);
+      console.log('[WORKERS] DATA:', JSON.stringify(res.data));
+
+      setWorkersList(
+        Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.results)
+            ? res.data.results
+            : []
+      );
+
+    } catch (e: any) {
+      console.error('[WORKERS] ERROR:', e?.message);
+      console.error('[WORKERS] RESPONSE:', e?.response?.status);
+      console.error('[WORKERS] DATA:', JSON.stringify(e?.response?.data));
     } finally {
       setLoading(false);
     }
@@ -56,7 +73,7 @@ export default function Workers({ navigation }: any) {
 
       setAddModalVisible(false);
       setFname(''); setLname(''); setPhone(''); setEmployeeIdInput('');
-      Alert.alert('Worker Added', `✓ ${fname} registered in database.`);
+      Alert.alert('Worker Added', `âœ“ ${fname} registered in database.`);
       fetchWorkers();
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || 'Failed to add worker to database.');
@@ -85,10 +102,10 @@ export default function Workers({ navigation }: any) {
 
         {/* Search Bar */}
         <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Text style={styles.searchIcon}>ðŸ”</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by name, ID, or zone…"
+            placeholder="Search by name, ID, or zoneâ€¦"
             placeholderTextColor="#9BAFA2"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -130,7 +147,7 @@ export default function Workers({ navigation }: any) {
                   </View>
                   <View style={styles.empInfo}>
                     <Text style={styles.empName}>{displayName}</Text>
-                    <Text style={styles.empRole}>{e.assigned_zone_name || e.zone || 'Site'} · {isStaff ? 'Supervisor' : 'Employee'}</Text>
+                    <Text style={styles.empRole}>{e.assigned_zone_name || e.zone || 'Site'} Â· {isStaff ? 'Supervisor' : 'Employee'}</Text>
                   </View>
                   <View style={styles.empRight}>
                     <View style={[styles.badge, isActive ? styles.badgeActive : styles.badgeInactive]}>
@@ -444,3 +461,4 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+

@@ -21,6 +21,7 @@ export default function WorkerLogin({ navigation }: Props) {
   const { loginWorker, isLoading } = useAuthStore();
 
   const handleLogin = async () => {
+    console.log('[BUTTON] SIGN IN PRESSED');
     if (!identifier.trim()) {
       setErrorMsg('Please enter your Employee ID or Phone number.');
       return;
