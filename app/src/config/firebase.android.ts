@@ -9,14 +9,12 @@
  *  - google-services.json must be in android/app/
  *  - App rebuilt with: npx expo run:android
  */
-import { getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
-
-const env = process.env as any;
+import auth from '@react-native-firebase/auth';
 
 export const firebaseConfig = {
   // Config is read from google-services.json by the native Firebase SDK
   // These values are kept for reference only
-  projectId: env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'atia-fpo',
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'atia-fpo',
 };
 
 export interface FirebaseUser {
@@ -38,8 +36,7 @@ class FirebasePhoneAuthService {
    * No reCAPTCHA widget required on Android.
    */
   async sendPhoneOTP(phone: string): Promise<void> {
-    const authInstance = getAuth();
-    this.confirmation = await signInWithPhoneNumber(authInstance, phone);
+    this.confirmation = await auth().signInWithPhoneNumber(phone);
   }
 
   /**
@@ -68,8 +65,7 @@ export const firebasePhoneAuth = new FirebasePhoneAuthService();
 class FirebaseAuthService {
   async signOut(): Promise<void> {
     try {
-      const authInstance = getAuth();
-      await authInstance.signOut();
+      await auth().signOut();
     } catch (_) {}
   }
 }

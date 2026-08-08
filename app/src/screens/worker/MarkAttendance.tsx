@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator, Animated } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
+import * as Location from 'expo-location';
 import * as Speech from 'expo-speech';
 import * as Notifications from 'expo-notifications';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -46,6 +47,13 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
   const [livenessWarn, setLivenessWarn] = useState(false);
   const [livenessReason, setLivenessReason] = useState('');
   const [clientLivenessBypassed, setClientLivenessBypassed] = useState(false);
+
+  // GPS captured at the exact moment the photo is taken
+  const [capturedLocation, setCapturedLocation] = useState<{
+    latitude: number | null;
+    longitude: number | null;
+    accuracy: number | null;
+  }>({ latitude: null, longitude: null, accuracy: null });
 
   // Animation values
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -100,14 +108,38 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
   const handleCapture = async () => {
     if (cameraRef.current) {
       try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
-          skipProcessing: false,
-        });
+        // Take the photo and capture GPS simultaneously for accuracy
+        const [photo, freshLocation] = await Promise.all([
+          cameraRef.current.takePictureAsync({
+            quality: 0.8,
+            skipProcessing: false,
+          }),
+          // Fresh GPS fix at the exact moment of capture
+          Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          }).catch(() => null), // Fallback gracefully if GPS times out
+        ]);
+
         if (photo?.uri) {
+          // Store the photo-time GPS fix (or fall back to existing gps state)
+          if (freshLocation) {
+            setCapturedLocation({
+              latitude: freshLocation.coords.latitude,
+              longitude: freshLocation.coords.longitude,
+              accuracy: freshLocation.coords.accuracy ?? null,
+            });
+          } else {
+            // Use the already-loaded GPS as fallback
+            setCapturedLocation({
+              latitude: gps.latitude,
+              longitude: gps.longitude,
+              accuracy: gps.accuracy,
+            });
+          }
+
           setPhotoUri(photo.uri);
           setStep(3);
-          
+
           // Trigger liveness heuristics
           const check = await runClientLivenessCheck(photo.uri);
           if (!check.passed) {
@@ -121,6 +153,7 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
     }
   };
 
+
   const handleFinalSubmit = async () => {
     setSubmitting(true);
     try {
@@ -132,11 +165,15 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         anomalyFlags.push("CLIENT_LIVENESS_WARN");
       }
 
+      // Use photo-time GPS if available, fall back to current GPS state
+      const submitLat = capturedLocation.latitude ?? gps.latitude ?? 0.0;
+      const submitLng = capturedLocation.longitude ?? gps.longitude ?? 0.0;
+
       if (!isOnline) {
         // Offline check-in path: SQLite save
         addToQueue({
-          latitude: gps.latitude || 0.0,
-          longitude: gps.longitude || 0.0,
+          latitude: submitLat,
+          longitude: submitLng,
           photo_local_uri: photoUri!,
           device_id: devId,
           marked_at: timestamp,
@@ -169,10 +206,10 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         throw new Error("Photo upload to storage container failed.");
       }
 
-      // 3. Post AttendanceRecord
+      // 3. Post AttendanceRecord with photo-time GPS coordinates
       await apiClient.post('/api/attendance/', {
-        latitude: gps.latitude || 0.0,
-        longitude: gps.longitude || 0.0,
+        latitude: submitLat,
+        longitude: submitLng,
         photo_url: s3_key,
         device_id: devId,
         marked_at: timestamp,
@@ -355,7 +392,10 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         {photoUri && <Image source={{ uri: photoUri }} style={styles.previewImage} />}
         
         <View style={styles.previewDetails}>
-          <Text style={styles.previewDetailText}>Gps: {gps.latitude?.toFixed(5)}, {gps.longitude?.toFixed(5)}</Text>
+          <Text style={styles.previewDetailText}>
+            📍 GPS at capture: {(capturedLocation.latitude ?? gps.latitude)?.toFixed(5)}, {(capturedLocation.longitude ?? gps.longitude)?.toFixed(5)}
+            {capturedLocation.accuracy ? ` (±${capturedLocation.accuracy.toFixed(0)}m)` : ''}
+          </Text>
           <Text style={styles.previewDetailText}>Date: {new Date().toLocaleDateString()}</Text>
           <Text style={styles.previewDetailText}>
             Zone Match: {isZoneMatch() ? "Matched ✓" : "Mismatch ⚠"}

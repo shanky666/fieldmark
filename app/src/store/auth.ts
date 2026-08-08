@@ -16,31 +16,10 @@ interface AuthState {
   language: string;
   userProfile: any | null;
   firebaseUser: any | null;
-
-  registerUser: (data: {
-    name: string;
-    employee_id: string;
-    phone: string;
-    role: string;
-  }) => Promise<void>;
-
-  loginWorker: (
-    identifier: string,
-    password: string,
-    firebaseIdToken?: string
-  ) => Promise<void>;
-
-  loginSupervisor: (
-    identifier: string,
-    password: string,
-    firebaseIdToken?: string
-  ) => Promise<void>;
-
-  loginAdmin: (
-    phone: string,
-    pass: string
-  ) => Promise<void>;
-
+  registerUser: (data: { name: string; employee_id: string; phone: string; role: string; password?: string; assigned_zone_id?: number }) => Promise<void>;
+  loginWorker: (identifier: string, password: string, firebaseIdToken?: string) => Promise<void>;
+  loginSupervisor: (identifier: string, password: string, firebaseIdToken?: string) => Promise<void>;
+  loginAdmin: (phone: string, pass: string) => Promise<void>;
   fetchUserProfile: () => Promise<void>;
 
   logout: () => Promise<void>;

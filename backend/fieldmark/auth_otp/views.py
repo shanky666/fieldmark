@@ -75,15 +75,21 @@ class RegisterView(APIView):
 
         is_staff = (role.upper() == 'SUPERVISOR')
         
-        worker = Worker.objects.create_user(
-            phone=normalized_phone,
-            password=password,
-            name=name,
-            employee_id=employee_id,
-            is_staff=is_staff,
-            is_active=True,
-            assigned_zone_id=assigned_zone_id if assigned_zone_id else None
-        )
+        try:
+            worker = Worker.objects.create_user(
+                phone=normalized_phone,
+                password=password,
+                name=name,
+                employee_id=employee_id,
+                is_staff=is_staff,
+                is_active=True,
+                assigned_zone_id=assigned_zone_id if assigned_zone_id else None
+            )
+        except Exception as e:
+            return Response({
+                'error': 'registration_failed',
+                'message': f'Registration failed: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         tokens = get_tokens_for_user(worker)
         return Response({
