@@ -8,7 +8,9 @@ export default function Home({ navigation }: any) {
   const { userProfile, logout } = useAuthStore();
 
   const [locationText, setLocationText] = useState('Fetching location…');
-  const [coords, setCoords] = useState<{ lat: number; lng: number; acc: number }>({ lat: 12.9718, lng: 77.6412, acc: 12 });
+  // Null until real GPS is acquired — avoids showing fake hardcoded coordinates
+  const [coords, setCoords] = useState<{ lat: number; lng: number; acc: number } | null>(null);
+  const [address, setAddress] = useState<string>('Acquiring location…');
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -21,16 +23,37 @@ export default function Home({ navigation }: any) {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setLocationText('Location ready · ±15m');
+        setLocationText('Location permission denied');
+        setAddress('Location unavailable');
         return;
       }
-      let loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setCoords({
-        lat: loc.coords.latitude,
-        lng: loc.coords.longitude,
-        acc: Math.round(loc.coords.accuracy || 10)
-      });
-      setLocationText(`Location ready · ±${Math.round(loc.coords.accuracy || 10)}m`);
+
+      try {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        const acc = Math.round(loc.coords.accuracy || 10);
+        setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude, acc });
+        setLocationText(`Location ready · ±${acc}m`);
+
+        // Reverse geocode to get real address
+        try {
+          const geo = await Location.reverseGeocodeAsync({
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+          });
+          if (geo && geo.length > 0) {
+            const g = geo[0];
+            const parts = [g.name, g.street, g.subregion || g.city, g.region].filter(Boolean);
+            setAddress(parts.join(', '));
+          } else {
+            setAddress(`${loc.coords.latitude.toFixed(5)}, ${loc.coords.longitude.toFixed(5)}`);
+          }
+        } catch {
+          setAddress(`${loc.coords.latitude.toFixed(5)}, ${loc.coords.longitude.toFixed(5)}`);
+        }
+      } catch (e) {
+        setLocationText('GPS unavailable');
+        setAddress('Unable to get location');
+      }
     })();
   }, []);
 
@@ -147,10 +170,12 @@ export default function Home({ navigation }: any) {
             <View style={styles.stampPhotoBox}>
               <Image source={{ uri: lastStamp.photoUri }} style={styles.stampPhoto} />
               <View style={styles.stampOverlay}>
-                <Text style={styles.stampAddr}>📍 Site Gate 2, Whitefield</Text>
-                <Text style={styles.stampCoords}>
-                  {coords.lat.toFixed(4)}° N, {coords.lng.toFixed(4)}° E · ±{coords.acc}m
-                </Text>
+                <Text style={styles.stampAddr}>📍 {address}</Text>
+                {coords ? (
+                  <Text style={styles.stampCoords}>
+                    {coords.lat.toFixed(5)}° N, {coords.lng.toFixed(5)}° E · ±{coords.acc}m
+                  </Text>
+                ) : null}
               </View>
               <View style={styles.stampRibbon}>
                 <Text style={styles.ribbonText}>✓ VERIFIED</Text>
@@ -226,10 +251,12 @@ export default function Home({ navigation }: any) {
                 <View style={styles.stampPhotoBox}>
                   <Image source={{ uri: previewPhoto }} style={styles.stampPhoto} />
                   <View style={styles.stampOverlay}>
-                    <Text style={styles.stampAddr}>📍 Site Gate 2, Whitefield</Text>
-                    <Text style={styles.stampCoords}>
-                      {coords.lat.toFixed(4)}° N, {coords.lng.toFixed(4)}° E · ±{coords.acc}m
-                    </Text>
+                    <Text style={styles.stampAddr}>📍 {address}</Text>
+                    {coords ? (
+                      <Text style={styles.stampCoords}>
+                        {coords.lat.toFixed(5)}° N, {coords.lng.toFixed(5)}° E · ±{coords.acc}m
+                      </Text>
+                    ) : null}
                   </View>
                   <View style={styles.stampRibbon}>
                     <Text style={styles.ribbonText}>✓ VERIFIED</Text>
