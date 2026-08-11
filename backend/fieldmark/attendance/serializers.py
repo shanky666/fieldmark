@@ -13,6 +13,7 @@ from .models import AttendanceRecord
 from .anomaly_checks import check_sync_gps_zone
 
 class AttendanceRecordSerializer(serializers.ModelSerializer):
+    worker = serializers.PrimaryKeyRelatedField(read_only=True)
     worker_detail = WorkerSerializer(source='worker', read_only=True)
     verified_by_name = serializers.CharField(source='verified_by.name', read_only=True)
 
@@ -73,3 +74,4 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
 
         record.save()
         return record
+
