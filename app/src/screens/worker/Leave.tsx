@@ -1,19 +1,71 @@
 import React, { useState } from 'react';
+import { apiClient } from '../../api/client';
+import { useAuthStore } from '../../store/auth';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TextInput, TouchableOpacity, Alert } from 'react-native';
 
 export default function Leave({ navigation }: any) {
+  const { workerId } = useAuthStore();
   const [selectedType, setSelectedType] = useState('casual');
   const [fromDate, setFromDate] = useState('2026-07-30');
   const [toDate, setToDate] = useState('2026-07-30');
   const [reason, setReason] = useState('');
 
-  const submitLeave = () => {
+  const submitLeave = async () => {
+    if (!workerId) {
+      Alert.alert('Error', 'Employee information not available. Please login again.');
+      return;
+    }
+
     if (!reason.trim()) {
       Alert.alert('Reason Required', 'Please enter a brief reason for your leave request.');
       return;
     }
-    Alert.alert('Success', '✓ Leave request submitted to supervisor for review');
-    setReason('');
+
+    if (!fromDate || !toDate) {
+      Alert.alert('Date Required', 'Please enter both from and to dates.');
+      return;
+    }
+
+    if (toDate < fromDate) {
+      Alert.alert('Invalid Dates', 'To date cannot be before from date.');
+      return;
+    }
+
+    const leaveTypeMap: Record<string, string> = {
+      casual: 'CASUAL',
+      sick: 'SICK',
+      holiday: 'FIELD_HOLIDAY',
+      unpaid: 'UNPAID',
+    };
+
+    try {
+      await apiClient.post('/api/leave/', {
+        worker: workerId,
+        leave_type: leaveTypeMap[selectedType],
+        start_date: fromDate,
+        end_date: toDate,
+        reason: reason.trim(),
+      });
+
+      Alert.alert(
+        'Success',
+        'Leave request submitted to admin for review.'
+      );
+
+      setReason('');
+    } catch (e: any) {
+      console.error(
+        '[LEAVE] Submit failed:',
+        e?.response?.data || e?.message || e
+      );
+
+      Alert.alert(
+        'Error',
+        e?.response?.data?.detail ||
+        e?.response?.data?.error ||
+        'Failed to submit leave request. Please try again.'
+      );
+    }
   };
 
   return (
@@ -309,3 +361,4 @@ const styles = StyleSheet.create({
     color: '#63796B',
   },
 });
+

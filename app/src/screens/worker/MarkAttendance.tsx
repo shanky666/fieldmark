@@ -233,7 +233,7 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
     } catch (error: any) {
       setSubmitting(false);
       console.error("Submission failed", error);
-      const errMsg = error.response?.data?.message || "Failed to submit attendance. Please try again.";
+      const errMsg = JSON.stringify(error.response?.data || error.message || error);
       Alert.alert(t('common.error'), errMsg);
     }
   };
@@ -732,3 +732,4 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
 });
+

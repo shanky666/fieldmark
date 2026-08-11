@@ -17,7 +17,7 @@ export default function Team() {
     const fetchTeam = async () => {
       try {
         const zoneId = userProfile?.zone_detail?.id || userProfile?.assigned_zone_id;
-        const url = zoneId ? `/api/workers/?zone=${zoneId}` : '/api/workers/';
+        const url = zoneId ? `/api/workers/list/?zone=${zoneId}` : '/api/workers/list/';
         const res = await apiClient.get(url);
         setWorkers(res.data.results || res.data || []);
       } catch (e) {

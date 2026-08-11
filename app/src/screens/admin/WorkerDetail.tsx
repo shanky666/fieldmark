@@ -35,7 +35,7 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
       setWorker(workerRes.data);
 
       // 2. Fetch all zones for reassignment dropdown
-      const zonesRes = await apiClient.get('/api/zones/');
+      const zonesRes = await apiClient.get('/api/workers/zones/');
       setZones(zonesRes.data);
 
       // 3. Fetch attendance for calendar

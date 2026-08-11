@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { apiClient } from '../../api/client';
 
-export default function Verify() {
+export default function Verify({ navigation }: any,) {
   const [activeTab, setActiveTab] = useState<'pending' | 'flagged' | 'done'>('pending');
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,7 +146,7 @@ export default function Verify() {
                     <View style={[styles.vThumb, { backgroundColor: item.status === 'APPROVED' ? '#2F8F5B' : item.status === 'FLAGGED' ? '#C24936' : '#1A6DB5' }]}>
                       <Text style={styles.vThumbText}>{initials}</Text>
                     </View>
-                    <View style={styles.vInfo}>
+                    <TouchableOpacity style={styles.vInfo} onPress={() => navigation.navigate('VerificationDetail', { recordId: item.id })}>
                       <Text style={styles.vName}>{item.worker_name || `Worker #${item.worker}`}</Text>
                       <Text style={styles.vMeta}>{item.zone_name || 'Assigned Zone'} · {item.marked_at ? new Date(item.marked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : item.date}</Text>
                       
@@ -169,10 +169,7 @@ export default function Verify() {
                           ))}
                         </View>
                       )}
-                    </View>
-                  </View>
-
-                  {activeTab !== 'done' && (
+                    </TouchableOpacity>`r`n                  </View>`r`n`r`n                  {activeTab !== 'done' && (
                     <View style={styles.actRow}>
                       <TouchableOpacity style={styles.actBtnApprove} onPress={() => handleApproveOne(item)}>
                         <Text style={styles.actBtnApproveText}>✓ Approve</Text>
@@ -475,3 +472,5 @@ const styles = StyleSheet.create({
     color: '#C24936',
   },
 });
+
+

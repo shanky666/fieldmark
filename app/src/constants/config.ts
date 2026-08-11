@@ -4,11 +4,12 @@ const getApiBaseUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
+
   if (Platform.OS === 'web') {
     return 'http://localhost:8000';
   }
-  // Production backend URL for mobile physical devices and standalone APKs
-  return 'https://fieldmark.onrender.com';
+
+  return 'https://fieldmark-ne9z.onrender.com';
 };
 
 export const CONFIG = {
@@ -17,4 +18,3 @@ export const CONFIG = {
   GPS_MISMATCH_THRESHOLD_METERS: 100,
   LIVENESS_BLUR_THRESHOLD: 50.0
 };
-

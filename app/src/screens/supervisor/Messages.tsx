@@ -47,13 +47,13 @@ export default function Messages({ navigation }: MessagesProps) {
         style={styles.card}
         onPress={() => navigation.navigate('GrievanceThread', {
           threadId: item.thread_id,
-          supervisorName: item.worker_detail?.name || 'Worker'
+          supervisorName: item.other_party?.name || 'Worker'
         })}
       >
         <View style={styles.leftCol}>
           <Text style={styles.subject}>{item.subject}</Text>
           <Text style={styles.lastMsg} numberOfLines={1}>{item.last_message}</Text>
-          <Text style={styles.workerName}>From: {item.worker_detail?.name} (Id: {item.worker_detail?.employee_id})</Text>
+          <Text style={styles.workerName}>From: {item.other_party?.name} (Id: {item.other_party?.employee_id})</Text>
         </View>
 
         <View style={styles.rightCol}>

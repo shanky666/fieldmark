@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Ima
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/auth';
+import { apiClient } from '../../api/client';
 
 export default function Home({ navigation }: any) {
   const { userProfile, logout } = useAuthStore();
@@ -57,49 +58,40 @@ export default function Home({ navigation }: any) {
     })();
   }, []);
 
-  const openCamera = async () => {
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('Permission Needed', 'Camera access is required for geotagged attendance check-in.');
-      return;
-    }
-    const res = await ImagePicker.launchCameraAsync({
-      quality: 0.7,
-      allowsEditing: false,
-    });
-    if (!res.canceled && res.assets && res.assets[0]) {
-      setPreviewPhoto(res.assets[0].uri);
-      setCameraModalVisible(true);
-    }
+  const openCamera = () => {
+    navigation.navigate('MarkAttendance');
   };
 
-  const confirmAttendance = () => {
-    const now = new Date();
-    const ts = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const ds = now.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const confirmAttendance = async () => {
+    try {
+      if (isCheckedIn) {
+        await apiClient.post('/api/attendance/checkout/');
 
-    if (!isCheckedIn) {
-      setCheckInTime(ts);
-      setIsCheckedIn(true);
-      Alert.alert('Attendance Marked', `✓ Checked in successfully at ${ts}`);
-    } else {
-      setCheckOutTime(ts);
-      setIsCheckedIn(false);
-      Alert.alert('Attendance Marked', `✓ Checked out successfully at ${ts}`);
+        const now = new Date();
+        const ts = now.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        setCheckOutTime(ts);
+        setIsCheckedIn(false);
+        setCameraModalVisible(false);
+        setPreviewPhoto(null);
+
+        Alert.alert("Attendance Marked", "Checked out successfully at " + ts);
+      } else {
+        navigation.navigate('MarkAttendance');
+        setCameraModalVisible(false);
+        setPreviewPhoto(null);
+      }
+    } catch (error: any) {
+      console.error('Checkout failed:', error);
+      const msg =
+        error.response?.data?.error ||
+        'Failed to check out. Please try again.';
+      Alert.alert('Checkout Error', msg);
     }
-
-    if (previewPhoto) {
-      setLastStamp({
-        photoUri: previewPhoto,
-        time: ts,
-        date: ds
-      });
-    }
-
-    setCameraModalVisible(false);
-    setPreviewPhoto(null);
   };
-
   const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
 
   return (
@@ -665,3 +657,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+
+
+
+

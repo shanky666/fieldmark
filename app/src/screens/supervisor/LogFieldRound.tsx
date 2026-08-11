@@ -31,7 +31,7 @@ export default function LogFieldRound({ navigation }: LogFieldRoundProps) {
   useEffect(() => {
     const fetchZones = async () => {
       try {
-        const res = await apiClient.get('/api/zones/');
+        const res = await apiClient.get('/api/workers/zones/');
         setZones(res.data);
         
         // Auto select supervisor's assigned zone
@@ -57,7 +57,7 @@ export default function LogFieldRound({ navigation }: LogFieldRoundProps) {
     const fetchWorkers = async () => {
       setLoadingWorkers(true);
       try {
-        const res = await apiClient.get(`/api/workers/?zone=${selectedZone.id}&status=active`);
+        const res = await apiClient.get(`/api/workers/list/?zone=${selectedZone.id}&status=active`);
         setWorkers(res.data.results || res.data || []);
         // Reset selections
         setSelectedWorkerIds([]);

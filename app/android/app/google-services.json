@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "709305379833",
-    "project_id": "atia-fpo",
-    "storage_bucket": "atia-fpo.firebasestorage.app"
+    "project_number": "922015871722",
+    "project_id": "fieldmark-atia-c178d",
+    "storage_bucket": "fieldmark-atia-c178d.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:709305379833:android:3c110fe579e90ab97a6b28",
+        "mobilesdk_app_id": "1:922015871722:android:71089b5ed7c5a20c03dd93",
         "android_client_info": {
           "package_name": "com.fieldmark.attendance"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA6RsBtV02MSDGr0-XGA4HbG49srE_0PN8"
+          "current_key": "AIzaSyBFk-X_UpwlPF5siewoTplk-lFyy_MAUXI"
         }
       ],
       "services": {
