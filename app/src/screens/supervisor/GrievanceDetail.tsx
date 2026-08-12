@@ -28,6 +28,7 @@ export default function GrievanceDetail({ route, navigation }: GrievanceDetailPr
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [isResolved, setIsResolved] = useState(false);
+  const [otherParty, setOtherParty] = useState<any>(null);
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -39,6 +40,8 @@ export default function GrievanceDetail({ route, navigation }: GrievanceDetailPr
       
       if (msgList.length > 0) {
         setIsResolved(msgList[0].is_resolved);
+        const party = msgList[0].sender === userProfile?.id ? msgList[0].recipient_detail : msgList[0].sender_detail;
+        setOtherParty(party);
       }
 
       await apiClient.patch(`/api/grievances/${threadId}/read/`);
@@ -111,20 +114,33 @@ export default function GrievanceDetail({ route, navigation }: GrievanceDetailPr
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>← {t('common.back')}</Text>
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>{employeeName}</Text>
-          <Text style={styles.headerSubtitle}>
-            {isResolved ? "Thread Resolved" : "Thread Open"}
-          </Text>
-        </View>
-        {canResolve ? (
-          <TouchableOpacity style={styles.resolveBtn} onPress={handleResolve}>
-            <Text style={styles.resolveBtnText}>Resolve</Text>
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>← {t('common.back')}</Text>
           </TouchableOpacity>
-        ) : <View style={{ width: 60 }} />}
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitle}>{employeeName}</Text>
+            <Text style={styles.headerSubtitle}>
+              {isResolved ? "Thread Resolved" : "Thread Open"}
+            </Text>
+          </View>
+          {canResolve ? (
+            <TouchableOpacity style={styles.resolveBtn} onPress={handleResolve}>
+              <Text style={styles.resolveBtnText}>Resolve</Text>
+            </TouchableOpacity>
+          ) : <View style={{ width: 60 }} />}
+        </View>
+
+        {otherParty && (
+          <View style={styles.partyDetailsBox}>
+            <Text style={styles.partyDetailText}>Employee Name: {otherParty.name}</Text>
+            <Text style={styles.partyDetailText}>Employee ID: {otherParty.employee_id || 'N/A'}</Text>
+            <Text style={styles.partyDetailText}>Zone: {otherParty.zone_detail?.name || 'N/A'}</Text>
+            {otherParty.supervisor_name && (
+              <Text style={styles.partyDetailText}>Supervisor: {otherParty.supervisor_name}</Text>
+            )}
+          </View>
+        )}
       </View>
 
       {loading ? (
@@ -186,14 +202,27 @@ const styles = StyleSheet.create({
     paddingTop: 44,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.white,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  partyDetailsBox: {
+    marginTop: 8,
+    backgroundColor: COLORS.lightGray,
+    padding: 10,
+    borderRadius: 8,
+  },
+  partyDetailText: {
+    fontSize: 12,
+    color: COLORS.darkText,
+    marginBottom: 2,
   },
   backBtn: {
     paddingVertical: 8,

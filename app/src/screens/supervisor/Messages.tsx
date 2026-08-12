@@ -53,7 +53,8 @@ export default function Messages({ navigation }: MessagesProps) {
         <View style={styles.leftCol}>
           <Text style={styles.subject}>{item.subject}</Text>
           <Text style={styles.lastMsg} numberOfLines={1}>{item.last_message}</Text>
-          <Text style={styles.workerName}>From: {item.other_party?.name} (Id: {item.other_party?.employee_id})</Text>
+          <Text style={styles.workerName}>From: {item.other_party?.name}</Text>
+          <Text style={styles.workerName}>Employee ID: {item.other_party?.employee_id || 'N/A'}</Text>
         </View>
 
         <View style={styles.rightCol}>

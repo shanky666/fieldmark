@@ -52,7 +52,8 @@ export default function Grievances({ navigation }: GrievancesProps) {
         <View style={styles.leftCol}>
           <Text style={styles.subject}>{item.subject}</Text>
           <Text style={styles.lastMsg} numberOfLines={1}>{item.last_message}</Text>
-          <Text style={styles.partyText}>From: {item.other_party?.name || 'Employee'} (ID: {item.other_party?.employee_id || 'N/A'})</Text>
+          <Text style={styles.partyText}>From: {item.other_party?.name || 'Employee'}</Text>
+          <Text style={styles.partyText}>Employee ID: {item.other_party?.employee_id || 'N/A'}</Text>
         </View>
 
         <View style={styles.rightCol}>

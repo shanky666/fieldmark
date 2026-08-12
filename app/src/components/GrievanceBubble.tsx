@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, StyleSheet, Dimensions, TouchableOpacity, Modal, SafeAreaView } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { CONFIG } from '../constants/config';
 
@@ -12,12 +12,14 @@ interface MessageProps {
   senderName: string;
 }
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function GrievanceBubble({ 
   message, attachmentUrl, isRead, isSelf, timestamp, senderName 
 }: MessageProps) {
   
+  const [modalVisible, setModalVisible] = useState(false);
+
   const formattedTime = () => {
     try {
       const date = new Date(timestamp);
@@ -25,6 +27,12 @@ export default function GrievanceBubble({
     } catch (e) {
       return '';
     }
+  };
+
+  const getImageUrl = (url: string) => {
+    if (url.startsWith('http')) return url;
+    if (url.startsWith('/')) return `${CONFIG.API_BASE_URL}${url}`;
+    return `${CONFIG.API_BASE_URL}/media/${url}`;
   };
 
   return (
@@ -38,17 +46,46 @@ export default function GrievanceBubble({
       ]}>
         {/* Attachment Image */}
         {attachmentUrl ? (
-          <Image 
-            source={{ uri: attachmentUrl.startsWith('http') ? attachmentUrl : `${CONFIG.API_BASE_URL}/media/${attachmentUrl}` }} 
-            style={styles.image}
-            resizeMode="cover"
-          />
+          <>
+            <TouchableOpacity onPress={() => setModalVisible(true)}>
+              <Image 
+                source={{ uri: getImageUrl(attachmentUrl) }} 
+                style={styles.image}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+            
+            <Modal
+              visible={modalVisible}
+              transparent={true}
+              animationType="fade"
+              onRequestClose={() => setModalVisible(false)}
+            >
+              <View style={styles.modalContainer}>
+                <SafeAreaView style={styles.modalSafeArea}>
+                  <TouchableOpacity 
+                    style={styles.closeBtn} 
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <Text style={styles.closeBtnText}>✕ Close</Text>
+                  </TouchableOpacity>
+                  <Image 
+                    source={{ uri: getImageUrl(attachmentUrl) }} 
+                    style={styles.fullScreenImage}
+                    resizeMode="contain"
+                  />
+                </SafeAreaView>
+              </View>
+            </Modal>
+          </>
         ) : null}
 
         {/* Message Text */}
-        <Text style={[styles.messageText, isSelf ? styles.selfText : styles.otherText]}>
-          {message}
-        </Text>
+        {message ? (
+          <Text style={[styles.messageText, isSelf ? styles.selfText : styles.otherText]}>
+            {message}
+          </Text>
+        ) : null}
 
         {/* Time and Tick Status */}
         <View style={styles.footer}>
@@ -141,5 +178,33 @@ const styles = StyleSheet.create({
     color: '#a8dba8', // light green tick
     marginLeft: 4,
     fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalSafeArea: {
+    flex: 1,
+    width: '100%',
+  },
+  closeBtn: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 10,
+    borderRadius: 8,
+  },
+  closeBtnText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
   },
 });

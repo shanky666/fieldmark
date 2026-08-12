@@ -21,6 +21,7 @@ export default function Home({ navigation }: any) {
 
   const [cameraModalVisible, setCameraModalVisible] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -108,10 +109,20 @@ export default function Home({ navigation }: any) {
     }
   }, []);
 
+  const fetchHistory = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/api/attendance/me/');
+      setHistory(res.data);
+    } catch (error) {
+      console.error('Failed to load attendance history:', error);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       fetchTodayAttendance();
-    }, [fetchTodayAttendance])
+      fetchHistory();
+    }, [fetchTodayAttendance, fetchHistory])
   );
 
   const handleCardPress = () => {
@@ -268,38 +279,48 @@ export default function Home({ navigation }: any) {
         </View>
 
         <View style={styles.miniHistory}>
-          <View style={styles.miniRow}>
-            <View style={[styles.statusDot, { backgroundColor: '#2F8F5B' }]} />
-            <View style={styles.miniInfo}>
-              <Text style={styles.miniDay}>Monday, 28 Jul</Text>
-              <Text style={styles.miniHours}>09:04 AM – 06:12 PM · 9h 08m</Text>
-            </View>
-            <View style={[styles.badge, styles.badgePresent]}>
-              <Text style={styles.badgePresentText}>Present</Text>
-            </View>
-          </View>
-
-          <View style={styles.miniRow}>
-            <View style={[styles.statusDot, { backgroundColor: '#B9791C' }]} />
-            <View style={styles.miniInfo}>
-              <Text style={styles.miniDay}>Friday, 25 Jul</Text>
-              <Text style={styles.miniHours}>09:41 AM – 06:02 PM · 8h 21m</Text>
-            </View>
-            <View style={[styles.badge, styles.badgeLate]}>
-              <Text style={styles.badgeLateText}>Late</Text>
-            </View>
-          </View>
-
-          <View style={styles.miniRow}>
-            <View style={[styles.statusDot, { backgroundColor: '#2F8F5B' }]} />
-            <View style={styles.miniInfo}>
-              <Text style={styles.miniDay}>Thursday, 24 Jul</Text>
-              <Text style={styles.miniHours}>08:58 AM – 06:07 PM</Text>
-            </View>
-            <View style={[styles.badge, styles.badgePresent]}>
-              <Text style={styles.badgePresentText}>Present</Text>
-            </View>
-          </View>
+          {history.length > 0 ? (
+            history.slice(0, 3).map((item) => {
+              const dateObj = new Date(item.date);
+              // Handle JS date parsing timezone differences by using split
+              const [year, month, day] = item.date.split('-');
+              const localDate = new Date(Number(year), Number(month) - 1, Number(day));
+              const dateStr = localDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' });
+              
+              let checkInStr = '--:--';
+              if (item.marked_at) {
+                checkInStr = new Date(item.marked_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              }
+              
+              let checkOutStr = 'Still checked in';
+              if (item.check_out_at) {
+                checkOutStr = new Date(item.check_out_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              }
+              
+              let durationStr = item.duration_formatted || '';
+              
+              const isPresent = item.status === 'APPROVED' || item.status === 'PENDING';
+              
+              return (
+                <View key={item.id} style={styles.miniRow}>
+                  <View style={[styles.statusDot, { backgroundColor: isPresent ? '#2F8F5B' : '#B9791C' }]} />
+                  <View style={styles.miniInfo}>
+                    <Text style={styles.miniDay}>{dateStr}</Text>
+                    <Text style={styles.miniHours}>
+                      {checkInStr} – {checkOutStr} {durationStr ? `· ${durationStr}` : ''}
+                    </Text>
+                  </View>
+                  <View style={[styles.badge, isPresent ? styles.badgePresent : styles.badgeLate]}>
+                    <Text style={isPresent ? styles.badgePresentText : styles.badgeLateText}>
+                      {item.status}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })
+          ) : (
+            <Text style={{ textAlign: 'center', color: '#63796B', marginTop: 20 }}>No attendance history yet</Text>
+          )}
         </View>
 
       </ScrollView>

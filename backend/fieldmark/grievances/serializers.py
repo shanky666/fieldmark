@@ -23,4 +23,4 @@ class GrievanceThreadSerializer(serializers.Serializer):
     last_message = serializers.CharField()
     timestamp = serializers.DateTimeField()
     unread_count = serializers.IntegerField()
-    other_party = WorkerSerializer()
+    other_party = WorkerSerializer(allow_null=True, required=False)

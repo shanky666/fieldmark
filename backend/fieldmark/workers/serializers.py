@@ -18,6 +18,7 @@ class ZoneSerializer(serializers.ModelSerializer):
 class WorkerSerializer(serializers.ModelSerializer):
     zone_detail = ZoneSerializer(source='assigned_zone', read_only=True)
     shift_detail = ShiftSerializer(source='shift', read_only=True)
+    supervisor_name = serializers.SerializerMethodField()
 
     password = serializers.CharField(write_only=True, required=False)
 
@@ -25,11 +26,18 @@ class WorkerSerializer(serializers.ModelSerializer):
         model = Worker
         fields = [
             'id', 'phone', 'name', 'employee_id', 'password', 'worker_type', 
-            'assigned_zone', 'zone_detail', 'shift', 'shift_detail',
+            'assigned_zone', 'zone_detail', 'shift', 'shift_detail', 'supervisor_name',
             'contract_start_date', 'contract_end_date', 'profile_photo_url', 
             'fcm_token', 'preferred_language', 'is_active', 'created_at'
         ]
         read_only_fields = ['id', 'created_at']
+
+    def get_supervisor_name(self, obj):
+        if obj.assigned_zone:
+            supervisor = Worker.objects.filter(is_staff=True, assigned_zone=obj.assigned_zone).first()
+            if supervisor:
+                return supervisor.name
+        return None
 
     def create(self, validated_data):
         password = validated_data.pop('password', None) or self.initial_data.get('password') or '123456'

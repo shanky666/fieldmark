@@ -119,7 +119,13 @@ class GrievanceViewSet(viewsets.ModelViewSet):
                 continue
                 
             # Determine other party
-            other_party = latest_msg.recipient if latest_msg.sender == user else latest_msg.sender
+            first_msg = GrievanceMessage.objects.filter(thread_id=t_id).order_by('created_at').first()
+            thread_creator = first_msg.sender
+            
+            if user == thread_creator:
+                other_party = None
+            else:
+                other_party = thread_creator
             
             # Count unread messages for the user
             unread_count = GrievanceMessage.objects.filter(
