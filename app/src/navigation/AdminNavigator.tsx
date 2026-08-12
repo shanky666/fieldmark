@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useTranslation } from 'react-i18next';
-import { Text } from 'react-native';
+import { Text, ScrollView } from 'react-native';
 
 import { COLORS } from '../constants/colors';
 
@@ -16,12 +16,15 @@ import AddWorker from '../screens/admin/AddWorker';
 import Reports from '../screens/admin/Reports';
 import Settings from '../screens/admin/Settings';
 import LeaveReview from '../screens/admin/LeaveReview';
+import AdminGrievances from '../screens/admin/Grievances';
+import AdminGrievanceDetail from '../screens/admin/AdminGrievanceDetail';
 
 export type AdminStackParamList = {
   AdminTabs: undefined;
   VerificationDetail: { recordId: number };
   WorkerDetail: { workerId: number };
   AddWorker: undefined;
+  AdminGrievanceDetail: { threadId: string; employeeName: string };
 };
 
 const Stack = createStackNavigator<AdminStackParamList>();
@@ -88,6 +91,14 @@ function AdminTabNavigator() {
         }}
       />
       <Tab.Screen 
+        name="GrievancesTab" 
+        component={AdminGrievances} 
+        options={{
+          tabBarLabel: "Issues",
+          tabBarIcon: ({ focused }) => <TabBarIcon label="⚠️" focused={focused} />
+        }}
+      />
+      <Tab.Screen 
         name="SettingsTab" 
         component={Settings} 
         options={{
@@ -106,6 +117,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="VerificationDetail" component={VerificationDetail} />
       <Stack.Screen name="WorkerDetail" component={WorkerDetail} />
       <Stack.Screen name="AddWorker" component={AddWorker} />
+      <Stack.Screen name="AdminGrievanceDetail" component={AdminGrievanceDetail} />
     </Stack.Navigator>
   );
 }

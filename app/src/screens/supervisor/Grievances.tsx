@@ -1,59 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { COLORS } from '../../constants/colors';
 import { apiClient } from '../../api/client';
 import { SupervisorStackParamList } from '../../navigation/SupervisorNavigator';
 
-type SupervisorMessagesNavProp = StackNavigationProp<SupervisorStackParamList, 'SupervisorTabs'>;
+type GrievancesNavigationProp = StackNavigationProp<SupervisorStackParamList, 'SupervisorTabs'>;
 
-interface MessagesProps {
-  navigation: SupervisorMessagesNavProp;
+interface GrievancesProps {
+  navigation: GrievancesNavigationProp;
 }
 
-export default function Messages({ navigation }: MessagesProps) {
+export default function Grievances({ navigation }: GrievancesProps) {
   const { t } = useTranslation();
   const [threads, setThreads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchThreads = async () => {
     try {
-      const res = await apiClient.get('/api/grievances/');
+      const res = await apiClient.get('/api/grievances/me/');
       setThreads(res.data);
     } catch (e) {
-      console.error("Failed to load supervisor grievance list", e);
+      console.error("Failed to load grievance threads", e);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchThreads();
-    const unsubscribe = navigation.addListener('focus', () => {
+  useFocusEffect(
+    useCallback(() => {
       fetchThreads();
-    });
-    return unsubscribe;
-  }, [navigation]);
+    }, [])
+  );
 
   const renderItem = ({ item }: { item: any }) => {
     const timeStr = item.timestamp 
-      ? new Date(item.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' })
+      ? new Date(item.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       : '';
 
     return (
       <TouchableOpacity
-        style={styles.card}
-        onPress={() => navigation.navigate('GrievanceDetail', {
+        style={styles.threadCard}
+        onPress={() => navigation.navigate('GrievanceDetail', { 
           threadId: item.thread_id,
-          employeeName: item.other_party?.name || 'Worker'
+          employeeName: item.other_party?.name || 'Employee'
         })}
       >
         <View style={styles.leftCol}>
           <Text style={styles.subject}>{item.subject}</Text>
           <Text style={styles.lastMsg} numberOfLines={1}>{item.last_message}</Text>
-          <Text style={styles.workerName}>From: {item.other_party?.name} (Id: {item.other_party?.employee_id})</Text>
+          <Text style={styles.partyText}>From: {item.other_party?.name || 'Employee'} (ID: {item.other_party?.employee_id || 'N/A'})</Text>
         </View>
 
         <View style={styles.rightCol}>
@@ -62,14 +61,14 @@ export default function Messages({ navigation }: MessagesProps) {
           <View style={styles.badgeRow}>
             {item.is_resolved ? (
               <View style={styles.resolvedBadge}>
-                <Text style={styles.resolvedText}>Resolved</Text>
+                <Text style={styles.resolvedText}>RESOLVED</Text>
               </View>
             ) : (
               <View style={styles.openBadge}>
-                <Text style={styles.openText}>Open</Text>
+                <Text style={styles.openText}>OPEN</Text>
               </View>
             )}
-
+            
             {item.unread_count > 0 && (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadText}>{item.unread_count}</Text>
@@ -83,7 +82,7 @@ export default function Messages({ navigation }: MessagesProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('supervisor.messages')}</Text>
+      <Text style={styles.screenTitle}>Team Grievances</Text>
 
       {loading ? (
         <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 80 }} />
@@ -94,7 +93,7 @@ export default function Messages({ navigation }: MessagesProps) {
           keyExtractor={(item) => item.thread_id}
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No grievance messages from workers.</Text>
+            <Text style={styles.emptyText}>No grievances reported in your zone.</Text>
           }
         />
       )}
@@ -108,18 +107,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0faf0',
     paddingTop: 44,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    paddingHorizontal: 20,
-    marginBottom: 10,
-  },
   list: {
     padding: 20,
     paddingBottom: 40,
   },
-  card: {
+  screenTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  threadCard: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: 16,
@@ -144,15 +143,15 @@ const styles = StyleSheet.create({
     color: COLORS.darkText,
   },
   lastMsg: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.lightText,
     marginTop: 4,
   },
-  workerName: {
-    fontSize: 10,
+  partyText: {
+    fontSize: 11,
     color: COLORS.primary,
     fontWeight: 'bold',
-    marginTop: 6,
+    marginTop: 8,
   },
   rightCol: {
     alignItems: 'flex-end',
@@ -171,9 +170,9 @@ const styles = StyleSheet.create({
   },
   unreadBadge: {
     backgroundColor: COLORS.primary,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -184,8 +183,8 @@ const styles = StyleSheet.create({
   },
   resolvedBadge: {
     backgroundColor: COLORS.accent + '22',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: 8,
   },
   resolvedText: {
@@ -195,8 +194,8 @@ const styles = StyleSheet.create({
   },
   openBadge: {
     backgroundColor: '#fffbeb',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#f59e0b',

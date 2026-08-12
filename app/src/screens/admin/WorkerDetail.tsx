@@ -117,11 +117,54 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Profile Info */}
         <View style={styles.card}>
-          <Text style={styles.name}>{worker.name}</Text>
-          <Text style={styles.employeeId}>Employee ID: {worker.employee_id}</Text>
-          <Text style={styles.phone}>{worker.phone}</Text>
-          <View style={styles.typeBadge}>
-            <Text style={styles.typeBadgeText}>{worker.worker_type}</Text>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+            <View>
+              <Text style={styles.name}>{worker.name}</Text>
+              <Text style={styles.employeeId}>Employee ID: {worker.employee_id}</Text>
+              <Text style={styles.phone}>{worker.phone}</Text>
+              <View style={styles.typeBadge}>
+                <Text style={styles.typeBadgeText}>{worker.worker_type}</Text>
+              </View>
+              {!worker.is_active && (
+                <View style={[styles.typeBadge, { backgroundColor: '#fee2e2', marginTop: 4 }]}>
+                   <Text style={[styles.typeBadgeText, { color: '#ef4444' }]}>INACTIVE</Text>
+                </View>
+              )}
+            </View>
+            <TouchableOpacity 
+              style={[styles.statusBtn, worker.is_active ? styles.deactivateBtn : styles.activateBtn]}
+              onPress={() => {
+                const action = worker.is_active ? 'deactivate' : 'activate';
+                Alert.alert(
+                  `${action === 'deactivate' ? 'Deactivate' : 'Activate'} Employee`,
+                  `Are you sure you want to ${action} this employee?`,
+                  [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    { 
+                      text: action === 'deactivate' ? 'Deactivate' : 'Activate', 
+                      style: action === 'deactivate' ? 'destructive' : 'default',
+                      onPress: async () => {
+                        setUpdating(true);
+                        try {
+                          await apiClient.patch(`/api/workers/list/${workerId}/`, {
+                            is_active: !worker.is_active
+                          });
+                          Alert.alert('Success', `Employee successfully ${action}d.`);
+                          fetchWorkerData();
+                        } catch (e) {
+                          Alert.alert('Error', `Failed to ${action} employee.`);
+                        } finally {
+                          setUpdating(false);
+                        }
+                      }
+                    }
+                  ]
+                );
+              }}
+              disabled={updating}
+            >
+              <Text style={styles.statusBtnText}>{worker.is_active ? 'Deactivate' : 'Activate'}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -240,6 +283,26 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: COLORS.primary,
     fontWeight: 'bold',
+  },
+  statusBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+  },
+  activateBtn: {
+    backgroundColor: '#dcfce7',
+    borderColor: '#22c55e',
+  },
+  deactivateBtn: {
+    backgroundColor: '#fee2e2',
+    borderColor: '#ef4444',
+  },
+  statusBtnText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: COLORS.darkText,
   },
   cardSectionTitle: {
     fontSize: 12,

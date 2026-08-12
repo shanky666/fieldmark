@@ -93,6 +93,22 @@ class Worker(AbstractUser):
 
     objects = WorkerManager()
 
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        # Auto-generate ID if it's missing (either new or existing without ID)
+        if not self.employee_id:
+            prefix = 'EMP'
+            if self.is_superuser:
+                prefix = 'ADM'
+            elif getattr(self, 'is_staff', False):
+                prefix = 'SUP'
+            self.employee_id = f"{prefix}-{self.pk:05d}"
+            # Prevent infinite recursion, only update employee_id
+            kwargs['force_insert'] = False
+            super().save(update_fields=['employee_id'])
+
     def __str__(self):
         return f"{self.name} ({self.phone}) - {self.worker_type}"
 

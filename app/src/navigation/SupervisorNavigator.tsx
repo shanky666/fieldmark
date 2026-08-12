@@ -12,13 +12,14 @@ import FieldRounds from '../screens/supervisor/FieldRounds';
 import LogFieldRound from '../screens/supervisor/LogFieldRound';
 import Messages from '../screens/supervisor/Messages';
 import Team from '../screens/supervisor/Team';
-import GrievanceThread from '../screens/worker/GrievanceThread'; // Reuse thread
-import HistoryDetail from '../screens/worker/HistoryDetail'; // Reuse detail
+import Grievances from '../screens/supervisor/Grievances';
+import GrievanceDetail from '../screens/supervisor/GrievanceDetail';
+import HistoryDetail from '../screens/worker/HistoryDetail'; 
 
 export type SupervisorStackParamList = {
   SupervisorTabs: undefined;
   LogFieldRound: undefined;
-  GrievanceThread: { threadId: string; supervisorName: string };
+  GrievanceDetail: { threadId: string; employeeName: string };
   WorkerHistoryView: { workerId: number; name: string };
   HistoryDetail: { recordId: number };
 };
@@ -71,6 +72,14 @@ function SupervisorTabNavigator() {
         }}
       />
       <Tab.Screen 
+        name="GrievancesTab" 
+        component={Grievances} 
+        options={{
+          tabBarLabel: 'Grievances',
+          tabBarIcon: ({ focused }) => <TabBarIcon label="⚠️" focused={focused} />
+        }}
+      />
+      <Tab.Screen 
         name="TeamTab" 
         component={Team} 
         options={{
@@ -87,7 +96,7 @@ export default function SupervisorNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="SupervisorTabs" component={SupervisorTabNavigator} />
       <Stack.Screen name="LogFieldRound" component={LogFieldRound} />
-      <Stack.Screen name="GrievanceThread" component={GrievanceThread} />
+      <Stack.Screen name="GrievanceDetail" component={GrievanceDetail} />
       <Stack.Screen name="HistoryDetail" component={HistoryDetail} />
     </Stack.Navigator>
   );

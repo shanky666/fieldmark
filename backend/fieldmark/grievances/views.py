@@ -18,6 +18,10 @@ class GrievanceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        
+        if user.is_superuser:
+            return GrievanceMessage.objects.all()
+
         # Retrieve all messages where user is either sender or recipient
         queryset = GrievanceMessage.objects.filter(Q(sender=user) | Q(recipient=user))
         
@@ -88,8 +92,18 @@ class GrievanceViewSet(viewsets.ModelViewSet):
         """Returns the list of active conversation threads for the current user."""
         user = request.user
         
-        # We query for all messages involving the user
-        user_msgs = GrievanceMessage.objects.filter(Q(sender=user) | Q(recipient=user))
+        # Determine the base query for messages this user has access to
+        if user.is_superuser:
+            user_msgs = GrievanceMessage.objects.all()
+        elif hasattr(user, 'is_staff') and user.is_staff and user.assigned_zone:
+            user_msgs = GrievanceMessage.objects.filter(
+                Q(sender=user) | 
+                Q(recipient=user) | 
+                Q(sender__assigned_zone=user.assigned_zone) | 
+                Q(recipient__assigned_zone=user.assigned_zone)
+            )
+        else:
+            user_msgs = GrievanceMessage.objects.filter(Q(sender=user) | Q(recipient=user))
         
         # Group by thread_id and find the latest message properties
         threads_query = user_msgs.values('thread_id').annotate(
@@ -133,9 +147,9 @@ class GrievanceViewSet(viewsets.ModelViewSet):
         thread_id = pk
         messages = GrievanceMessage.objects.filter(thread_id=thread_id).order_by('created_at')
         
-        # Verify access: user must be sender or recipient of at least one message in the thread
+        # Verify access
         user = request.user
-        if not messages.filter(Q(sender=user) | Q(recipient=user)).exists():
+        if not user.is_superuser and not messages.filter(Q(sender=user) | Q(recipient=user)).exists():
             # Supervisors can access threads from workers in their zone
             if not (hasattr(user, 'is_staff') and user.is_staff and user.assigned_zone and 
                     messages.filter(Q(sender__assigned_zone=user.assigned_zone) | Q(recipient__assigned_zone=user.assigned_zone)).exists()):
@@ -163,9 +177,12 @@ class GrievanceViewSet(viewsets.ModelViewSet):
         if not first_msg:
             return Response({'error': 'Thread not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        # Verify access: user must be sender or recipient of at least one message in thread
-        if not thread_msgs.filter(Q(sender=user) | Q(recipient=user)).exists():
-            return Response({'error': 'unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        # Verify access
+        if not user.is_superuser and not thread_msgs.filter(Q(sender=user) | Q(recipient=user)).exists():
+            # Supervisors can reply to threads from workers in their zone
+            if not (hasattr(user, 'is_staff') and user.is_staff and user.assigned_zone and 
+                    thread_msgs.filter(Q(sender__assigned_zone=user.assigned_zone) | Q(recipient__assigned_zone=user.assigned_zone)).exists()):
+                return Response({'error': 'unauthorized'}, status=status.HTTP_403_FORBIDDEN)
 
         # Recipient is the other party of the latest message
         recipient = latest_msg.recipient if latest_msg.sender == user else latest_msg.sender

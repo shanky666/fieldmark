@@ -47,8 +47,8 @@ export default function AddWorker({ navigation }: AddWorkerProps) {
   }, []);
 
   const handleRegister = async () => {
-    if (!name || !phone || !employeeId || !selectedZoneId) {
-      Alert.alert(t('common.error'), "Please fill in all required fields (Name, Phone, ID, Zone).");
+    if (!name || !phone || !selectedZoneId) {
+      Alert.alert(t('common.error'), "Please fill in all required fields (Name, Phone, Zone).");
       return;
     }
 
@@ -142,7 +142,7 @@ export default function AddWorker({ navigation }: AddWorkerProps) {
           </View>
 
           {/* Employee ID */}
-          <Text style={styles.label}>Employee ID *</Text>
+          <Text style={styles.label}>Employee ID (Optional, Auto-generated)</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. FM-1049"
