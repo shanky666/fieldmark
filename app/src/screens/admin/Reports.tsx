@@ -1,11 +1,66 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { useAuthStore } from '../../store/auth';
+import { secureStorage } from '../../utils/secureStorage';
+import { apiClient } from '../../api/client';
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState<'attendance' | 'leave' | 'corrections'>('attendance');
 
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  const [pdfRole, setPdfRole] = useState<'All' | 'Employee' | 'Supervisor'>('All');
+  const [pdfZone, setPdfZone] = useState('');
+  const [pdfStartDate, setPdfStartDate] = useState('');
+  const [pdfEndDate, setPdfEndDate] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
+
   const exportReport = (type: string) => {
-    Alert.alert('Export Triggered', `📥 ${type} is preparing for download.`);
+    if (type === 'Attendance PDF') {
+      setPdfModalVisible(true);
+    } else {
+      Alert.alert('Export Triggered', `📥 ${type} is preparing for download.`);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    setPdfLoading(true);
+    try {
+      let query = `?role=${pdfRole}`;
+      if (pdfZone.trim()) query += `&zone=${encodeURIComponent(pdfZone.trim())}`;
+      if (pdfStartDate.trim()) query += `&start_date=${encodeURIComponent(pdfStartDate.trim())}`;
+      if (pdfEndDate.trim()) query += `&end_date=${encodeURIComponent(pdfEndDate.trim())}`;
+
+      const apiUrl = apiClient.defaults.baseURL || 'http://10.0.2.2:8000';
+      const fullUrl = `${apiUrl}/api/attendance/pdf-report/${query}`;
+      
+      const fileUri = FileSystem.documentDirectory + 'Attendance_History.pdf';
+      const token = await secureStorage.getItem('access_token');
+      const downloadRes = await FileSystem.downloadAsync(
+        fullUrl,
+        fileUri,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (downloadRes.status !== 200) {
+        Alert.alert('Download Failed', 'Could not generate or download the PDF.');
+        return;
+      }
+
+      setPdfModalVisible(false);
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(downloadRes.uri);
+      } else {
+        Alert.alert('Saved', 'PDF saved to device storage.');
+      }
+
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'An error occurred while downloading.');
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   return (
@@ -115,6 +170,9 @@ export default function Reports() {
             </View>
 
             <View style={styles.exportList}>
+              <TouchableOpacity style={styles.exportBtn} onPress={() => exportReport('Attendance PDF')}>
+                <Text style={styles.exportBtnText}>📄 Download Attendance History (PDF)</Text>
+              </TouchableOpacity>
               <TouchableOpacity style={styles.exportBtn} onPress={() => exportReport('CSV')}>
                 <Text style={styles.exportBtnText}>📥 Export Attendance CSV</Text>
               </TouchableOpacity>
@@ -181,6 +239,62 @@ export default function Reports() {
         )}
 
       </ScrollView>
+
+      {/* Download PDF Modal */}
+      {pdfModalVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Download PDF Report</Text>
+            <Text style={styles.modalSub}>Filter attendance records for download.</Text>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>ROLE</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {['All', 'Employee', 'Supervisor'].map(r => (
+                  <TouchableOpacity 
+                    key={r} 
+                    style={[styles.roleBtn, pdfRole === r && styles.roleBtnActive]}
+                    onPress={() => setPdfRole(r as any)}
+                  >
+                    <Text style={[styles.roleBtnText, pdfRole === r && styles.roleBtnTextActive]}>{r}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>ZONE (Optional)</Text>
+              <TextInput style={styles.input} placeholder="e.g. Zone A" placeholderTextColor="#9BAFA2" value={pdfZone} onChangeText={setPdfZone} />
+            </View>
+
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldFlex}>
+                <Text style={styles.label}>START DATE</Text>
+                <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#9BAFA2" value={pdfStartDate} onChangeText={setPdfStartDate} />
+              </View>
+              <View style={styles.fieldFlex}>
+                <Text style={styles.label}>END DATE</Text>
+                <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#9BAFA2" value={pdfEndDate} onChangeText={setPdfEndDate} />
+              </View>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.btnGhost} onPress={() => setPdfModalVisible(false)} disabled={pdfLoading}>
+                <Text style={styles.btnGhostText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btnPrimary, pdfLoading && { opacity: 0.7 }]} onPress={handleDownloadPDF} disabled={pdfLoading}>
+                {pdfLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.btnPrimaryText}>Download PDF</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
+
     </SafeAreaView>
   );
 }
@@ -382,5 +496,117 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#1F6B42',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(10, 20, 14, 0.6)',
+    justifyContent: 'flex-end',
+    zIndex: 1000,
+  },
+  modalSheet: {
+    backgroundColor: '#F3FAF5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 20,
+    paddingBottom: 36,
+  },
+  modalHandle: {
+    width: 38,
+    height: 4,
+    backgroundColor: '#DCEEE2',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#16241C',
+  },
+  modalSub: {
+    fontSize: 12.5,
+    color: '#63796B',
+    marginTop: 2,
+    marginBottom: 14,
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  fieldFlex: {
+    flex: 1,
+  },
+  field: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#63796B',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  input: {
+    borderWidth: 1.5,
+    borderColor: '#DCEEE2',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#16241C',
+    backgroundColor: '#FFFFFF',
+  },
+  roleBtn: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: '#DCEEE2',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  roleBtnActive: {
+    borderColor: '#2F8F5B',
+    backgroundColor: '#EAF6EE',
+  },
+  roleBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#63796B',
+  },
+  roleBtnTextActive: {
+    color: '#1F6B42',
+    fontWeight: '700',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 18,
+  },
+  btnGhost: {
+    flex: 1,
+    backgroundColor: '#EAF6EE',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  btnGhostText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#16241C',
+  },
+  btnPrimary: {
+    flex: 1.5,
+    backgroundColor: '#2F8F5B',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  btnPrimaryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

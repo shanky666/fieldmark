@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Switch, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Switch, TouchableOpacity, Alert, TextInput } from 'react-native';
 import { useAuthStore } from '../../store/auth';
+import { apiClient } from '../../api/client';
 
 export default function Settings() {
   const { logout } = useAuthStore();
@@ -20,6 +21,35 @@ export default function Settings() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: () => logout() }
     ]);
+  };
+
+  const [addAdminVisible, setAddAdminVisible] = useState(false);
+  const [adminName, setAdminName] = useState('');
+  const [adminPhone, setAdminPhone] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminCreating, setAdminCreating] = useState(false);
+
+  const handleAddAdmin = async () => {
+    if (!adminName.trim() || !adminPhone.trim() || !adminPassword.trim()) {
+      Alert.alert('Required', 'Please fill all fields (Name, Phone, Password).');
+      return;
+    }
+    setAdminCreating(true);
+    try {
+      // Assuming apiClient has the interceptor to attach JWT token
+      const res = await apiClient.post('/api/auth/admin-register/', {
+        name: adminName.trim(),
+        phone: adminPhone.trim(),
+        password: adminPassword.trim()
+      });
+      setAddAdminVisible(false);
+      setAdminName(''); setAdminPhone(''); setAdminPassword('');
+      Alert.alert('Success', `New Admin ${res.data?.admin?.admin_id || 'created'} successfully!`);
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to create new Admin.');
+    } finally {
+      setAdminCreating(false);
+    }
   };
 
   return (
@@ -117,12 +147,57 @@ export default function Settings() {
           </View>
         </View>
 
+        {/* Admin Management */}
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Admin management</Text>
+        </View>
+        <View style={styles.groupCard}>
+          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => setAddAdminVisible(true)}>
+            <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>+ Add new admin</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Sign Out */}
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
           <Text style={styles.signOutBtnText}>🚪 Sign Out of Admin Portal</Text>
         </TouchableOpacity>
 
       </ScrollView>
+
+      {/* Add Admin Modal */}
+      {addAdminVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Add Admin</Text>
+            <Text style={styles.modalSub}>Register a new Admin for the Portal.</Text>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>FULL NAME</Text>
+              <TextInput style={styles.input} placeholder="e.g. Ramesh Admin" placeholderTextColor="#9BAFA2" value={adminName} onChangeText={setAdminName} />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>PHONE NUMBER</Text>
+              <TextInput style={styles.input} placeholder="+91 98765 43210" placeholderTextColor="#9BAFA2" keyboardType="phone-pad" value={adminPhone} onChangeText={setAdminPhone} />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>INITIAL PASSWORD</Text>
+              <TextInput style={styles.input} placeholder="Enter a secure password" placeholderTextColor="#9BAFA2" value={adminPassword} onChangeText={setAdminPassword} secureTextEntry />
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.btnGhost} onPress={() => setAddAdminVisible(false)} disabled={adminCreating}>
+                <Text style={styles.btnGhostText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btnPrimary, adminCreating && { opacity: 0.7 }]} onPress={handleAddAdmin} disabled={adminCreating}>
+                <Text style={styles.btnPrimaryText}>{adminCreating ? 'Creating...' : 'Create Admin'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -201,5 +276,87 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#C24936',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(10, 20, 14, 0.6)',
+    justifyContent: 'flex-end',
+    zIndex: 1000,
+  },
+  modalSheet: {
+    backgroundColor: '#F3FAF5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 20,
+    paddingBottom: 36,
+  },
+  modalHandle: {
+    width: 38,
+    height: 4,
+    backgroundColor: '#DCEEE2',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#16241C',
+  },
+  modalSub: {
+    fontSize: 12.5,
+    color: '#63796B',
+    marginTop: 2,
+    marginBottom: 14,
+  },
+  field: {
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#63796B',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  input: {
+    borderWidth: 1.5,
+    borderColor: '#DCEEE2',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#16241C',
+    backgroundColor: '#FFFFFF',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 18,
+  },
+  btnGhost: {
+    flex: 1,
+    backgroundColor: '#EAF6EE',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  btnGhostText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#16241C',
+  },
+  btnPrimary: {
+    flex: 1.5,
+    backgroundColor: '#2F8F5B',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  btnPrimaryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

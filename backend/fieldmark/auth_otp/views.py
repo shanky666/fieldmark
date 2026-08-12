@@ -57,20 +57,20 @@ class RegisterView(APIView):
         employee_id = request.data.get('employee_id')
         role = request.data.get('role', 'WORKER') # 'WORKER' or 'SUPERVISOR'
         assigned_zone_id = request.data.get('assigned_zone_id')
-        password = request.data.get('password', '123456')
+        password = request.data.get('password')
 
-        if not phone or not name or not employee_id:
-            return Response({'error': 'invalid_input', 'message': 'Phone, Name, and Employee ID are required'}, status=status.HTTP_400_BAD_REQUEST)
+        if not phone or not name or not password:
+            return Response({'error': 'invalid_input', 'message': 'Phone, Name, and Password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         normalized_phone = normalize_phone(phone)
-        employee_id = employee_id.strip()
+        employee_id = employee_id.strip() if employee_id else None
         name = name.strip()
 
         digits = ''.join(c for c in phone if c.isdigit())[-10:] if any(c.isdigit() for c in str(phone)) else phone
         if Worker.objects.filter(Q(phone=phone) | Q(phone=normalized_phone) | Q(phone__endswith=digits)).exists():
             return Response({'error': 'phone_exists', 'message': 'An account with this phone number already exists. Please log in directly.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if Worker.objects.filter(employee_id__iexact=employee_id).exists():
+        if employee_id and Worker.objects.filter(employee_id__iexact=employee_id).exists():
             return Response({'error': 'employee_id_exists', 'message': 'An account with this Employee ID already exists. Please log in directly.'}, status=status.HTTP_400_BAD_REQUEST)
 
         is_staff = (role.upper() == 'SUPERVISOR')
@@ -104,6 +104,54 @@ class RegisterView(APIView):
             **tokens
         }, status=status.HTTP_201_CREATED)
 
+class AdminRegisterView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request):
+        if not request.user.is_superuser:
+            return Response({'error': 'unauthorized', 'message': 'Only an existing Admin can create a new Admin'}, status=status.HTTP_403_FORBIDDEN)
+
+        phone = request.data.get('phone')
+        name = request.data.get('name')
+        password = request.data.get('password')
+
+        if not phone or not name or not password:
+            return Response({'error': 'invalid_input', 'message': 'Phone, Name, and Password are required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        normalized_phone = normalize_phone(phone)
+        name = name.strip()
+
+        digits = ''.join(c for c in phone if c.isdigit())[-10:] if any(c.isdigit() for c in str(phone)) else phone
+        if Worker.objects.filter(Q(phone=phone) | Q(phone=normalized_phone) | Q(phone__endswith=digits)).exists():
+            return Response({'error': 'phone_exists', 'message': 'An account with this phone number already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            admin_user = Worker.objects.create_user(
+                phone=normalized_phone,
+                password=password,
+                name=name,
+                is_staff=True,
+                is_superuser=True,
+                is_active=True,
+            )
+            admin_user.created_by = request.user
+            admin_user.save()
+            
+        except Exception as e:
+            return Response({
+                'error': 'registration_failed',
+                'message': f'Admin creation failed: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'message': 'Admin created successfully',
+            'admin': {
+                'id': admin_user.id,
+                'name': admin_user.name,
+                'phone': admin_user.phone,
+                'admin_id': admin_user.employee_id
+            }
+        }, status=status.HTTP_201_CREATED)
 
 
 class UserLoginView(APIView):

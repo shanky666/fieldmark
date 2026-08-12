@@ -12,6 +12,7 @@ export default function Workers({ navigation }: any) {
   const [phone, setPhone] = useState('');
   const [employeeIdInput, setEmployeeIdInput] = useState('');
   const [role, setRole] = useState('WORKER');
+  const [initialPassword, setInitialPassword] = useState('');
 
   const [workersList, setWorkersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,8 +56,8 @@ export default function Workers({ navigation }: any) {
       Alert.alert('Required', 'Please enter first name.');
       return;
     }
-    if (!employeeIdInput.trim()) {
-      Alert.alert('Required', 'Please enter Employee ID.');
+    if (!initialPassword.trim()) {
+      Alert.alert('Required', 'Please enter an Initial Password.');
       return;
     }
     if (!phone.trim()) {
@@ -67,13 +68,14 @@ export default function Workers({ navigation }: any) {
     try {
       await apiClient.post('/api/auth/register/', {
         name: `${fname.trim()} ${lname.trim()}`.trim(),
-        employee_id: employeeIdInput.trim(),
+        employee_id: employeeIdInput.trim() || undefined,
         phone: phone.trim(),
-        role: role
+        role: role,
+        password: initialPassword.trim()
       });
 
       setAddModalVisible(false);
-      setFname(''); setLname(''); setPhone(''); setEmployeeIdInput('');
+      setFname(''); setLname(''); setPhone(''); setEmployeeIdInput(''); setInitialPassword('');
       Alert.alert('Worker Added', `✓ ${fname} registered in database.`);
       fetchWorkers();
     } catch (e: any) {
@@ -191,7 +193,7 @@ export default function Workers({ navigation }: any) {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>EMPLOYEE ID (REQUIRED)</Text>
+              <Text style={styles.label}>EMPLOYEE ID (OPTIONAL, AUTO-GENERATED)</Text>
               <TextInput style={styles.input} placeholder="e.g. EMP-1042" placeholderTextColor="#9BAFA2" value={employeeIdInput} onChangeText={setEmployeeIdInput} autoCapitalize="characters" />
             </View>
 
@@ -203,6 +205,11 @@ export default function Workers({ navigation }: any) {
             <View style={styles.field}>
               <Text style={styles.label}>DESIGNATION / ROLE</Text>
               <TextInput style={styles.input} placeholder="Technician, Mason, Engineer" placeholderTextColor="#9BAFA2" value={role} onChangeText={setRole} />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>INITIAL PASSWORD</Text>
+              <TextInput style={styles.input} placeholder="Enter a password" placeholderTextColor="#9BAFA2" value={initialPassword} onChangeText={setInitialPassword} secureTextEntry />
             </View>
 
             <View style={styles.modalActions}>
