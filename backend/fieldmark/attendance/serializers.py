@@ -34,7 +34,6 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        # The request context contains the authenticated user
         request = self.context.get('request')
         if not request:
             raise serializers.ValidationError("Request context missing")
@@ -42,27 +41,36 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
         user = request.user
         data['worker'] = user
 
-        # 1. Parse date from marked_at in IST
-        marked_at = data.get('marked_at', timezone.now())
-        marked_at_ist = marked_at.astimezone(ist_tz)
-        
-        # Populate date field from IST marked_at (prevents UTC timezone offsets shifting date)
-        data['date'] = marked_at_ist.date()
+        # Always determine the attendance day from the server's IST date.
+        # This prevents yesterday's attendance from blocking today's check-in.
+        today_ist = timezone.now().astimezone(ist_tz).date()
+        data['date'] = today_ist
 
-        # 2. Duplicate Check: check if already submitted today (status != REJECTED)
+        # Prevent duplicate check-in for THIS worker on THIS IST date.
         duplicate_check = AttendanceRecord.objects.filter(
             worker=user,
-            date=data['date']
-        ).exclude(status=AttendanceRecord.StatusChoices.REJECTED)
-        
+            date=today_ist
+        ).exclude(
+            status=AttendanceRecord.StatusChoices.REJECTED
+        )
+
         if duplicate_check.exists():
+            existing = duplicate_check.first()
+
+            if existing.check_out_at:
+                raise serializers.ValidationError({
+                    'error': 'attendance_completed_today',
+                    'message': 'Attendance is already completed for today.',
+                    'existing_id': existing.id
+                })
+
             raise serializers.ValidationError({
-                'error': 'already_marked_today',
-                'existing_id': duplicate_check.first().id
+                'error': 'already_checked_in',
+                'message': 'You are already checked in today. Please check out first.',
+                'existing_id': existing.id
             })
 
         return data
-
     def create(self, validated_data):
         # Instantiating the attendance record
         record = AttendanceRecord(**validated_data)
@@ -74,6 +82,7 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
 
         record.save()
         return record
+
 
 
 
