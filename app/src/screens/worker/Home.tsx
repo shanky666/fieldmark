@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
+import { CONFIG } from '../../constants/config';
 
 export default function Home({ navigation }: any) {
   const { userProfile, logout } = useAuthStore();
@@ -92,11 +93,17 @@ export default function Home({ navigation }: any) {
         }
 
         if (record.photo_url) {
+          let photoUri = String(record.photo_url);
+          if (!photoUri.startsWith('http') && !photoUri.startsWith('data:')) {
+            const cleanPath = photoUri.startsWith('/media/') ? photoUri : `/media/${photoUri.replace(/^\/+/, '')}`;
+            photoUri = `${CONFIG.API_BASE_URL.replace(/\/+$/, '')}${cleanPath}`;
+          }
+
           setLastStamp({
-            photoUri: record.photo_url,
+            photoUri,
             time: checkIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             date: record.date,
-            status: record.status || 'PENDING'
+            status: record.status || 'APPROVED'
           });
         }
       } else {
@@ -257,8 +264,17 @@ export default function Home({ navigation }: any) {
                   </Text>
                 ) : null}
               </View>
-              <View style={styles.stampRibbon}>
-                <Text style={styles.ribbonText}>✓ VERIFIED</Text>
+              <View style={[
+                styles.stampRibbon,
+                lastStamp.status === 'REJECTED' ? styles.ribbonRejected :
+                lastStamp.status === 'FLAGGED' ? styles.ribbonFlagged :
+                lastStamp.status === 'PENDING' ? styles.ribbonPending : styles.ribbonApproved
+              ]}>
+                <Text style={styles.ribbonText}>
+                  {lastStamp.status === 'REJECTED' ? '❌ REJECTED' :
+                   lastStamp.status === 'FLAGGED' ? '⚠️ FLAGGED' :
+                   lastStamp.status === 'PENDING' ? '⏳ PENDING' : '✓ APPROVED'}
+                </Text>
               </View>
             </View>
             <View style={styles.stampFoot}>
@@ -579,10 +595,21 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-    backgroundColor: '#2F8F5B',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 6,
+  },
+  ribbonApproved: {
+    backgroundColor: '#2F8F5B',
+  },
+  ribbonRejected: {
+    backgroundColor: '#C24936',
+  },
+  ribbonFlagged: {
+    backgroundColor: '#B9791C',
+  },
+  ribbonPending: {
+    backgroundColor: '#1A6DB5',
   },
   ribbonText: {
     color: '#FFFFFF',
@@ -717,8 +744,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
-
-
 
 
 

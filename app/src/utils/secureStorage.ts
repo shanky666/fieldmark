@@ -8,30 +8,65 @@ import { Platform } from 'react-native';
 let SecureStore: typeof import('expo-secure-store') | null = null;
 
 if (Platform.OS !== 'web') {
-  SecureStore = require('expo-secure-store');
+  try {
+    SecureStore = require('expo-secure-store');
+  } catch (e) {
+    console.warn('Failed to require expo-secure-store', e);
+  }
 }
 
 export const secureStorage = {
   async getItem(key: string): Promise<string | null> {
-    if (Platform.OS === 'web') {
-      return localStorage.getItem(key);
+    if (Platform.OS === 'web' || !SecureStore) {
+      try {
+        return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+      } catch {
+        return null;
+      }
     }
-    return SecureStore!.getItemAsync(key);
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch (e) {
+      console.warn('SecureStore.getItemAsync failed:', e);
+      try {
+        return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+      } catch {
+        return null;
+      }
+    }
   },
 
   async setItem(key: string, value: string): Promise<void> {
-    if (Platform.OS === 'web') {
-      localStorage.setItem(key, value);
+    if (Platform.OS === 'web' || !SecureStore) {
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
+      } catch {}
       return;
     }
-    await SecureStore!.setItemAsync(key, value);
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch (e) {
+      console.warn('SecureStore.setItemAsync failed:', e);
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
+      } catch {}
+    }
   },
 
   async deleteItem(key: string): Promise<void> {
-    if (Platform.OS === 'web') {
-      localStorage.removeItem(key);
+    if (Platform.OS === 'web' || !SecureStore) {
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+      } catch {}
       return;
     }
-    await SecureStore!.deleteItemAsync(key);
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch (e) {
+      console.warn('SecureStore.deleteItemAsync failed:', e);
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
+      } catch {}
+    }
   },
 };

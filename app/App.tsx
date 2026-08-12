@@ -12,29 +12,37 @@ import RootNavigator from './src/navigation/RootNavigator';
 
 const BACKGROUND_SYNC_TASK = 'FIELDMARK_SYNC_TASK';
 
-// Register background fetch task — native only
+// Register background fetch task — native only with safety try/catch
 if (Platform.OS !== 'web') {
-  const TaskManager = require('expo-task-manager');
-  const BackgroundFetch = require('expo-background-fetch');
+  try {
+    const TaskManager = require('expo-task-manager');
+    const BackgroundFetch = require('expo-background-fetch');
 
-  TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
-    try {
-      const hasSynced = await syncOfflineQueue();
-      return hasSynced
-        ? BackgroundFetch.BackgroundFetchResult.NewData
-        : BackgroundFetch.BackgroundFetchResult.NoData;
-    } catch (error) {
-      console.error('Background sync task failed', error);
-      return BackgroundFetch.BackgroundFetchResult.Failed;
+    if (TaskManager?.defineTask && BackgroundFetch) {
+      TaskManager.defineTask(BACKGROUND_SYNC_TASK, async () => {
+        try {
+          const hasSynced = await syncOfflineQueue();
+          return hasSynced
+            ? BackgroundFetch.BackgroundFetchResult.NewData
+            : BackgroundFetch.BackgroundFetchResult.NoData;
+        } catch (error) {
+          console.error('Background sync task failed', error);
+          return BackgroundFetch.BackgroundFetchResult.Failed;
+        }
+      });
     }
-  });
+  } catch (e) {
+    console.warn('Background sync task defineTask skipped:', e);
+  }
 }
 
 async function registerBackgroundSync() {
   if (Platform.OS === 'web') return;
 
-  const BackgroundFetch = require('expo-background-fetch');
   try {
+    const BackgroundFetch = require('expo-background-fetch');
+    if (!BackgroundFetch?.getStatusAsync) return;
+
     const status = await BackgroundFetch.getStatusAsync();
     if (
       status === BackgroundFetch.BackgroundFetchStatus.Restricted ||
@@ -58,11 +66,19 @@ export default function App() {
   const { initDb } = useOfflineQueueStore();
 
   useEffect(() => {
-    // 1. Initialize SQLite tables (no-op on web)
-    initDb();
+    try {
+      // 1. Initialize SQLite tables (no-op on web / gracefully handled)
+      initDb();
+    } catch (e) {
+      console.warn('initDb error', e);
+    }
 
-    // 2. Register background task (no-op on web)
-    registerBackgroundSync();
+    try {
+      // 2. Register background task (no-op on web / gracefully handled)
+      registerBackgroundSync();
+    } catch (e) {
+      console.warn('registerBackgroundSync error', e);
+    }
   }, []);
 
   return (
