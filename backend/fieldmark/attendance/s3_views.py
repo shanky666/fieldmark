@@ -56,10 +56,10 @@ class S3PresignView(APIView):
 
 class LocalMockUploadView(APIView):
     """
-    Accepts binary PUT uploads to mock S3 uploads during local development, 
-    saving files directly to Django's local media storage.
+    Accepts binary PUT uploads from the mobile application and saves them 
+    directly into Django's MEDIA_ROOT directory.
     """
-    permission_classes = [permissions.AllowAny] # Client PUT requests from App
+    permission_classes = [permissions.AllowAny]
 
     def put(self, request):
         s3_key = request.query_params.get('key')
@@ -67,12 +67,18 @@ class LocalMockUploadView(APIView):
             return Response({'error': 'Missing query parameter key'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # Read binary body content
             file_data = request.body
+            if not file_data:
+                return Response({'error': 'Empty file payload'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Ensure parent directories exist under MEDIA_ROOT
+            clean_key = s3_key.lstrip('/')
+            target_path = os.path.join(settings.MEDIA_ROOT, clean_key)
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
             
-            # Save file via django default storage
-            default_storage.save(s3_key, ContentFile(file_data))
+            with open(target_path, 'wb') as f:
+                f.write(file_data)
             
-            return Response({'message': 'File uploaded locally successfully'}, status=status.HTTP_200_OK)
+            return Response({'message': 'File uploaded successfully'}, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({'error': f"Failed to save local mock upload: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': f"Failed to save upload: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
