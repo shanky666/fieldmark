@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.utils import timezone
 from datetime import date
 from .models import Shift, Zone, Worker, ZoneReassignmentHistory
 from .serializers import (
@@ -68,6 +69,9 @@ class WorkerViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
     def perform_update(self, serializer):
         # Handle implicit zone reassignment during standard PATCH update
         instance = self.get_object()
@@ -83,9 +87,41 @@ class WorkerViewSet(viewsets.ModelViewSet):
                     reassigned_by=self.request.user,
                     reason="Updated via worker profile update"
                 )
-                serializer.save()
+                
+                # Check status change
+                if 'is_active' in serializer.validated_data and instance.is_active != serializer.validated_data['is_active']:
+                    serializer.save(
+                        last_status_changed_at=timezone.now(),
+                        status_changed_by=self.request.user
+                    )
+                else:
+                    serializer.save()
         else:
-            serializer.save()
+            if 'is_active' in serializer.validated_data and instance.is_active != serializer.validated_data['is_active']:
+                serializer.save(
+                    last_status_changed_at=timezone.now(),
+                    status_changed_by=self.request.user
+                )
+            else:
+                serializer.save()
+
+    @action(detail=True, methods=['post'], url_path='reset-password')
+    def reset_password(self, request, pk=None):
+        if not request.user.is_superuser:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+            
+        worker = self.get_object()
+        new_password = request.data.get('password')
+        
+        if not new_password:
+            return Response({'error': 'Password is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        worker.set_password(new_password)
+        worker.last_password_reset_at = timezone.now()
+        worker.password_reset_by = request.user
+        worker.save()
+        
+        return Response({'message': 'Password reset successfully'})
 
     @action(detail=True, methods=['post'], url_path='reassign-zone')
     def reassign_zone(self, request, pk=None):

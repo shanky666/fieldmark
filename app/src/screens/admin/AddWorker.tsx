@@ -19,6 +19,7 @@ export default function AddWorker({ navigation }: AddWorkerProps) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [employeeId, setEmployeeId] = useState('');
+  const [password, setPassword] = useState('');
   const [workerType, setWorkerType] = useState<'PERMANENT' | 'CONTRACTOR' | 'SEASONAL'>('PERMANENT');
   
   const [zones, setZones] = useState<any[]>([]);
@@ -47,8 +48,8 @@ export default function AddWorker({ navigation }: AddWorkerProps) {
   }, []);
 
   const handleRegister = async () => {
-    if (!name || !phone || !selectedZoneId) {
-      Alert.alert(t('common.error'), "Please fill in all required fields (Name, Phone, Zone).");
+    if (!name || !phone || !selectedZoneId || !password) {
+      Alert.alert(t('common.error'), "Please fill in all required fields (Name, Phone, Zone, Password).");
       return;
     }
 
@@ -79,6 +80,7 @@ export default function AddWorker({ navigation }: AddWorkerProps) {
         employee_id: employeeId,
         worker_type: workerType,
         assigned_zone: selectedZoneId,
+        password,
         contract_start_date: contractStart || null,
         contract_end_date: contractEnd || null
       });
@@ -140,6 +142,17 @@ export default function AddWorker({ navigation }: AddWorkerProps) {
               onChangeText={(v) => setPhone(v.replace(/[^0-9]/g, ''))}
             />
           </View>
+
+          {/* Password */}
+          <Text style={styles.label}>Initial Password *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Set a password for the worker"
+            placeholderTextColor={COLORS.lightText}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
 
           {/* Employee ID */}
           <Text style={styles.label}>Employee ID (Optional, Auto-generated)</Text>

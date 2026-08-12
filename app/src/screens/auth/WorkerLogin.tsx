@@ -14,8 +14,8 @@ interface Props {
 }
 
 export default function WorkerLogin({ navigation }: Props) {
-  const [identifier, setIdentifier] = useState('WRK001');
-  const [password, setPassword] = useState('123456');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
   const { loginWorker, isLoading } = useAuthStore();
@@ -103,15 +103,6 @@ export default function WorkerLogin({ navigation }: Props) {
               {isLoading
                 ? <ActivityIndicator color="#FFF" />
                 : <Text style={styles.submitBtnText}>Sign In</Text>}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.registerLink}
-              onPress={() => navigation.navigate('Register', { role: 'WORKER' })}
-            >
-              <Text style={styles.registerText}>
-                New Employee? <Text style={styles.registerTextBold}>Register Here</Text>
-              </Text>
             </TouchableOpacity>
 
           </View>

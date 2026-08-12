@@ -86,6 +86,13 @@ class Worker(AbstractUser):
         default=LanguageChoices.EN
     )
     created_at = models.DateTimeField(default=timezone.now)
+    created_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='created_workers')
+    
+    last_password_reset_at = models.DateTimeField(null=True, blank=True)
+    password_reset_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='passwords_reset')
+    
+    last_status_changed_at = models.DateTimeField(null=True, blank=True)
+    status_changed_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='statuses_changed')
 
     # Django user representation override
     USERNAME_FIELD = 'phone'

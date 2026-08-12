@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,8 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
   const [calendarData, setCalendarData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const fetchWorkerData = async () => {
     try {
@@ -81,6 +83,38 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
               Alert.alert(t('common.error'), "Failed to update assigned zone.");
             } finally {
               setUpdating(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword.trim()) {
+      Alert.alert(t('common.error'), "Please enter a new password.");
+      return;
+    }
+    Alert.alert(
+      "Reset Password",
+      `Are you sure you want to reset the password for ${worker?.name}?`,
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.confirm'),
+          onPress: async () => {
+            setResettingPassword(true);
+            try {
+              await apiClient.post(`/api/workers/list/${workerId}/reset-password/`, {
+                password: newPassword.trim()
+              });
+              Alert.alert(t('common.success'), `Password reset successfully.`);
+              setNewPassword('');
+              fetchWorkerData();
+            } catch (e) {
+              Alert.alert(t('common.error'), "Failed to reset password.");
+            } finally {
+              setResettingPassword(false);
             }
           }
         }
@@ -192,6 +226,63 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
                 </TouchableOpacity>
               );
             })}
+          </View>
+        </View>
+
+        {/* Security & Audit History */}
+        <View style={styles.card}>
+          <Text style={styles.cardSectionTitle}>Security & Audit History</Text>
+          
+          <View style={styles.auditRow}>
+            <Text style={styles.auditLabel}>Account Status:</Text>
+            <Text style={styles.auditValue}>{worker.is_active ? 'Active' : 'Deactivated'}</Text>
+          </View>
+          <View style={styles.auditRow}>
+            <Text style={styles.auditLabel}>Created By:</Text>
+            <Text style={styles.auditValue}>{worker.created_by_name || 'System / Auto'}</Text>
+          </View>
+          <View style={styles.auditRow}>
+            <Text style={styles.auditLabel}>Created At:</Text>
+            <Text style={styles.auditValue}>{new Date(worker.created_at).toLocaleString()}</Text>
+          </View>
+          <View style={styles.auditRow}>
+            <Text style={styles.auditLabel}>Last Password Reset:</Text>
+            <Text style={styles.auditValue}>
+              {worker.last_password_reset_at 
+                ? `${new Date(worker.last_password_reset_at).toLocaleString()} by ${worker.password_reset_by_name || 'Admin'}` 
+                : 'Password: Set'}
+            </Text>
+          </View>
+          <View style={styles.auditRow}>
+            <Text style={styles.auditLabel}>Last Status Change:</Text>
+            <Text style={styles.auditValue}>
+              {worker.last_status_changed_at 
+                ? `${new Date(worker.last_status_changed_at).toLocaleString()} by ${worker.status_changed_by_name || 'Admin'}` 
+                : 'No changes'}
+            </Text>
+          </View>
+
+          <Text style={[styles.cardSectionTitle, { marginTop: 16 }]}>Reset Password</Text>
+          <View style={styles.resetRow}>
+            <TextInput
+              style={styles.resetInput}
+              placeholder="Enter new password"
+              placeholderTextColor={COLORS.lightText}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+            />
+            <TouchableOpacity 
+              style={[styles.resetBtn, resettingPassword && { opacity: 0.7 }]} 
+              onPress={handleResetPassword}
+              disabled={resettingPassword}
+            >
+              {resettingPassword ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.resetBtnText}>Reset</Text>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -363,5 +454,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.danger,
     marginTop: 100,
+  },
+  auditRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.lightGray,
+  },
+  auditLabel: {
+    fontSize: 12,
+    color: COLORS.lightText,
+    fontWeight: '500',
+  },
+  auditValue: {
+    fontSize: 12,
+    color: COLORS.darkText,
+    fontWeight: 'bold',
+  },
+  resetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  resetInput: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 14,
+    backgroundColor: COLORS.lightGray,
+  },
+  resetBtn: {
+    backgroundColor: COLORS.primary,
+    height: 40,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  resetBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
   },
 });

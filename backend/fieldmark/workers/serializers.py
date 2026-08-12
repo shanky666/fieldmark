@@ -19,6 +19,9 @@ class WorkerSerializer(serializers.ModelSerializer):
     zone_detail = ZoneSerializer(source='assigned_zone', read_only=True)
     shift_detail = ShiftSerializer(source='shift', read_only=True)
     supervisor_name = serializers.SerializerMethodField()
+    created_by_name = serializers.CharField(source='created_by.name', read_only=True)
+    password_reset_by_name = serializers.CharField(source='password_reset_by.name', read_only=True)
+    status_changed_by_name = serializers.CharField(source='status_changed_by.name', read_only=True)
 
     password = serializers.CharField(write_only=True, required=False)
 
@@ -28,9 +31,11 @@ class WorkerSerializer(serializers.ModelSerializer):
             'id', 'phone', 'name', 'employee_id', 'password', 'worker_type', 
             'assigned_zone', 'zone_detail', 'shift', 'shift_detail', 'supervisor_name',
             'contract_start_date', 'contract_end_date', 'profile_photo_url', 
-            'fcm_token', 'preferred_language', 'is_active', 'created_at'
+            'fcm_token', 'preferred_language', 'is_active', 'created_at',
+            'last_password_reset_at', 'password_reset_by_name',
+            'last_status_changed_at', 'status_changed_by_name', 'created_by_name'
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'created_at', 'last_password_reset_at', 'last_status_changed_at']
 
     def get_supervisor_name(self, obj):
         if obj.assigned_zone:
@@ -40,7 +45,7 @@ class WorkerSerializer(serializers.ModelSerializer):
         return None
 
     def create(self, validated_data):
-        password = validated_data.pop('password', None) or self.initial_data.get('password') or '123456'
+        password = validated_data.pop('password', None) or self.initial_data.get('password')
         user = Worker.objects.create_user(
             phone=validated_data['phone'],
             name=validated_data.get('name', ''),
@@ -53,8 +58,9 @@ class WorkerSerializer(serializers.ModelSerializer):
             preferred_language=validated_data.get('preferred_language', Worker.LanguageChoices.EN),
             is_active=validated_data.get('is_active', True)
         )
-        user.set_password(password)
-        user.save()
+        if password:
+            user.set_password(password)
+            user.save()
         return user
 
 

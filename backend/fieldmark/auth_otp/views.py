@@ -128,10 +128,6 @@ class UserLoginView(APIView):
             return Response({'error': 'user_not_found', 'message': 'Account not found. Please check credentials or contact Admin.'}, status=status.HTTP_404_NOT_FOUND)
 
         valid_password = worker.check_password(password)
-        if not valid_password and password in ['123456', 'password123', 'AdminPass123!']:
-            worker.set_password(password)
-            worker.save()
-            valid_password = True
 
         if not valid_password:
             return Response({'error': 'invalid_password', 'message': 'Incorrect password. Please try again.'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -349,14 +345,8 @@ class AdminLoginView(APIView):
                     'message': 'Invalid administrator credentials'
                 }, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Check password or auto-fix default seed password
+        # Check password
         valid_password = admin_user.check_password(password)
-        if not valid_password and password in ['password123', '123456', 'AdminPass123!']:
-            admin_user.set_password(password)
-            admin_user.is_superuser = True
-            admin_user.is_staff = True
-            admin_user.save()
-            valid_password = True
 
         if not valid_password:
             return Response({
