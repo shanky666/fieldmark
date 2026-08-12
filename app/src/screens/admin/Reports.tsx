@@ -8,34 +8,33 @@ import { apiClient } from '../../api/client';
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState<'attendance' | 'leave' | 'corrections'>('attendance');
-
-  const [pdfModalVisible, setPdfModalVisible] = useState(false);
-  const [pdfRole, setPdfRole] = useState<'All' | 'Employee' | 'Supervisor'>('All');
-  const [pdfZone, setPdfZone] = useState('');
-  const [pdfStartDate, setPdfStartDate] = useState('');
-  const [pdfEndDate, setPdfEndDate] = useState('');
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [csvModalVisible, setCsvModalVisible] = useState(false);
+  const [csvRole, setCsvRole] = useState<'All' | 'Employee' | 'Supervisor'>('All');
+  const [csvZone, setCsvZone] = useState('');
+  const [csvStartDate, setCsvStartDate] = useState('');
+  const [csvEndDate, setCsvEndDate] = useState('');
+  const [csvLoading, setCsvLoading] = useState(false);
 
   const exportReport = (type: string) => {
-    if (type === 'Attendance PDF') {
-      setPdfModalVisible(true);
+    if (type === 'Attendance CSV') {
+      setCsvModalVisible(true);
     } else {
       Alert.alert('Export Triggered', `📥 ${type} is preparing for download.`);
     }
   };
 
-  const handleDownloadPDF = async () => {
-    setPdfLoading(true);
+  const handleDownloadCSV = async () => {
+    setCsvLoading(true);
     try {
-      let query = `?role=${pdfRole}`;
-      if (pdfZone.trim()) query += `&zone=${encodeURIComponent(pdfZone.trim())}`;
-      if (pdfStartDate.trim()) query += `&start_date=${encodeURIComponent(pdfStartDate.trim())}`;
-      if (pdfEndDate.trim()) query += `&end_date=${encodeURIComponent(pdfEndDate.trim())}`;
+      let query = `?role=${csvRole}`;
+      if (csvZone.trim()) query += `&zone=${encodeURIComponent(csvZone.trim())}`;
+      if (csvStartDate.trim()) query += `&start_date=${encodeURIComponent(csvStartDate.trim())}`;
+      if (csvEndDate.trim()) query += `&end_date=${encodeURIComponent(csvEndDate.trim())}`;
 
       const apiUrl = apiClient.defaults.baseURL || 'http://10.0.2.2:8000';
-      const fullUrl = `${apiUrl}/api/attendance/pdf-report/${query}`;
+      const fullUrl = `${apiUrl}/api/attendance/csv-report/${query}`;
       
-      const fileUri = FileSystem.documentDirectory + 'Attendance_History.pdf';
+      const fileUri = FileSystem.documentDirectory + 'Attendance_History.csv';
       const token = await secureStorage.getItem('access_token');
       const downloadRes = await FileSystem.downloadAsync(
         fullUrl,
@@ -44,22 +43,22 @@ export default function Reports() {
       );
       
       if (downloadRes.status !== 200) {
-        Alert.alert('Download Failed', 'Could not generate or download the PDF.');
+        Alert.alert('Download Failed', 'Could not generate or download the CSV.');
         return;
       }
 
-      setPdfModalVisible(false);
+      setCsvModalVisible(false);
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
         await Sharing.shareAsync(downloadRes.uri);
       } else {
-        Alert.alert('Saved', 'PDF saved to device storage.');
+        Alert.alert('Saved', 'CSV saved to device storage.');
       }
 
     } catch (e: any) {
       Alert.alert('Error', e.message || 'An error occurred while downloading.');
     } finally {
-      setPdfLoading(false);
+      setCsvLoading(false);
     }
   };
 
@@ -170,17 +169,8 @@ export default function Reports() {
             </View>
 
             <View style={styles.exportList}>
-              <TouchableOpacity style={styles.exportBtn} onPress={() => exportReport('Attendance PDF')}>
-                <Text style={styles.exportBtnText}>📄 Download Attendance History (PDF)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.exportBtn} onPress={() => exportReport('CSV')}>
+              <TouchableOpacity style={styles.exportBtn} onPress={() => exportReport('Attendance CSV')}>
                 <Text style={styles.exportBtnText}>📥 Export Attendance CSV</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.exportBtn} onPress={() => exportReport('Payroll PDF')}>
-                <Text style={styles.exportBtnText}>📄 Export Payroll PDF</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.exportBtn} onPress={() => exportReport('Form 25 Muster Roll')}>
-                <Text style={styles.exportBtnText}>📋 Form 25 / Muster Roll</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -240,12 +230,12 @@ export default function Reports() {
 
       </ScrollView>
 
-      {/* Download PDF Modal */}
-      {pdfModalVisible && (
+      {/* Download CSV Modal */}
+      {csvModalVisible && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Download PDF Report</Text>
+            <Text style={styles.modalTitle}>Download CSV Report</Text>
             <Text style={styles.modalSub}>Filter attendance records for download.</Text>
 
             <View style={styles.field}>
@@ -254,10 +244,10 @@ export default function Reports() {
                 {['All', 'Employee', 'Supervisor'].map(r => (
                   <TouchableOpacity 
                     key={r} 
-                    style={[styles.roleBtn, pdfRole === r && styles.roleBtnActive]}
-                    onPress={() => setPdfRole(r as any)}
+                    style={[styles.roleBtn, csvRole === r && styles.roleBtnActive]}
+                    onPress={() => setCsvRole(r as any)}
                   >
-                    <Text style={[styles.roleBtnText, pdfRole === r && styles.roleBtnTextActive]}>{r}</Text>
+                    <Text style={[styles.roleBtnText, csvRole === r && styles.roleBtnTextActive]}>{r}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -265,29 +255,29 @@ export default function Reports() {
 
             <View style={styles.field}>
               <Text style={styles.label}>ZONE (Optional)</Text>
-              <TextInput style={styles.input} placeholder="e.g. Zone A" placeholderTextColor="#9BAFA2" value={pdfZone} onChangeText={setPdfZone} />
+              <TextInput style={styles.input} placeholder="e.g. Zone A" placeholderTextColor="#9BAFA2" value={csvZone} onChangeText={setCsvZone} />
             </View>
 
             <View style={styles.fieldRow}>
               <View style={styles.fieldFlex}>
                 <Text style={styles.label}>START DATE</Text>
-                <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#9BAFA2" value={pdfStartDate} onChangeText={setPdfStartDate} />
+                <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#9BAFA2" value={csvStartDate} onChangeText={setCsvStartDate} />
               </View>
               <View style={styles.fieldFlex}>
                 <Text style={styles.label}>END DATE</Text>
-                <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#9BAFA2" value={pdfEndDate} onChangeText={setPdfEndDate} />
+                <TextInput style={styles.input} placeholder="YYYY-MM-DD" placeholderTextColor="#9BAFA2" value={csvEndDate} onChangeText={setCsvEndDate} />
               </View>
             </View>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.btnGhost} onPress={() => setPdfModalVisible(false)} disabled={pdfLoading}>
+              <TouchableOpacity style={styles.btnGhost} onPress={() => setCsvModalVisible(false)} disabled={csvLoading}>
                 <Text style={styles.btnGhostText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.btnPrimary, pdfLoading && { opacity: 0.7 }]} onPress={handleDownloadPDF} disabled={pdfLoading}>
-                {pdfLoading ? (
+              <TouchableOpacity style={[styles.btnPrimary, csvLoading && { opacity: 0.7 }]} onPress={handleDownloadCSV} disabled={csvLoading}>
+                {csvLoading ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.btnPrimaryText}>Download PDF</Text>
+                  <Text style={styles.btnPrimaryText}>Download CSV</Text>
                 )}
               </TouchableOpacity>
             </View>
