@@ -22,6 +22,7 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
     duration_seconds = serializers.IntegerField(read_only=True)
     duration_formatted = serializers.CharField(read_only=True)
     liveness_passed = serializers.BooleanField(read_only=True)
+    photo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = AttendanceRecord
@@ -39,6 +40,25 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
             'photo_exif_lng', 'exif_gps_delta_meters', 'verified_by', 
             'verified_at', 'anomaly_flags', 'duration_seconds', 'duration_formatted', 'liveness_passed'
         ]
+
+    def get_photo_url(self, obj):
+        if not obj.photo_url:
+            return None
+        url = str(obj.photo_url)
+        if url.startswith('http://') or url.startswith('https://') or url.startswith('data:'):
+            return url
+        
+        relative_path = url
+        if not relative_path.startswith('/media/'):
+            if relative_path.startswith('/'):
+                relative_path = f"/media{relative_path}"
+            else:
+                relative_path = f"/media/{relative_path}"
+
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(relative_path)
+        return relative_path
 
     def validate(self, data):
         request = self.context.get('request')

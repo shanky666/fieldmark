@@ -106,11 +106,17 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         
         photos = []
         for r in records:
+            url = str(r.photo_url)
+            if not (url.startswith('http://') or url.startswith('https://') or url.startswith('data:')):
+                if not url.startswith('/media/'):
+                    url = f"/media/{url}" if not url.startswith('/') else f"/media{url}"
+                url = request.build_absolute_uri(url)
+
             photos.append({
                 'id': r.id,
                 'date': r.date.strftime('%Y-%m-%d'),
                 'marked_at': r.marked_at.strftime('%Y-%m-%d %H:%M'),
-                'photo_url': r.photo_url,
+                'photo_url': url,
                 'status': r.status,
                 'latitude': r.latitude,
                 'longitude': r.longitude

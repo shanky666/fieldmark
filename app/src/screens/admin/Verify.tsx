@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Ale
 import { apiClient } from '../../api/client';
 
 export default function Verify({ navigation }: any) {
-  const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'completed' | 'flagged' | 'done'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'completed' | 'flagged' | 'done' | 'rejected'>('pending');
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -78,6 +78,7 @@ export default function Verify({ navigation }: any) {
   const completedList = records.filter(r => !!r.check_out_at); // Checked out
   const flaggedList = records.filter(r => r.status === 'FLAGGED' || (r.anomaly_flags && r.anomaly_flags.length > 0));
   const approvedList = records.filter(r => r.status === 'APPROVED');
+  const rejectedList = records.filter(r => r.status === 'REJECTED');
 
   const displayedList = activeTab === 'pending' 
     ? pendingList 
@@ -87,6 +88,8 @@ export default function Verify({ navigation }: any) {
     ? completedList
     : activeTab === 'flagged' 
     ? flaggedList 
+    : activeTab === 'rejected'
+    ? rejectedList
     : approvedList;
 
   return (
@@ -139,6 +142,15 @@ export default function Verify({ navigation }: any) {
             >
               <Text style={[styles.atabText, activeTab === 'done' && styles.atabTextActive]}>
                 Approved ({approvedList.length})
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.atab, activeTab === 'rejected' && styles.atabActive]}
+              onPress={() => setActiveTab('rejected')}
+            >
+              <Text style={[styles.atabText, activeTab === 'rejected' && styles.atabTextActive]}>
+                Rejected ({rejectedList.length})
               </Text>
             </TouchableOpacity>
           </View>
