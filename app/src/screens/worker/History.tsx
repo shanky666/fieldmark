@@ -1,7 +1,41 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, ActivityIndicator } from 'react-native';
+import { useAuthStore } from '../../store/auth';
+import { apiClient } from '../../api/client';
 
 export default function History() {
+  const { workerId } = useAuthStore();
+  const [history, setHistory] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchHistoryAndStats();
+  }, []);
+
+  const fetchHistoryAndStats = async () => {
+    setLoading(true);
+    try {
+      const [historyRes, statsRes] = await Promise.all([
+        apiClient.get('/api/attendance/me/'),
+        workerId ? apiClient.get(`/api/workers/list/${workerId}/stats/`) : Promise.resolve({ data: null })
+      ]);
+      setHistory(historyRes.data || []);
+      setStats(statsRes.data);
+    } catch (e) {
+      console.warn("Failed to load attendance history & stats", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const presentCount = stats?.days_present ?? history.filter(h => h.status === 'APPROVED').length;
+  const pendingCount = stats?.days_pending ?? history.filter(h => h.status === 'PENDING').length;
+  const absentCount = stats?.days_absent ?? history.filter(h => h.status === 'REJECTED').length;
+  const attendanceRate = stats?.approval_rate_pct ?? (history.length > 0 ? Math.round((presentCount / history.length) * 100) : 100);
+
+  const currentMonthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -10,95 +44,84 @@ export default function History() {
         {/* Statistics Grid */}
         <View style={styles.statGrid}>
           <View style={styles.statTile}>
-            <Text style={styles.statNum}>22</Text>
+            <Text style={[styles.statNum, { color: '#2F8F5B' }]}>{presentCount}</Text>
             <Text style={styles.statLbl}>Days present</Text>
           </View>
           <View style={styles.statTile}>
-            <Text style={styles.statNum}>2</Text>
-            <Text style={styles.statLbl}>Days late</Text>
+            <Text style={[styles.statNum, { color: '#1A6DB5' }]}>{pendingCount}</Text>
+            <Text style={styles.statLbl}>Days pending</Text>
           </View>
           <View style={styles.statTile}>
-            <Text style={styles.statNum}>1</Text>
+            <Text style={[styles.statNum, { color: '#C24936' }]}>{absentCount}</Text>
             <Text style={styles.statLbl}>Days absent</Text>
           </View>
           <View style={styles.statTile}>
-            <Text style={styles.statNum}>96%</Text>
-            <Text style={styles.statLbl}>Attendance rate</Text>
+            <Text style={[styles.statNum, { color: '#6E56A6' }]}>{attendanceRate}%</Text>
+            <Text style={styles.statLbl}>Approval rate</Text>
           </View>
         </View>
 
         {/* Monthly History Section */}
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>July 2026</Text>
+          <Text style={styles.sectionTitle}>{currentMonthYear}</Text>
         </View>
 
-        <View style={styles.miniHistory}>
+        {loading ? (
+          <ActivityIndicator color="#2F8F5B" style={{ marginVertical: 20 }} />
+        ) : history.length === 0 ? (
           <View style={styles.miniRow}>
-            <View style={[styles.statusDot, { backgroundColor: '#2F8F5B' }]} />
-            <View style={styles.miniInfo}>
-              <Text style={styles.miniDay}>Tuesday, 29 Jul</Text>
-              <Text style={styles.miniHours}>09:02 AM – In progress</Text>
-            </View>
-            <View style={[styles.badge, styles.badgePresent]}>
-              <Text style={styles.badgePresentText}>Present</Text>
-            </View>
+            <Text style={{ color: '#63796B', fontSize: 13, textAlign: 'center', flex: 1 }}>
+              No attendance records logged for this period.
+            </Text>
           </View>
+        ) : (
+          <View style={styles.miniHistory}>
+            {history.map((item) => {
+              const [year, month, day] = item.date.split('-');
+              const localDate = new Date(Number(year), Number(month) - 1, Number(day));
+              const dateStr = localDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' });
 
-          <View style={styles.miniRow}>
-            <View style={[styles.statusDot, { backgroundColor: '#2F8F5B' }]} />
-            <View style={styles.miniInfo}>
-              <Text style={styles.miniDay}>Monday, 28 Jul</Text>
-              <Text style={styles.miniHours}>09:04 AM – 06:12 PM · 9h 08m</Text>
-            </View>
-            <View style={[styles.badge, styles.badgePresent]}>
-              <Text style={styles.badgePresentText}>Present</Text>
-            </View>
-          </View>
+              let checkInStr = '--:--';
+              if (item.marked_at) {
+                checkInStr = new Date(item.marked_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              }
 
-          <View style={styles.miniRow}>
-            <View style={[styles.statusDot, { backgroundColor: '#6E56A6' }]} />
-            <View style={styles.miniInfo}>
-              <Text style={styles.miniDay}>Saturday, 26 Jul</Text>
-              <Text style={styles.miniHours}>Approved casual leave</Text>
-            </View>
-            <View style={[styles.badge, styles.badgeLeave]}>
-              <Text style={styles.badgeLeaveText}>Leave</Text>
-            </View>
-          </View>
+              let checkOutStr = 'Still checked in';
+              if (item.check_out_at) {
+                checkOutStr = new Date(item.check_out_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              }
 
-          <View style={styles.miniRow}>
-            <View style={[styles.statusDot, { backgroundColor: '#B9791C' }]} />
-            <View style={styles.miniInfo}>
-              <Text style={styles.miniDay}>Friday, 25 Jul</Text>
-              <Text style={styles.miniHours}>09:41 AM – 06:02 PM · 8h 21m</Text>
-            </View>
-            <View style={[styles.badge, styles.badgeLate]}>
-              <Text style={styles.badgeLateText}>Late</Text>
-            </View>
-          </View>
+              const durationStr = item.duration_formatted || '';
+              const isApproved = item.status === 'APPROVED';
+              const isPending = item.status === 'PENDING';
 
-          <View style={styles.miniRow}>
-            <View style={[styles.statusDot, { backgroundColor: '#2F8F5B' }]} />
-            <View style={styles.miniInfo}>
-              <Text style={styles.miniDay}>Thursday, 24 Jul</Text>
-              <Text style={styles.miniHours}>08:58 AM – 06:07 PM · 9h 09m</Text>
-            </View>
-            <View style={[styles.badge, styles.badgePresent]}>
-              <Text style={styles.badgePresentText}>Present</Text>
-            </View>
+              return (
+                <View key={item.id} style={styles.miniRow}>
+                  <View style={[
+                    styles.statusDot, 
+                    { backgroundColor: isApproved ? '#2F8F5B' : isPending ? '#1A6DB5' : '#C24936' }
+                  ]} />
+                  <View style={styles.miniInfo}>
+                    <Text style={styles.miniDay}>{dateStr}</Text>
+                    <Text style={styles.miniHours}>
+                      {checkInStr} – {checkOutStr} {durationStr ? `· ${durationStr}` : ''}
+                    </Text>
+                  </View>
+                  <View style={[
+                    styles.badge, 
+                    isApproved ? styles.badgePresent : isPending ? styles.badgeLate : styles.badgeAbsent
+                  ]}>
+                    <Text style={
+                      isApproved ? styles.badgePresentText : isPending ? styles.badgeLateText : styles.badgeAbsentText
+                    }>
+                      {item.status}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
           </View>
-
-          <View style={styles.miniRow}>
-            <View style={[styles.statusDot, { backgroundColor: '#C24936' }]} />
-            <View style={styles.miniInfo}>
-              <Text style={styles.miniDay}>Wednesday, 23 Jul</Text>
-              <Text style={styles.miniHours}>No check-in recorded</Text>
-            </View>
-            <View style={[styles.badge, styles.badgeAbsent]}>
-              <Text style={styles.badgeAbsentText}>Absent</Text>
-            </View>
-          </View>
-        </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -197,10 +220,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   badgeLate: {
-    backgroundColor: '#FBEDD3',
+    backgroundColor: '#E3F0FC',
   },
   badgeLateText: {
-    color: '#B9791C',
+    color: '#1A6DB5',
     fontSize: 10.5,
     fontWeight: '700',
   },

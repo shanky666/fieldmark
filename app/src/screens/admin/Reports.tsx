@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -14,6 +14,58 @@ export default function Reports() {
   const [csvStartDate, setCsvStartDate] = useState('');
   const [csvEndDate, setCsvEndDate] = useState('');
   const [csvLoading, setCsvLoading] = useState(false);
+
+  // Dynamic Data States
+  const [zones, setZones] = useState<any[]>([]);
+  const [pendingLeaves, setPendingLeaves] = useState<any[]>([]);
+  const [pendingCorrections, setPendingCorrections] = useState<any[]>([]);
+  const [weeklyRates, setWeeklyRates] = useState<number[]>([88, 92, 80, 95, 90, 74]);
+  const [loadingData, setLoadingData] = useState(false);
+
+  useEffect(() => {
+    fetchReportsData();
+  }, [activeTab]);
+
+  const fetchReportsData = async () => {
+    setLoadingData(true);
+    try {
+      if (activeTab === 'attendance') {
+        const [zonesRes, attRes] = await Promise.all([
+          apiClient.get('/api/workers/zones/'),
+          apiClient.get('/api/attendance/')
+        ]);
+        const loadedZones = zonesRes.data.results || zonesRes.data || [];
+        const loadedAtt = attRes.data.results || attRes.data || [];
+
+        // Compute site-wise attendance summary dynamically
+        const zoneStats = loadedZones.map((z: any) => {
+          const zoneAtt = loadedAtt.filter((a: any) => a.zone_id === z.id || a.worker_assigned_zone_id === z.id);
+          const totalLogs = zoneAtt.length;
+          const approvedLogs = zoneAtt.filter((a: any) => a.status === 'APPROVED').length;
+          const pct = totalLogs > 0 ? Math.round((approvedLogs / totalLogs) * 100) : 100;
+          return {
+            id: z.id,
+            name: z.name,
+            pct: pct,
+            count: totalLogs
+          };
+        });
+        setZones(zoneStats);
+      } else if (activeTab === 'leave') {
+        const leaveRes = await apiClient.get('/api/leave/');
+        const loadedLeaves = leaveRes.data.results || leaveRes.data || [];
+        setPendingLeaves(loadedLeaves.filter((l: any) => l.status === 'PENDING'));
+      } else if (activeTab === 'corrections') {
+        const corrRes = await apiClient.get('/api/corrections/');
+        const loadedCorr = corrRes.data.results || corrRes.data || [];
+        setPendingCorrections(loadedCorr.filter((c: any) => c.status === 'PENDING'));
+      }
+    } catch (e) {
+      console.warn("Error fetching reports data", e);
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const exportReport = (type: string) => {
     if (type === 'Attendance CSV') {
@@ -31,8 +83,8 @@ export default function Reports() {
       if (csvStartDate.trim()) query += `&start_date=${encodeURIComponent(csvStartDate.trim())}`;
       if (csvEndDate.trim()) query += `&end_date=${encodeURIComponent(csvEndDate.trim())}`;
 
-      const apiUrl = apiClient.defaults.baseURL || 'http://10.0.2.2:8000';
-      const fullUrl = `${apiUrl}/api/attendance/csv-report/${query}`;
+      const baseUrl = (apiClient.defaults.baseURL || 'http://10.0.2.2:8000').replace(/\/+$/, '');
+      const fullUrl = `${baseUrl}/api/attendance/csv-report/${query}`;
       
       const fileUri = FileSystem.documentDirectory + 'Attendance_History.csv';
       const token = await secureStorage.getItem('access_token');
@@ -43,7 +95,7 @@ export default function Reports() {
       );
       
       if (downloadRes.status !== 200) {
-        Alert.alert('Download Failed', 'Could not generate or download the CSV.');
+        Alert.alert('Download Failed', `Could not generate or download the CSV. (Status ${downloadRes.status})`);
         return;
       }
 
@@ -62,12 +114,54 @@ export default function Reports() {
     }
   };
 
+  const handleApproveLeave = async (leaveId: number, name: string) => {
+    try {
+      await apiClient.patch(`/api/leave/${leaveId}/review/`, { action: 'approve' });
+      Alert.alert('Approved', `✓ Leave request for ${name} approved.`);
+      setPendingLeaves(prev => prev.filter(l => l.id !== leaveId));
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to approve leave request.');
+    }
+  };
+
+  const handleRejectLeave = async (leaveId: number, name: string) => {
+    try {
+      await apiClient.patch(`/api/leave/${leaveId}/review/`, { action: 'reject' });
+      Alert.alert('Rejected', `Leave request for ${name} rejected.`);
+      setPendingLeaves(prev => prev.filter(l => l.id !== leaveId));
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to reject leave request.');
+    }
+  };
+
+  const handleApproveCorrection = async (corrId: number, name: string) => {
+    try {
+      await apiClient.patch(`/api/corrections/${corrId}/review/`, { action: 'approve' });
+      Alert.alert('Approved', `✓ Attendance correction for ${name} approved.`);
+      setPendingCorrections(prev => prev.filter(c => c.id !== corrId));
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to approve correction.');
+    }
+  };
+
+  const handleRejectCorrection = async (corrId: number, name: string) => {
+    try {
+      await apiClient.patch(`/api/corrections/${corrId}/review/`, { action: 'reject' });
+      Alert.alert('Rejected', `Attendance correction for ${name} rejected.`);
+      setPendingCorrections(prev => prev.filter(c => c.id !== corrId));
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to reject correction.');
+    }
+  };
+
+  const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S'];
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.pageTitle}>Reports & Analytics</Text>
 
-        {/* Atabs */}
+        {/* Tabs */}
         <View style={styles.atabs}>
           <TouchableOpacity 
             style={[styles.atab, activeTab === 'attendance' && styles.atabActive]}
@@ -99,36 +193,13 @@ export default function Reports() {
               <Text style={styles.chartTitle}>Attendance Rate</Text>
               
               <View style={styles.reportBars}>
-                <View style={styles.barCol}>
-                  <Text style={styles.pct}>88%</Text>
-                  <View style={[styles.bar, { height: '88%' }]} />
-                  <Text style={styles.day}>M</Text>
-                </View>
-                <View style={styles.barCol}>
-                  <Text style={styles.pct}>92%</Text>
-                  <View style={[styles.bar, { height: '92%' }]} />
-                  <Text style={styles.day}>T</Text>
-                </View>
-                <View style={styles.barCol}>
-                  <Text style={styles.pct}>80%</Text>
-                  <View style={[styles.bar, { height: '80%', backgroundColor: '#B9791C' }]} />
-                  <Text style={styles.day}>W</Text>
-                </View>
-                <View style={styles.barCol}>
-                  <Text style={styles.pct}>95%</Text>
-                  <View style={[styles.bar, { height: '95%' }]} />
-                  <Text style={styles.day}>T</Text>
-                </View>
-                <View style={styles.barCol}>
-                  <Text style={styles.pct}>90%</Text>
-                  <View style={[styles.bar, { height: '90%' }]} />
-                  <Text style={styles.day}>F</Text>
-                </View>
-                <View style={styles.barCol}>
-                  <Text style={styles.pct}>74%</Text>
-                  <View style={[styles.bar, { height: '74%', backgroundColor: '#B9791C' }]} />
-                  <Text style={styles.day}>S</Text>
-                </View>
+                {weeklyRates.map((pct, idx) => (
+                  <View key={idx} style={styles.barCol}>
+                    <Text style={styles.pct}>{pct}%</Text>
+                    <View style={[styles.bar, { height: `${pct}%`, backgroundColor: pct < 85 ? '#B9791C' : '#2F8F5B' }]} />
+                    <Text style={styles.day}>{dayLabels[idx] || 'D'}</Text>
+                  </View>
+                ))}
               </View>
             </View>
 
@@ -137,31 +208,25 @@ export default function Reports() {
               <Text style={styles.sectionTitle}>Site-wise summary</Text>
             </View>
 
-            <View style={styles.miniHistory}>
+            {loadingData ? (
+              <ActivityIndicator color="#2F8F5B" style={{ marginVertical: 20 }} />
+            ) : zones.length === 0 ? (
               <View style={styles.miniRow}>
-                <View style={[styles.statusDot, { backgroundColor: '#2F8F5B' }]} />
-                <View style={styles.miniInfo}>
-                  <Text style={styles.miniDay}>Facade A</Text>
-                  <Text style={styles.miniHours}>96% attendance · 42 employees</Text>
-                </View>
+                <Text style={{ color: '#63796B', fontSize: 13 }}>No zone data available.</Text>
               </View>
-
-              <View style={styles.miniRow}>
-                <View style={[styles.statusDot, { backgroundColor: '#2F8F5B' }]} />
-                <View style={styles.miniInfo}>
-                  <Text style={styles.miniDay}>Facade B</Text>
-                  <Text style={styles.miniHours}>91% attendance · 24 employees</Text>
-                </View>
+            ) : (
+              <View style={styles.miniHistory}>
+                {zones.map(z => (
+                  <View key={z.id} style={styles.miniRow}>
+                    <View style={[styles.statusDot, { backgroundColor: z.pct >= 85 ? '#2F8F5B' : '#B9791C' }]} />
+                    <View style={styles.miniInfo}>
+                      <Text style={styles.miniDay}>{z.name}</Text>
+                      <Text style={styles.miniHours}>{z.pct}% attendance · {z.count} logs recorded</Text>
+                    </View>
+                  </View>
+                ))}
               </View>
-
-              <View style={styles.miniRow}>
-                <View style={[styles.statusDot, { backgroundColor: '#B9791C' }]} />
-                <View style={styles.miniInfo}>
-                  <Text style={styles.miniDay}>Block C</Text>
-                  <Text style={styles.miniHours}>78% attendance · 31 employees</Text>
-                </View>
-              </View>
-            </View>
+            )}
 
             {/* Export Buttons */}
             <View style={styles.sectionHead}>
@@ -182,23 +247,38 @@ export default function Reports() {
               <Text style={styles.sectionTitle}>Pending Leave Requests</Text>
             </View>
 
-            <View style={styles.reqCard}>
-              <View style={styles.reqTop}>
-                <View>
-                  <Text style={styles.reqName}>Farah Sheikh</Text>
-                  <Text style={styles.reqMeta}>Casual · 1 day · 30 Jul</Text>
-                </View>
-                <View style={styles.badgePending}>
-                  <Text style={styles.badgePendingText}>Pending</Text>
-                </View>
+            {loadingData ? (
+              <ActivityIndicator color="#2F8F5B" style={{ marginVertical: 20 }} />
+            ) : pendingLeaves.length === 0 ? (
+              <View style={styles.reqCard}>
+                <Text style={{ color: '#63796B', fontSize: 13, textAlign: 'center', paddingVertical: 10 }}>
+                  ✓ No pending leave requests.
+                </Text>
               </View>
-              <Text style={styles.reqBodyText}>Family function — requesting one day casual leave</Text>
-              <View style={styles.actRow}>
-                <TouchableOpacity style={styles.actBtnApprove} onPress={() => Alert.alert('Approved', '✓ Farah Sheikh leave approved')}>
-                  <Text style={styles.actBtnApproveText}>✓ Approve</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            ) : (
+              pendingLeaves.map(l => (
+                <View key={l.id} style={styles.reqCard}>
+                  <View style={styles.reqTop}>
+                    <View>
+                      <Text style={styles.reqName}>{l.worker_name || `Worker #${l.worker}`}</Text>
+                      <Text style={styles.reqMeta}>{l.leave_type || 'Leave'} · {l.start_date} to {l.end_date}</Text>
+                    </View>
+                    <View style={styles.badgePending}>
+                      <Text style={styles.badgePendingText}>Pending</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.reqBodyText}>{l.reason || 'No reason provided'}</Text>
+                  <View style={styles.actRow}>
+                    <TouchableOpacity style={styles.actBtnApprove} onPress={() => handleApproveLeave(l.id, l.worker_name || 'Worker')}>
+                      <Text style={styles.actBtnApproveText}>✓ Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actBtnReject} onPress={() => handleRejectLeave(l.id, l.worker_name || 'Worker')}>
+                      <Text style={styles.actBtnRejectText}>✕ Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
           </View>
         )}
 
@@ -208,23 +288,38 @@ export default function Reports() {
               <Text style={styles.sectionTitle}>Attendance Correction Requests</Text>
             </View>
 
-            <View style={styles.reqCard}>
-              <View style={styles.reqTop}>
-                <View>
-                  <Text style={styles.reqName}>Deepak Rao</Text>
-                  <Text style={styles.reqMeta}>Correction · 23 Jul 2026</Text>
-                </View>
-                <View style={styles.badgePending}>
-                  <Text style={styles.badgePendingText}>Pending</Text>
-                </View>
+            {loadingData ? (
+              <ActivityIndicator color="#2F8F5B" style={{ marginVertical: 20 }} />
+            ) : pendingCorrections.length === 0 ? (
+              <View style={styles.reqCard}>
+                <Text style={{ color: '#63796B', fontSize: 13, textAlign: 'center', paddingVertical: 10 }}>
+                  ✓ No pending correction requests.
+                </Text>
               </View>
-              <Text style={styles.reqBodyText}>No network signal at site gate — was present from 09:00 AM but could not check in on time.</Text>
-              <View style={styles.actRow}>
-                <TouchableOpacity style={styles.actBtnApprove} onPress={() => Alert.alert('Approved', '✓ Deepak Rao correction approved')}>
-                  <Text style={styles.actBtnApproveText}>✓ Approve</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            ) : (
+              pendingCorrections.map(c => (
+                <View key={c.id} style={styles.reqCard}>
+                  <View style={styles.reqTop}>
+                    <View>
+                      <Text style={styles.reqName}>{c.worker_name || `Worker #${c.worker}`}</Text>
+                      <Text style={styles.reqMeta}>Correction · Date: {c.date}</Text>
+                    </View>
+                    <View style={styles.badgePending}>
+                      <Text style={styles.badgePendingText}>Pending</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.reqBodyText}>{c.reason || 'No reason provided'}</Text>
+                  <View style={styles.actRow}>
+                    <TouchableOpacity style={styles.actBtnApprove} onPress={() => handleApproveCorrection(c.id, c.worker_name || 'Worker')}>
+                      <Text style={styles.actBtnApproveText}>✓ Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actBtnReject} onPress={() => handleRejectCorrection(c.id, c.worker_name || 'Worker')}>
+                      <Text style={styles.actBtnRejectText}>✕ Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
           </View>
         )}
 
@@ -364,7 +459,6 @@ const styles = StyleSheet.create({
   bar: {
     width: '100%',
     borderRadius: 6,
-    backgroundColor: '#2F8F5B',
   },
   pct: {
     fontSize: 10,
@@ -459,6 +553,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
+    alignSelf: 'flex-start',
   },
   badgePendingText: {
     color: '#B9791C',
@@ -474,9 +569,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   actRow: {
+    flexDirection: 'row',
+    gap: 8,
     marginTop: 10,
   },
   actBtnApprove: {
+    flex: 1,
     backgroundColor: '#DCF2E3',
     paddingVertical: 9,
     borderRadius: 10,
@@ -486,6 +584,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#1F6B42',
+  },
+  actBtnReject: {
+    flex: 1,
+    backgroundColor: '#FBE5E1',
+    paddingVertical: 9,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  actBtnRejectText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#C24936',
   },
   modalOverlay: {
     position: 'absolute',

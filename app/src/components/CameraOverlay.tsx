@@ -6,9 +6,10 @@ interface CameraOverlayProps {
   latitude: number | null;
   longitude: number | null;
   accuracy: number | null;
+  address?: string | null;
 }
 
-export default function CameraOverlay({ latitude, longitude, accuracy }: CameraOverlayProps) {
+export default function CameraOverlay({ latitude, longitude, accuracy, address }: CameraOverlayProps) {
   const formatCoord = (val: number | null) => (val !== null ? val.toFixed(5) : 'N/A');
   const now = new Date();
   const dateStr = now.toLocaleDateString();
@@ -23,8 +24,11 @@ export default function CameraOverlay({ latitude, longitude, accuracy }: CameraO
 
       {/* Watermarks Container */}
       <View style={styles.watermarkRow}>
-        {/* GPS Coordinates (Bottom Left) */}
+        {/* Location & GPS Coordinates (Bottom Left) */}
         <View style={styles.watermarkContainer}>
+          {address ? (
+            <Text style={styles.watermarkAddressText} numberOfLines={1}>📍 {address}</Text>
+          ) : null}
           <Text style={styles.watermarkText}>GPS: {formatCoord(latitude)}, {formatCoord(longitude)}</Text>
           {accuracy !== null && (
             <Text style={styles.watermarkSubtext}>Acc: {accuracy.toFixed(1)}m</Text>
@@ -65,10 +69,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   watermarkContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 6,
+    borderRadius: 8,
+    maxWidth: '65%',
+  },
+  watermarkAddressText: {
+    color: '#ffffff',
+    fontSize: 10.5,
+    fontWeight: 'bold',
+    marginBottom: 2,
   },
   watermarkText: {
     color: '#ffffff',

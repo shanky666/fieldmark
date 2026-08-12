@@ -181,16 +181,18 @@ export default function Home({ navigation }: any) {
         <View style={styles.greetRow}>
           <View>
             <Text style={styles.eyebrow}>{todayStr}</Text>
-            <Text style={styles.pageTitle}>Hi, {userProfile?.first_name || 'Ananya'} 👋</Text>
+            <Text style={styles.pageTitle}>Hi, {userProfile?.name ? userProfile.name.split(' ')[0] : 'Worker'} 👋</Text>
             <View style={styles.shiftChip}>
               <View style={styles.dot} />
-              <Text style={styles.shiftText}>{userProfile?.shift || 'General Shift'} · 09:00–18:00</Text>
+              <Text style={styles.shiftText}>{userProfile?.shift_detail?.name || userProfile?.zone_detail?.name || userProfile?.assigned_zone || 'General Shift'}</Text>
             </View>
           </View>
           <View style={styles.avatarGroup}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
-                {(userProfile?.first_name?.[0] || 'A') + (userProfile?.last_name?.[0] || 'N')}
+                {userProfile?.name
+                  ? userProfile.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
+                  : 'EMP'}
               </Text>
             </View>
             <TouchableOpacity style={styles.bellBtn} onPress={() => navigation.navigate('MessagesTab')}>

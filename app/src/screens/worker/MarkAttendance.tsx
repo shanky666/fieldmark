@@ -48,12 +48,13 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
   const [livenessReason, setLivenessReason] = useState('');
   const [clientLivenessBypassed, setClientLivenessBypassed] = useState(false);
 
-  // GPS captured at the exact moment the photo is taken
+  // GPS & Address captured at the exact moment the photo is taken
   const [capturedLocation, setCapturedLocation] = useState<{
     latitude: number | null;
     longitude: number | null;
     accuracy: number | null;
   }>({ latitude: null, longitude: null, accuracy: null });
+  const [capturedAddress, setCapturedAddress] = useState<string | null>(null);
 
   // Animation values
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -121,20 +122,37 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         ]);
 
         if (photo?.uri) {
-          // Store the photo-time GPS fix (or fall back to existing gps state)
+          let lat = gps.latitude;
+          let lng = gps.longitude;
+          let acc = gps.accuracy;
+
           if (freshLocation) {
-            setCapturedLocation({
-              latitude: freshLocation.coords.latitude,
-              longitude: freshLocation.coords.longitude,
-              accuracy: freshLocation.coords.accuracy ?? null,
-            });
+            lat = freshLocation.coords.latitude;
+            lng = freshLocation.coords.longitude;
+            acc = freshLocation.coords.accuracy ?? null;
+          }
+
+          setCapturedLocation({
+            latitude: lat,
+            longitude: lng,
+            accuracy: acc,
+          });
+
+          // Reverse geocode captured coordinates to display actual location address
+          if (lat && lng) {
+            try {
+              const geo = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+              if (geo && geo.length > 0) {
+                const parts = [geo[0].name, geo[0].street, geo[0].subregion || geo[0].city, geo[0].region].filter(Boolean);
+                setCapturedAddress(parts.join(', '));
+              } else {
+                setCapturedAddress(gps.address);
+              }
+            } catch {
+              setCapturedAddress(gps.address);
+            }
           } else {
-            // Use the already-loaded GPS as fallback
-            setCapturedLocation({
-              latitude: gps.latitude,
-              longitude: gps.longitude,
-              accuracy: gps.accuracy,
-            });
+            setCapturedAddress(gps.address);
           }
 
           setPhotoUri(photo.uri);
@@ -152,7 +170,6 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
       }
     }
   };
-
 
   const handleFinalSubmit = async () => {
     setSubmitting(true);
@@ -358,7 +375,8 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         <CameraOverlay 
           latitude={gps.latitude} 
           longitude={gps.longitude} 
-          accuracy={gps.accuracy} 
+          accuracy={gps.accuracy}
+          address={gps.address}
         />
 
         {/* Top Controls Bar */}
@@ -405,13 +423,18 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         {photoUri && <Image source={{ uri: photoUri }} style={styles.previewImage} />}
         
         <View style={styles.previewDetails}>
+          {(capturedAddress || gps.address) ? (
+            <Text style={[styles.previewDetailText, { fontSize: 13, fontWeight: '700', color: COLORS.darkText, marginBottom: 4 }]}>
+              📍 Location: {capturedAddress || gps.address}
+            </Text>
+          ) : null}
           <Text style={styles.previewDetailText}>
-            📍 GPS at capture: {(capturedLocation.latitude ?? gps.latitude)?.toFixed(5)}, {(capturedLocation.longitude ?? gps.longitude)?.toFixed(5)}
-            {capturedLocation.accuracy ? ` (±${capturedLocation.accuracy.toFixed(0)}m)` : ''}
+            🌐 GPS: {(capturedLocation.latitude ?? gps.latitude)?.toFixed(5)}° N, {(capturedLocation.longitude ?? gps.longitude)?.toFixed(5)}° E
+            {capturedLocation.accuracy ? ` (±${capturedLocation.accuracy.toFixed(0)}m accuracy)` : ''}
           </Text>
-          <Text style={styles.previewDetailText}>Date: {new Date().toLocaleDateString()}</Text>
+          <Text style={styles.previewDetailText}>📅 Date: {new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</Text>
           <Text style={styles.previewDetailText}>
-            Zone Match: {isZoneMatch() ? "Matched ✓" : "Mismatch ⚠"}
+            🏢 Zone Match: {isZoneMatch() ? "Matched ✓" : "Mismatch ⚠"}
           </Text>
         </View>
       </View>
@@ -675,7 +698,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   warnSheet: {
-    backgroundColor: '#fffbeb', // Light amber
+    backgroundColor: '#fffbeb',
     borderColor: '#f59e0b',
     borderWidth: 1,
     borderRadius: 12,
@@ -745,4 +768,3 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
 });
-

@@ -1,21 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../api/client';
 import { useAuthStore } from '../../store/auth';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 
 export default function Leave({ navigation }: any) {
   const { workerId } = useAuthStore();
   const [selectedType, setSelectedType] = useState('casual');
-  const [fromDate, setFromDate] = useState('2026-07-30');
-  const [toDate, setToDate] = useState('2026-07-30');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Dynamic state
+  const [balance, setBalance] = useState<any>(null);
+  const [myRequests, setMyRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLeaveData();
+    // Default from/to date to today YYYY-MM-DD
+    const todayStr = new Date().toISOString().split('T')[0];
+    setFromDate(todayStr);
+    setToDate(todayStr);
+  }, []);
+
+  const fetchLeaveData = async () => {
+    setLoading(true);
+    try {
+      const [balRes, reqRes] = await Promise.all([
+        apiClient.get('/api/leave/balance/me/'),
+        apiClient.get('/api/leave/me/')
+      ]);
+      setBalance(balRes.data);
+      setMyRequests(reqRes.data?.results || reqRes.data || []);
+    } catch (e) {
+      console.warn("Failed to fetch leave data", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const submitLeave = async () => {
-    if (!workerId) {
-      Alert.alert('Error', 'Employee information not available. Please login again.');
-      return;
-    }
-
     if (!reason.trim()) {
       Alert.alert('Reason Required', 'Please enter a brief reason for your leave request.');
       return;
@@ -38,9 +63,9 @@ export default function Leave({ navigation }: any) {
       unpaid: 'UNPAID',
     };
 
+    setSubmitting(true);
     try {
       await apiClient.post('/api/leave/', {
-        worker: workerId,
         leave_type: leaveTypeMap[selectedType],
         start_date: fromDate,
         end_date: toDate,
@@ -49,24 +74,26 @@ export default function Leave({ navigation }: any) {
 
       Alert.alert(
         'Success',
-        'Leave request submitted to admin for review.'
+        'Leave request submitted for review.'
       );
 
       setReason('');
+      fetchLeaveData();
     } catch (e: any) {
-      console.error(
-        '[LEAVE] Submit failed:',
-        e?.response?.data || e?.message || e
-      );
-
+      console.error('[LEAVE] Submit failed:', e?.response?.data || e?.message || e);
       Alert.alert(
         'Error',
         e?.response?.data?.detail ||
         e?.response?.data?.error ||
         'Failed to submit leave request. Please try again.'
       );
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const casualLeft = balance ? Math.max(0, (balance.casual_total || 12) - (balance.casual_used || 0)) : '--';
+  const sickLeft = balance ? Math.max(0, (balance.sick_total || 6) - (balance.sick_used || 0)) : '--';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -76,11 +103,11 @@ export default function Leave({ navigation }: any) {
         {/* Quota Grid */}
         <View style={styles.statGrid}>
           <View style={styles.statTile}>
-            <Text style={[styles.statNum, { color: '#2F8F5B' }]}>8</Text>
+            <Text style={[styles.statNum, { color: '#2F8F5B' }]}>{casualLeft}</Text>
             <Text style={styles.statLbl}>Casual left</Text>
           </View>
           <View style={styles.statTile}>
-            <Text style={[styles.statNum, { color: '#6E56A6' }]}>6</Text>
+            <Text style={[styles.statNum, { color: '#6E56A6' }]}>{sickLeft}</Text>
             <Text style={styles.statLbl}>Sick left</Text>
           </View>
         </View>
@@ -125,11 +152,11 @@ export default function Leave({ navigation }: any) {
           <View style={styles.fieldRow}>
             <View style={styles.fieldFlex}>
               <Text style={styles.label}>FROM DATE</Text>
-              <TextInput style={styles.input} value={fromDate} onChangeText={setFromDate} />
+              <TextInput style={styles.input} value={fromDate} placeholder="YYYY-MM-DD" placeholderTextColor="#9BAFA2" onChangeText={setFromDate} />
             </View>
             <View style={styles.fieldFlex}>
               <Text style={styles.label}>TO DATE</Text>
-              <TextInput style={styles.input} value={toDate} onChangeText={setToDate} />
+              <TextInput style={styles.input} value={toDate} placeholder="YYYY-MM-DD" placeholderTextColor="#9BAFA2" onChangeText={setToDate} />
             </View>
           </View>
 
@@ -146,8 +173,12 @@ export default function Leave({ navigation }: any) {
             />
           </View>
 
-          <TouchableOpacity style={styles.btnPrimary} onPress={submitLeave}>
-            <Text style={styles.btnPrimaryText}>Submit Request</Text>
+          <TouchableOpacity style={[styles.btnPrimary, submitting && { opacity: 0.7 }]} onPress={submitLeave} disabled={submitting}>
+            {submitting ? (
+              <ActivityIndicator color="#FFF" size="small" />
+            ) : (
+              <Text style={styles.btnPrimaryText}>Submit Request</Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -156,35 +187,40 @@ export default function Leave({ navigation }: any) {
           <Text style={styles.sectionTitle}>My requests</Text>
         </View>
 
-        <View style={styles.reqCard}>
-          <View style={styles.reqTop}>
-            <View>
-              <Text style={styles.reqName}>Casual leave · 26 Jul</Text>
-              <Text style={styles.reqMeta}>1 day · Submitted 24 Jul</Text>
-            </View>
-            <View style={styles.badgeApproved}>
-              <Text style={styles.badgeApprovedText}>Approved</Text>
-            </View>
+        {loading ? (
+          <ActivityIndicator color="#2F8F5B" style={{ marginVertical: 20 }} />
+        ) : myRequests.length === 0 ? (
+          <View style={styles.reqCard}>
+            <Text style={{ color: '#63796B', fontSize: 13, textAlign: 'center', paddingVertical: 10 }}>
+              No leave requests submitted yet.
+            </Text>
           </View>
-          <View style={styles.reqBody}>
-            <Text style={styles.reqBodyText}>Family function</Text>
-          </View>
-        </View>
-
-        <View style={styles.reqCard}>
-          <View style={styles.reqTop}>
-            <View>
-              <Text style={styles.reqName}>Sick leave · 18–19 Jul</Text>
-              <Text style={styles.reqMeta}>2 days · Submitted 17 Jul</Text>
+        ) : (
+          myRequests.map((r: any) => (
+            <View key={r.id} style={styles.reqCard}>
+              <View style={styles.reqTop}>
+                <View>
+                  <Text style={styles.reqName}>{r.leave_type} · {r.start_date}</Text>
+                  <Text style={styles.reqMeta}>To {r.end_date} · Submitted {r.created_at?.substring(0, 10) || r.start_date}</Text>
+                </View>
+                <View style={[
+                  styles.badgeApproved, 
+                  r.status === 'PENDING' && { backgroundColor: '#FBEDD3' },
+                  r.status === 'REJECTED' && { backgroundColor: '#FBE5E1' }
+                ]}>
+                  <Text style={[
+                    styles.badgeApprovedText,
+                    r.status === 'PENDING' && { color: '#B9791C' },
+                    r.status === 'REJECTED' && { color: '#C24936' }
+                  ]}>{r.status}</Text>
+                </View>
+              </View>
+              <View style={styles.reqBody}>
+                <Text style={styles.reqBodyText}>{r.reason}</Text>
+              </View>
             </View>
-            <View style={styles.badgeApproved}>
-              <Text style={styles.badgeApprovedText}>Approved</Text>
-            </View>
-          </View>
-          <View style={styles.reqBody}>
-            <Text style={styles.reqBodyText}>Fever, doctor advised rest</Text>
-          </View>
-        </View>
+          ))
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -361,4 +397,3 @@ const styles = StyleSheet.create({
     color: '#63796B',
   },
 });
-

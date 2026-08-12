@@ -8,11 +8,11 @@ from django.db.models import Q
 from .models import AttendanceRecord
 
 class AttendanceCSVReportView(APIView):
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        if not request.user.is_superuser:
-            return Response({'error': 'Unauthorized', 'message': 'Only Admins can download CSV reports.'}, status=status.HTTP_403_FORBIDDEN)
+        if not (request.user.is_superuser or request.user.is_staff):
+            return Response({'error': 'Unauthorized', 'message': 'Only Admins and Supervisors can download CSV reports.'}, status=status.HTTP_403_FORBIDDEN)
 
         role = request.query_params.get('role', 'All')
         worker_id = request.query_params.get('worker_id')
@@ -20,7 +20,12 @@ class AttendanceCSVReportView(APIView):
         start_date_str = request.query_params.get('start_date')
         end_date_str = request.query_params.get('end_date')
 
-        queryset = AttendanceRecord.objects.all().select_related('worker', 'worker__assigned_zone').order_by('-date', '-marked_at')
+        queryset = AttendanceRecord.objects.all().select_related('worker', 'worker__assigned_zone', 'verified_by').order_by('-date', '-marked_at')
+
+        # Supervisors are scoped to their assigned zone if set
+        if not request.user.is_superuser and request.user.is_staff:
+            if request.user.assigned_zone:
+                queryset = queryset.filter(worker__assigned_zone=request.user.assigned_zone)
 
         if role == 'Employee':
             queryset = queryset.filter(worker__is_staff=False, worker__is_superuser=False)
