@@ -14,9 +14,14 @@ class FieldRoundViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         user = self.request.user
 
-        # Role restriction: Workers cannot view field rounds. 
-        # Supervisors and Admins can see rounds.
-        if not (user.is_superuser or user.is_staff):
+        if user.is_superuser:
+            pass
+        elif hasattr(user, 'is_staff') and user.is_staff:
+            if user.assigned_zone:
+                queryset = queryset.filter(zone=user.assigned_zone)
+            else:
+                return queryset.none()
+        else:
             return queryset.none()
 
         zone = self.request.query_params.get('zone')
@@ -28,6 +33,13 @@ class FieldRoundViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(visited_at__date=date_param)
 
         return queryset
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        if instance.status == 'COMPLETED':
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'error': 'Cannot edit a completed Field Log.'})
+        serializer.save()
 
     @action(detail=False, methods=['get'], url_path='me')
     def my_rounds(self, request):

@@ -1,34 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Alert, ActivityIndicator, Platform } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
 
 export default function Dashboard({ navigation }: any) {
   const { userProfile, logout } = useAuthStore();
-  const [rounds, setRounds] = useState<any[]>([]);
-  const [workerCount, setWorkerCount] = useState<number>(0);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [roundsRes, workersRes] = await Promise.all([
-        apiClient.get('/api/rounds/'),
-        apiClient.get('/api/workers/')
-      ]);
-      setRounds(roundsRes.data.results || roundsRes.data || []);
-      const workersList = workersRes.data.results || workersRes.data || [];
-      setWorkerCount(workersList.length);
+      const res = await apiClient.get('/api/workers/supervisor-dashboard/');
+      setStats(res.data);
     } catch (e) {
       console.warn("Failed to fetch supervisor dashboard data", e);
     } finally {
       setLoading(false);
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [])
+  );
 
   const nameInitials = userProfile?.name
     ? userProfile.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
@@ -55,7 +52,7 @@ export default function Dashboard({ navigation }: any) {
         <View style={styles.greetRow}>
           <View>
             <Text style={styles.eyebrow}>Supervisor Portal</Text>
-            <Text style={styles.pageTitle}>Site Field Rounds</Text>
+            <Text style={styles.pageTitle}>Dashboard</Text>
             <Text style={styles.subTitle}>
               Zone: {userProfile?.zone_detail?.name || userProfile?.zone || 'Assigned Zone'} · {userProfile?.name || 'Supervisor'}
             </Text>
@@ -78,17 +75,28 @@ export default function Dashboard({ navigation }: any) {
 
         {/* Team Presence Overview */}
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Zone Headcount</Text>
+          <Text style={styles.sectionTitle}>Today's Attendance</Text>
         </View>
 
         <View style={styles.statGrid}>
           <View style={styles.statTile}>
-            <Text style={[styles.statNum, { color: '#2F8F5B' }]}>{workerCount}</Text>
-            <Text style={styles.statLbl}>Assigned workers</Text>
+            <Text style={[styles.statNum, { color: '#2F8F5B' }]}>{stats?.total_assigned || 0}</Text>
+            <Text style={styles.statLbl}>Assigned</Text>
           </View>
           <View style={styles.statTile}>
-            <Text style={[styles.statNum, { color: '#1F6B42' }]}>{rounds.length}</Text>
-            <Text style={styles.statLbl}>Field rounds logged</Text>
+            <Text style={[styles.statNum, { color: '#1F6B42' }]}>{stats?.checked_in || 0}</Text>
+            <Text style={styles.statLbl}>Checked In</Text>
+          </View>
+        </View>
+
+        <View style={[styles.statGrid, { marginTop: 10 }]}>
+          <View style={styles.statTile}>
+            <Text style={[styles.statNum, { color: '#B9791C' }]}>{stats?.checked_out || 0}</Text>
+            <Text style={styles.statLbl}>Checked Out</Text>
+          </View>
+          <View style={styles.statTile}>
+            <Text style={[styles.statNum, { color: '#A02020' }]}>{stats?.not_checked_in || 0}</Text>
+            <Text style={styles.statLbl}>No check-in</Text>
           </View>
         </View>
 
@@ -99,21 +107,21 @@ export default function Dashboard({ navigation }: any) {
 
         {loading ? (
           <ActivityIndicator color="#B9791C" style={{ marginVertical: 20 }} />
-        ) : rounds.length === 0 ? (
+        ) : !stats?.recent_activity || stats.recent_activity.length === 0 ? (
           <View style={styles.logCard}>
             <Text style={styles.logDesc}>No field rounds logged yet. Tap "+ Start New Field Round" to create one.</Text>
           </View>
         ) : (
           <View style={styles.logList}>
-            {rounds.slice(0, 5).map((r: any) => (
+            {stats.recent_activity.map((r: any) => (
               <View key={r.id} style={styles.logCard}>
                 <View style={styles.logTop}>
-                  <Text style={styles.logZone}>📍 {r.zone_name || 'Site Zone'}</Text>
+                  <Text style={styles.logZone}>📍 {r.zone_detail?.name || 'Site Zone'}</Text>
                   <Text style={styles.logTime}>{r.visited_at ? new Date(r.visited_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today'}</Text>
                 </View>
-                <Text style={styles.logDesc}>{r.notes || `Verified ${r.worker_count_observed || 0} workers present on site.`}</Text>
+                <Text style={styles.logDesc}>{r.remarks || r.notes || `Verified ${r.worker_count_observed || 0} workers present on site.`}</Text>
                 <View style={styles.tagChip}>
-                  <Text style={styles.tagChipText}>✓ Geotag verified</Text>
+                  <Text style={styles.tagChipText}>{r.status === 'COMPLETED' ? '✓ Completed' : '⌛ Open'}</Text>
                 </View>
               </View>
             ))}

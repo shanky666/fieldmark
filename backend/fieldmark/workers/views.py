@@ -206,3 +206,49 @@ class WorkerViewSet(viewsets.ModelViewSet):
         } if worker.shift else None
 
         return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='supervisor-dashboard')
+    def supervisor_dashboard(self, request):
+        user = request.user
+        if not (user.is_superuser or user.is_staff):
+            return Response({'error': 'unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+
+        zone = user.assigned_zone
+        if not zone:
+            return Response({'error': 'no assigned zone'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from fieldmark.attendance.models import AttendanceRecord
+        from fieldmark.rounds.models import FieldRound
+        from django.utils import timezone
+        
+        try:
+            import pytz
+            ist_tz = pytz.timezone('Asia/Kolkata')
+        except ImportError:
+            from zoneinfo import ZoneInfo
+            ist_tz = ZoneInfo('Asia/Kolkata')
+
+        today_ist = timezone.now().astimezone(ist_tz).date()
+
+        assigned_workers = Worker.objects.filter(assigned_zone=zone, is_active=True)
+        total_assigned = assigned_workers.count()
+
+        today_attendance = AttendanceRecord.objects.filter(worker__assigned_zone=zone, date=today_ist)
+        checked_in = today_attendance.filter(check_out_at__isnull=True).count()
+        checked_out = today_attendance.filter(check_out_at__isnull=False).count()
+        not_checked_in = total_assigned - (checked_in + checked_out)
+        
+        active_logs = FieldRound.objects.filter(zone=zone, status='OPEN').count()
+        
+        recent_activity = FieldRound.objects.filter(zone=zone).order_by('-visited_at')[:5]
+        from fieldmark.rounds.serializers import FieldRoundSerializer
+        recent_activity_data = FieldRoundSerializer(recent_activity, many=True, context={'request': request}).data
+
+        return Response({
+            'total_assigned': total_assigned,
+            'checked_in': checked_in,
+            'checked_out': checked_out,
+            'not_checked_in': not_checked_in,
+            'active_logs': active_logs,
+            'recent_activity': recent_activity_data
+        })
