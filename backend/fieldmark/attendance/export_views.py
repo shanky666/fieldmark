@@ -20,7 +20,7 @@ class AttendanceCSVReportView(APIView):
         start_date_str = request.query_params.get('start_date')
         end_date_str = request.query_params.get('end_date')
 
-        queryset = AttendanceRecord.objects.all().select_related('worker', 'worker__assigned_zone').order_by('-date', '-check_in_at')
+        queryset = AttendanceRecord.objects.all().select_related('worker', 'worker__assigned_zone').order_by('-date', '-marked_at')
 
         if role == 'Employee':
             queryset = queryset.filter(worker__is_staff=False, worker__is_superuser=False)
@@ -55,7 +55,7 @@ class AttendanceCSVReportView(APIView):
 
         writer = csv.writer(response)
         writer.writerow([
-            "Name", "ID", "Role", "Zone", "Date", "Check-in", "Check-out", "Duration", "Status", "Verification"
+            "Name", "ID", "Role", "Zone", "Date", "Check-in", "Check-out", "Duration", "Status", "Verified By"
         ])
 
         for record in queryset:
@@ -63,7 +63,7 @@ class AttendanceCSVReportView(APIView):
             role_text = "Supervisor" if w.is_staff else "Employee"
             zone_text = w.assigned_zone.name if w.assigned_zone else "Unassigned"
             
-            check_in = record.check_in_at.strftime('%H:%M:%S') if record.check_in_at else "N/A"
+            check_in = record.marked_at.strftime('%H:%M:%S') if record.marked_at else "N/A"
             
             if record.check_out_at:
                 check_out = record.check_out_at.strftime('%H:%M:%S')
@@ -73,7 +73,7 @@ class AttendanceCSVReportView(APIView):
                 duration = "-"
                 
             status_text = record.get_status_display()
-            verification_text = record.get_verification_status_display()
+            verified_by_text = record.verified_by.name if record.verified_by else "Pending"
 
             writer.writerow([
                 w.name,
@@ -85,7 +85,7 @@ class AttendanceCSVReportView(APIView):
                 check_out,
                 duration,
                 status_text,
-                verification_text
+                verified_by_text
             ])
 
         return response
