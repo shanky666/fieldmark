@@ -157,15 +157,76 @@ export default function VerificationDetail({ route, navigation }: VerificationDe
           <Image source={{ uri: photoUri }} style={styles.image} resizeMode="cover" />
         </View>
 
-        {/* Worker Details Card */}
+        {/* Worker & Shift Details Card */}
         <View style={styles.card}>
           <View style={styles.row}>
             <View>
-              <Text style={styles.workerName}>{record.worker_detail?.name}</Text>
-              <Text style={styles.employeeId}>Employee ID: {record.worker_detail?.employee_id}</Text>
+              <Text style={styles.workerName}>{record.worker_name || record.worker_detail?.name || `Worker #${record.worker}`}</Text>
+              <Text style={styles.employeeId}>Employee ID: {record.worker_employee_id || record.worker_detail?.employee_id || 'N/A'}</Text>
+              <Text style={styles.employeeId}>Zone: {record.zone_name || record.worker_detail?.zone_detail?.name || 'Assigned Zone'}</Text>
             </View>
             <StatusBadge status={record.status} />
           </View>
+
+          <View style={styles.divider} />
+
+          {/* Timing & Working Duration */}
+          <Text style={styles.label}>Attendance Timings & Duration</Text>
+          <View style={styles.gpsGrid}>
+            <View style={styles.gpsCell}>
+              <Text style={styles.gpsCellTitle}>CHECK-IN TIME</Text>
+              <Text style={styles.gpsCellVal}>
+                {record.marked_at ? new Date(record.marked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+              </Text>
+              <Text style={styles.gpsCellValText}>{record.date}</Text>
+            </View>
+            <View style={styles.gpsCell}>
+              <Text style={styles.gpsCellTitle}>CHECK-OUT TIME</Text>
+              <Text style={styles.gpsCellVal}>
+                {record.check_out_at ? new Date(record.check_out_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Still Checked In'}
+              </Text>
+              <Text style={styles.gpsCellValText}>
+                {record.check_out_at ? new Date(record.check_out_at).toLocaleDateString() : 'In Progress'}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.deltaLabel}>
+            Total Working Duration: <Text style={[styles.deltaVal, { color: COLORS.primary }]}>{record.duration_formatted || '--'}</Text>
+          </Text>
+
+          <View style={styles.divider} />
+
+          {/* Verification & System Identifiers */}
+          <Text style={styles.label}>Device & Submission Metadata</Text>
+          <View style={styles.gpsGrid}>
+            <View style={styles.gpsCell}>
+              <Text style={styles.gpsCellTitle}>DEVICE ID</Text>
+              <Text style={[styles.gpsCellVal, { fontSize: 10 }]}>{record.device_id || 'N/A'}</Text>
+            </View>
+            <View style={styles.gpsCell}>
+              <Text style={styles.gpsCellTitle}>LIVENESS VERIFICATION</Text>
+              <Text style={[styles.gpsCellVal, { color: record.liveness_passed !== false ? COLORS.accent : COLORS.danger }]}>
+                {record.liveness_passed !== false ? '✓ Passed' : '⚠ Flagged'}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.deltaLabel}>
+            Submission Mode: <Text style={styles.deltaVal}>{record.is_offline_submission ? `Offline Sync (Queued: ${record.offline_queued_at || 'N/A'})` : 'Online Real-time'}</Text>
+          </Text>
+
+          {record.verified_by_name && (
+            <View style={{ marginTop: 8 }}>
+              <Text style={styles.deltaLabel}>
+                Verified By: <Text style={styles.deltaVal}>{record.verified_by_name} at {record.verified_at ? new Date(record.verified_at).toLocaleString() : 'N/A'}</Text>
+              </Text>
+            </View>
+          )}
+
+          {record.rejection_note && (
+            <View style={{ marginTop: 6, backgroundColor: '#FBE5E1', padding: 8, borderRadius: 8 }}>
+              <Text style={{ fontSize: 12, color: COLORS.danger, fontWeight: 'bold' }}>Rejection Reason: {record.rejection_note}</Text>
+            </View>
+          )}
 
           <View style={styles.divider} />
 

@@ -233,8 +233,21 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
     } catch (error: any) {
       setSubmitting(false);
       console.error("Submission failed", error);
-      const errMsg = JSON.stringify(error.response?.data || error.message || error);
-      Alert.alert(t('common.error'), errMsg);
+      const data = error.response?.data;
+      let errMsg = "Submission failed. Please try again.";
+      if (data?.message) {
+        errMsg = data.message;
+      } else if (typeof data?.error === 'string') {
+        errMsg = data.error;
+      } else if (typeof data === 'string') {
+        errMsg = data;
+      } else if (error.message) {
+        errMsg = error.message;
+      }
+
+      Alert.alert("Attendance Notice", errMsg, [
+        { text: "OK", onPress: () => navigation.navigate('WorkerTabs') }
+      ]);
     }
   };
 

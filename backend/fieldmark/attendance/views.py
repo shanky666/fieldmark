@@ -6,6 +6,13 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+try:
+    import pytz
+    ist_tz = pytz.timezone('Asia/Kolkata')
+except ImportError:
+    from zoneinfo import ZoneInfo
+    ist_tz = ZoneInfo('Asia/Kolkata')
+
 from fieldmark.workers.models import Worker, Zone
 from fieldmark.notifications.fcm import send_push_notification
 from .models import AttendanceRecord
@@ -184,15 +191,30 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         return Response(AttendanceRecordSerializer(record).data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'], url_path='today')
+    def today_attendance(self, request):
+        """Fetch today's attendance record for the authenticated worker based on IST date."""
+        user = request.user
+        today_ist = timezone.now().astimezone(ist_tz).date()
+        record = AttendanceRecord.objects.filter(
+            worker=user,
+            date=today_ist
+        ).first()
+
+        if not record:
+            return Response({'today_record': None}, status=status.HTTP_200_OK)
+
+        return Response(AttendanceRecordSerializer(record).data, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=['post'], url_path='checkout')
     def checkout(self, request):
-        """Check out the authenticated worker from today's attendance record."""
+        """Check out the authenticated worker from today's attendance record (IST date)."""
         user = request.user
-        today = timezone.localdate()
+        today_ist = timezone.now().astimezone(ist_tz).date()
 
         record = AttendanceRecord.objects.filter(
             worker=user,
-            date=today
+            date=today_ist
         ).first()
 
         if not record:
@@ -203,7 +225,11 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         if record.check_out_at:
             return Response(
-                {'error': 'Already checked out.', 'check_out_at': record.check_out_at},
+                {
+                    'error': 'attendance_completed_today',
+                    'message': 'Attendance is already completed for today.',
+                    'check_out_at': record.check_out_at
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -214,6 +240,37 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
             AttendanceRecordSerializer(record).data,
             status=status.HTTP_200_OK
         )
+
+    @action(detail=True, methods=['post'], url_path='approve')
+    def approve(self, request, pk=None):
+        """Admin approves record."""
+        record = self.get_object()
+        user = request.user
+        if not (user.is_superuser or user.is_staff):
+            return Response({'error': 'unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        record.status = AttendanceRecord.StatusChoices.APPROVED
+        record.rejection_note = None
+        record.verified_by = user
+        record.verified_at = timezone.now()
+        record.save()
+        return Response(AttendanceRecordSerializer(record).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='reject')
+    def reject(self, request, pk=None):
+        """Admin rejects record."""
+        record = self.get_object()
+        user = request.user
+        if not (user.is_superuser or user.is_staff):
+            return Response({'error': 'unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        rejection_note = request.data.get('rejection_note', 'Rejected by admin')
+        record.status = AttendanceRecord.StatusChoices.REJECTED
+        record.rejection_note = rejection_note
+        record.verified_by = user
+        record.verified_at = timezone.now()
+        record.save()
+        return Response(AttendanceRecordSerializer(record).data, status=status.HTTP_200_OK)
     @action(detail=False, methods=['post'], url_path='bulk-approve')
     def bulk_approve(self, request):
         """Bulk approves all eligible records."""

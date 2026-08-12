@@ -58,9 +58,35 @@ class AttendanceRecord(models.Model):
     offline_queued_at = models.DateTimeField(null=True, blank=True)
     anomaly_flags = models.JSONField(default=list, blank=True)
 
+    @property
+    def duration_seconds(self):
+        if self.marked_at and self.check_out_at:
+            return int((self.check_out_at - self.marked_at).total_seconds())
+        return None
+
+    @property
+    def duration_formatted(self):
+        if not self.marked_at:
+            return "--"
+        if not self.check_out_at:
+            return "In Progress"
+        total_sec = max(0, int((self.check_out_at - self.marked_at).total_seconds()))
+        hours = total_sec // 3600
+        mins = (total_sec % 3600) // 60
+        return f"{hours}h {mins:02d}m"
+
+    @property
+    def liveness_passed(self):
+        flags = self.anomaly_flags or []
+        for f in flags:
+            if 'LIVENESS' in str(f).upper():
+                return False
+        return True
+
     class Meta:
         ordering = ['-marked_at']
         unique_together = ('worker', 'date')
 
     def __str__(self):
         return f"{self.worker.name} on {self.date} - Status: {self.status}"
+

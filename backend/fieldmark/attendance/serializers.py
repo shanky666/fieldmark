@@ -15,22 +15,29 @@ from .anomaly_checks import check_sync_gps_zone
 class AttendanceRecordSerializer(serializers.ModelSerializer):
     worker = serializers.PrimaryKeyRelatedField(read_only=True)
     worker_detail = WorkerSerializer(source='worker', read_only=True)
+    worker_name = serializers.CharField(source='worker.name', read_only=True)
+    worker_employee_id = serializers.CharField(source='worker.employee_id', read_only=True)
+    zone_name = serializers.CharField(source='worker.assigned_zone.name', default='Assigned Zone', read_only=True)
     verified_by_name = serializers.CharField(source='verified_by.name', read_only=True)
+    duration_seconds = serializers.IntegerField(read_only=True)
+    duration_formatted = serializers.CharField(read_only=True)
+    liveness_passed = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = AttendanceRecord
         fields = [
-            'id', 'worker', 'worker_detail', 'date', 'marked_at', 'check_out_at', 
+            'id', 'worker', 'worker_detail', 'worker_name', 'worker_employee_id', 'zone_name',
+            'date', 'marked_at', 'check_out_at', 'duration_seconds', 'duration_formatted',
             'latitude', 'longitude', 'photo_url', 'photo_hash', 
             'photo_exif_lat', 'photo_exif_lng', 'exif_gps_delta_meters', 
-            'device_id', 'gps_match', 'status', 'verified_by', 
+            'device_id', 'gps_match', 'status', 'liveness_passed', 'verified_by', 
             'verified_by_name', 'verified_at', 'rejection_note', 
             'is_offline_submission', 'offline_queued_at', 'anomaly_flags'
         ]
         read_only_fields = [
             'id', 'gps_match', 'status', 'photo_hash', 'photo_exif_lat', 
             'photo_exif_lng', 'exif_gps_delta_meters', 'verified_by', 
-            'verified_at', 'anomaly_flags'
+            'verified_at', 'anomaly_flags', 'duration_seconds', 'duration_formatted', 'liveness_passed'
         ]
 
     def validate(self, data):

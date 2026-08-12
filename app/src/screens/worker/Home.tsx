@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image, Alert, Modal } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/auth';
@@ -15,6 +16,7 @@ export default function Home({ navigation }: any) {
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [isCompletedToday, setIsCompletedToday] = useState(false);
   const [lastStamp, setLastStamp] = useState<{ photoUri: string; time: string; date: string } | null>(null);
 
   const [cameraModalVisible, setCameraModalVisible] = useState(false);
@@ -58,40 +60,106 @@ export default function Home({ navigation }: any) {
     })();
   }, []);
 
-  const openCamera = () => {
-    navigation.navigate('MarkAttendance');
+  const fetchTodayAttendance = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/api/attendance/today/');
+      const record = res.data?.id ? res.data : (res.data?.today_record || null);
+
+      if (record) {
+        const checkIn = new Date(record.marked_at);
+        setCheckInTime(
+          checkIn.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        );
+
+        if (record.check_out_at) {
+          const checkOut = new Date(record.check_out_at);
+          setCheckOutTime(
+            checkOut.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          );
+          setIsCheckedIn(false);
+          setIsCompletedToday(true);
+        } else {
+          setCheckOutTime(null);
+          setIsCheckedIn(true);
+          setIsCompletedToday(false);
+        }
+
+        if (record.photo_url) {
+          setLastStamp({
+            photoUri: record.photo_url,
+            time: checkIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            date: record.date
+          });
+        }
+      } else {
+        setCheckInTime(null);
+        setCheckOutTime(null);
+        setIsCheckedIn(false);
+        setIsCompletedToday(false);
+      }
+    } catch (error) {
+      console.error('Failed to load today attendance:', error);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchTodayAttendance();
+    }, [fetchTodayAttendance])
+  );
+
+  const handleCardPress = () => {
+    if (isCompletedToday) {
+      Alert.alert("Attendance Completed", "You have already completed check-in and check-out for today.");
+      return;
+    }
+
+    if (isCheckedIn) {
+      Alert.alert(
+        "Check Out Confirmation",
+        "Are you sure you want to check out?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Check Out", style: "destructive", onPress: performCheckout }
+        ]
+      );
+    } else {
+      navigation.navigate('MarkAttendance');
+    }
   };
 
-  const confirmAttendance = async () => {
+  const performCheckout = async () => {
     try {
-      if (isCheckedIn) {
-        await apiClient.post('/api/attendance/checkout/');
+      const res = await apiClient.post('/api/attendance/checkout/');
+      const checkOutDate = new Date(res.data.check_out_at);
+      const ts = checkOutDate.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
 
-        const now = new Date();
-        const ts = now.toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+      setCheckOutTime(ts);
+      setIsCheckedIn(false);
+      setIsCompletedToday(true);
+      setCameraModalVisible(false);
+      setPreviewPhoto(null);
 
-        setCheckOutTime(ts);
-        setIsCheckedIn(false);
-        setCameraModalVisible(false);
-        setPreviewPhoto(null);
-
-        Alert.alert("Attendance Marked", "Checked out successfully at " + ts);
-      } else {
-        navigation.navigate('MarkAttendance');
-        setCameraModalVisible(false);
-        setPreviewPhoto(null);
-      }
+      Alert.alert("Attendance Marked", "Checked out successfully at " + ts);
     } catch (error: any) {
       console.error('Checkout failed:', error);
       const msg =
+        error.response?.data?.message ||
         error.response?.data?.error ||
         'Failed to check out. Please try again.';
       Alert.alert('Checkout Error', msg);
     }
   };
+
   const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
 
   return (
@@ -122,19 +190,25 @@ export default function Home({ navigation }: any) {
         </View>
 
         {/* Check-In Action Card */}
-        <View style={styles.checkinCard}>
-          <TouchableOpacity style={styles.camBtn} onPress={openCamera} activeOpacity={0.85}>
-            <Text style={styles.camIcon}>📸</Text>
-          </TouchableOpacity>
-          <Text style={styles.ciTitle}>{isCheckedIn ? 'Checked in' : 'Mark your attendance'}</Text>
+        <TouchableOpacity style={styles.checkinCard} onPress={handleCardPress} activeOpacity={0.9}>
+          <View style={styles.camBtn}>
+            <Text style={styles.camIcon}>{isCompletedToday ? '✓' : isCheckedIn ? '⌛' : '📸'}</Text>
+          </View>
+          <Text style={styles.ciTitle}>
+            {isCompletedToday ? 'Attendance Completed' : isCheckedIn ? 'Checked in' : 'Mark your attendance'}
+          </Text>
           <Text style={styles.ciSub}>
-            {isCheckedIn ? 'Tap again at end of shift to check out' : 'Snap a geo-tagged photo to check in'}
+            {isCompletedToday 
+              ? 'Check-in and check-out completed for today'
+              : isCheckedIn 
+                ? 'Checked in at ' + (checkInTime || '') + ' · Tap to check out' 
+                : 'Snap a geo-tagged photo to check in'}
           </Text>
           <View style={styles.locStatus}>
             <View style={styles.pulse} />
             <Text style={styles.locText}>{locationText}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Log Box Row */}
         <View style={styles.logRow}>
@@ -179,7 +253,7 @@ export default function Home({ navigation }: any) {
             </View>
           </View>
         ) : (
-          <TouchableOpacity style={styles.emptyCap} onPress={openCamera}>
+          <TouchableOpacity style={styles.emptyCap} onPress={handleCardPress}>
             <Text style={styles.emptyCapIcon}>📷</Text>
             <Text style={styles.emptyCapText}>No photo entry yet today</Text>
           </TouchableOpacity>
@@ -230,45 +304,7 @@ export default function Home({ navigation }: any) {
 
       </ScrollView>
 
-      {/* Camera Capture Confirmation Modal Sheet */}
-      <Modal visible={cameraModalVisible} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Confirm Attendance Entry</Text>
-            <Text style={styles.modalSub}>Review geotagged stamp before submitting.</Text>
-
-            {previewPhoto && (
-              <View style={styles.stampWrap}>
-                <View style={styles.stampPhotoBox}>
-                  <Image source={{ uri: previewPhoto }} style={styles.stampPhoto} />
-                  <View style={styles.stampOverlay}>
-                    <Text style={styles.stampAddr}>📍 {address}</Text>
-                    {coords ? (
-                      <Text style={styles.stampCoords}>
-                        {coords.lat.toFixed(5)}° N, {coords.lng.toFixed(5)}° E · ±{coords.acc}m
-                      </Text>
-                    ) : null}
-                  </View>
-                  <View style={styles.stampRibbon}>
-                    <Text style={styles.ribbonText}>✓ VERIFIED</Text>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.btnGhost} onPress={() => setCameraModalVisible(false)}>
-                <Text style={styles.btnGhostText}>Retake</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.btnPrimary} onPress={confirmAttendance}>
-                <Text style={styles.btnPrimaryText}>Confirm {isCheckedIn ? 'Check-out' : 'Check-in'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+          </SafeAreaView>
   );
 }
 
@@ -657,6 +693,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+
+
+
 
 
 
