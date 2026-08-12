@@ -15,47 +15,48 @@ class AttendanceRecord(models.Model):
         FLAGGED = 'FLAGGED', 'Flagged'
 
     worker = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.CASCADE, 
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
         related_name='attendance_records'
     )
     date = models.DateField(default=timezone.now)
     marked_at = models.DateTimeField(default=timezone.now)
+    check_out_at = models.DateTimeField(null=True, blank=True)
+
     latitude = models.FloatField()
     longitude = models.FloatField()
-    photo_url = models.CharField(max_length=500) # S3 Key or URL
-    photo_hash = models.CharField(max_length=32, null=True, blank=True) # MD5 hash
-    
-    # EXIF extraction outputs
+    photo_url = models.CharField(max_length=500)
+    photo_hash = models.CharField(max_length=32, null=True, blank=True)
+
     photo_exif_lat = models.FloatField(null=True, blank=True)
     photo_exif_lng = models.FloatField(null=True, blank=True)
     exif_gps_delta_meters = models.FloatField(null=True, blank=True)
-    
+
     device_id = models.CharField(max_length=255)
     gps_match = models.CharField(
-        max_length=15, 
-        choices=GPSMatchChoices.choices, 
+        max_length=15,
+        choices=GPSMatchChoices.choices,
         default=GPSMatchChoices.MATCHED
     )
     status = models.CharField(
-        max_length=15, 
-        choices=StatusChoices.choices, 
+        max_length=15,
+        choices=StatusChoices.choices,
         default=StatusChoices.PENDING
     )
-    
+
     verified_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='verifications_done'
     )
     verified_at = models.DateTimeField(null=True, blank=True)
     rejection_note = models.TextField(null=True, blank=True)
-    
+
     is_offline_submission = models.BooleanField(default=False)
     offline_queued_at = models.DateTimeField(null=True, blank=True)
-    anomaly_flags = models.JSONField(default=list, blank=True) # List of triggers
+    anomaly_flags = models.JSONField(default=list, blank=True)
 
     class Meta:
         ordering = ['-marked_at']

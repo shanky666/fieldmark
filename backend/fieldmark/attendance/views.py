@@ -184,6 +184,36 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         return Response(AttendanceRecordSerializer(record).data, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['post'], url_path='checkout')
+    def checkout(self, request):
+        """Check out the authenticated worker from today's attendance record."""
+        user = request.user
+        today = timezone.localdate()
+
+        record = AttendanceRecord.objects.filter(
+            worker=user,
+            date=today
+        ).first()
+
+        if not record:
+            return Response(
+                {'error': 'No attendance record found for today.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if record.check_out_at:
+            return Response(
+                {'error': 'Already checked out.', 'check_out_at': record.check_out_at},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        record.check_out_at = timezone.now()
+        record.save(update_fields=['check_out_at'])
+
+        return Response(
+            AttendanceRecordSerializer(record).data,
+            status=status.HTTP_200_OK
+        )
     @action(detail=False, methods=['post'], url_path='bulk-approve')
     def bulk_approve(self, request):
         """Bulk approves all eligible records."""
@@ -238,3 +268,4 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
                 )
 
         return Response({'approved_count': count, 'message': f'Successfully approved {count} records'}, status=status.HTTP_200_OK)
+

@@ -20,7 +20,7 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = AttendanceRecord
         fields = [
-            'id', 'worker', 'worker_detail', 'date', 'marked_at', 
+            'id', 'worker', 'worker_detail', 'date', 'marked_at', 'check_out_at', 
             'latitude', 'longitude', 'photo_url', 'photo_hash', 
             'photo_exif_lat', 'photo_exif_lng', 'exif_gps_delta_meters', 
             'device_id', 'gps_match', 'status', 'verified_by', 
@@ -74,4 +74,7 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
 
         record.save()
         return record
+
+
+
 
