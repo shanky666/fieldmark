@@ -15,6 +15,8 @@ export default function Workers({ navigation }: any) {
   const [initialPassword, setInitialPassword] = useState('');
 
   const [zonesList, setZonesList] = useState<any[]>([]);
+  const [workersList, setWorkersList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchWorkers();
@@ -480,4 +482,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+
 
