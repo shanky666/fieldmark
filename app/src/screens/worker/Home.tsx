@@ -17,7 +17,7 @@ export default function Home({ navigation }: any) {
   const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCompletedToday, setIsCompletedToday] = useState(false);
-  const [lastStamp, setLastStamp] = useState<{ photoUri: string; time: string; date: string } | null>(null);
+  const [lastStamp, setLastStamp] = useState<{ photoUri: string; time: string; date: string; status: string } | null>(null);
 
   const [cameraModalVisible, setCameraModalVisible] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
@@ -95,7 +95,8 @@ export default function Home({ navigation }: any) {
           setLastStamp({
             photoUri: record.photo_url,
             time: checkIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            date: record.date
+            date: record.date,
+            status: record.status || 'PENDING'
           });
         }
       } else {
@@ -716,6 +717,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+
 
 
 
