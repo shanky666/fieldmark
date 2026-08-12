@@ -14,12 +14,21 @@ export default function Workers({ navigation }: any) {
   const [role, setRole] = useState('WORKER');
   const [initialPassword, setInitialPassword] = useState('');
 
-  const [workersList, setWorkersList] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [zonesList, setZonesList] = useState<any[]>([]);
 
   useEffect(() => {
     fetchWorkers();
+    fetchZones();
   }, []);
+
+  const fetchZones = async () => {
+    try {
+      const res = await apiClient.get('/api/workers/zones/');
+      setZonesList(res.data.results || res.data || []);
+    } catch (e) {
+      console.warn("Failed to fetch zones for filter chips", e);
+    }
+  };
 
   const fetchWorkers = async () => {
     setLoading(true);
@@ -88,8 +97,10 @@ export default function Workers({ navigation }: any) {
     const matchesQuery = `${nameStr} ${w.employee_id || ''} ${w.zone || ''} ${w.role || ''}`.toLowerCase().includes(searchQuery.toLowerCase());
     if (selectedZoneFilter === 'all') return matchesQuery;
     if (selectedZoneFilter === 'inactive') return matchesQuery && w.is_active === false;
-    return matchesQuery && (w.assigned_zone_name === selectedZoneFilter || w.zone === selectedZoneFilter);
+    return matchesQuery && (w.assigned_zone_name === selectedZoneFilter || w.zone === selectedZoneFilter || w.zone_detail?.name === selectedZoneFilter);
   });
+
+  const filterChips = ['all', ...zonesList.map(z => z.name), 'inactive'];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -117,7 +128,7 @@ export default function Workers({ navigation }: any) {
 
         {/* Filter Chips */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
-          {['all', 'Facade A', 'Facade B', 'Block C', 'inactive'].map(chip => (
+          {filterChips.map(chip => (
             <TouchableOpacity 
               key={chip} 
               style={[styles.zoneChip, selectedZoneFilter === chip && styles.zoneChipSel]}
