@@ -249,7 +249,7 @@ export default function Home({ navigation }: any) {
 
         {/* Last Verified Entry Stamp */}
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Last verified entry</Text>
+          <Text style={styles.sectionTitle}>Latest entry</Text>
         </View>
 
         {lastStamp ? (

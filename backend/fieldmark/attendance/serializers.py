@@ -48,6 +48,27 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
         if url.startswith('http://') or url.startswith('https://') or url.startswith('data:'):
             return url
         
+        # S3 / R2 Presigned GET URL handling for deployed environments
+        from django.conf import settings
+        if getattr(settings, 'AWS_ACCESS_KEY_ID', None) and getattr(settings, 'AWS_SECRET_ACCESS_KEY', None) and not settings.AWS_S3_ENDPOINT_URL.startswith("http://r2-endpoint-placeholder"):
+            import boto3
+            try:
+                s3_client = boto3.client(
+                    's3',
+                    aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                    aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                    endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+                    config=boto3.session.Config(signature_version='s3v4')
+                )
+                return s3_client.generate_presigned_url(
+                    'get_object',
+                    Params={'Bucket': settings.AWS_STORAGE_BUCKET_NAME, 'Key': url},
+                    ExpiresIn=3600
+                )
+            except Exception:
+                pass
+                
+        # Local fallback
         relative_path = url
         if not relative_path.startswith('/media/'):
             if relative_path.startswith('/'):
