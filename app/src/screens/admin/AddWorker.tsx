@@ -33,10 +33,11 @@ export default function AddWorker({ navigation }: AddWorkerProps) {
   useEffect(() => {
     const fetchZones = async () => {
       try {
-        const res = await apiClient.get('/api/zones/');
-        setZones(res.data);
-        if (res.data.length > 0) {
-          setSelectedZoneId(res.data[0].id);
+        const res = await apiClient.get('/api/workers/zones/');
+        const loadedZones = res.data.results || res.data || [];
+        setZones(loadedZones);
+        if (loadedZones.length > 0) {
+          setSelectedZoneId(loadedZones[0].id);
         }
       } catch (e) {
         console.error("Failed to load zones", e);
