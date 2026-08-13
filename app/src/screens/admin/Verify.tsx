@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Alert, Modal, TextInput, ActivityIndicator, Image } from 'react-native';
 import { apiClient } from '../../api/client';
+import { CONFIG } from '../../constants/config';
 
 export default function Verify({ navigation }: any) {
   const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'completed' | 'flagged' | 'done' | 'rejected'>('pending');
@@ -186,12 +187,25 @@ export default function Verify({ navigation }: any) {
               const checkOutStr = item.check_out_at ? new Date(item.check_out_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'In Progress';
               const durationStr = item.duration_formatted || '--';
 
+              const rawUrl = item.photo_url || item.photo;
+              const photoUri = rawUrl
+                ? rawUrl.startsWith('http')
+                  ? rawUrl
+                  : rawUrl.startsWith('/')
+                  ? `${CONFIG.API_BASE_URL}${rawUrl}`
+                  : `${CONFIG.API_BASE_URL}/api/media-serve/?key=${rawUrl.replace(/^media\//, '')}`
+                : null;
+
               return (
                 <View key={item.id} style={styles.vCard}>
                   <View style={styles.vTop}>
-                    <View style={[styles.vThumb, { backgroundColor: item.status === 'APPROVED' ? '#2F8F5B' : item.status === 'FLAGGED' ? '#C24936' : '#1A6DB5' }]}>
-                      <Text style={styles.vThumbText}>{initials}</Text>
-                    </View>
+                    {photoUri ? (
+                      <Image source={{ uri: photoUri }} style={styles.vPhotoThumb} resizeMode="cover" />
+                    ) : (
+                      <View style={[styles.vThumb, { backgroundColor: item.status === 'APPROVED' ? '#2F8F5B' : item.status === 'FLAGGED' ? '#C24936' : '#1A6DB5' }]}>
+                        <Text style={styles.vThumbText}>{initials}</Text>
+                      </View>
+                    )}
                     <TouchableOpacity style={styles.vInfo} onPress={() => navigation.navigate('VerificationDetail', { recordId: item.id })}>
                       <Text style={styles.vName}>{item.worker_name || item.worker_detail?.name || `Worker #${item.worker}`}</Text>
                       <Text style={styles.vMeta}>
@@ -365,12 +379,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   vThumb: {
-    width: 42,
-    height: 42,
+    width: 50,
+    height: 50,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  vPhotoThumb: {
+    width: 54,
+    height: 54,
+    borderRadius: 12,
+    marginRight: 12,
+    backgroundColor: '#EAF6EE',
+    borderWidth: 1,
+    borderColor: '#DCEEE2',
   },
   vThumbText: {
     color: '#FFFFFF',

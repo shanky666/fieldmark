@@ -137,9 +137,14 @@ export default function VerificationDetail({ route, navigation }: VerificationDe
     }
   }
 
-  const photoUri = record.photo_url?.startsWith('http') 
-    ? record.photo_url 
-    : `${CONFIG.API_BASE_URL}/media/${record.photo_url}`;
+  const rawUrl = record.photo_url || record.photo;
+  const photoUri = rawUrl
+    ? rawUrl.startsWith('http')
+      ? rawUrl
+      : rawUrl.startsWith('/')
+      ? `${CONFIG.API_BASE_URL}${rawUrl}`
+      : `${CONFIG.API_BASE_URL}/api/media-serve/?key=${rawUrl.replace(/^media\//, '')}`
+    : null;
 
   return (
     <View style={styles.container}>
