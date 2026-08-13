@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '../../store/auth';
 import { COLORS } from '../../constants/colors';
-import { useLocation } from '../../hooks/useLocation';
+import { useLocation, formatGeocodeAddress } from '../../hooks/useLocation';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useOfflineQueueStore } from '../../store/offlineQueue';
 import { getUniqueDeviceId } from '../../utils/deviceId';
@@ -143,8 +143,7 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
             try {
               const geo = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
               if (geo && geo.length > 0) {
-                const parts = [geo[0].name, geo[0].street, geo[0].subregion || geo[0].city, geo[0].region].filter(Boolean);
-                setCapturedAddress(parts.join(', '));
+                setCapturedAddress(formatGeocodeAddress(geo[0]));
               } else {
                 setCapturedAddress(gps.address);
               }

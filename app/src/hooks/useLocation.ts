@@ -12,6 +12,20 @@ export interface LocationState {
   refreshLocation: () => Promise<void>;
 }
 
+export function formatGeocodeAddress(item: Location.LocationGeocodedAddress): string {
+  if (!item) return '';
+  const streetPart = [item.streetNumber, item.street].filter(Boolean).join(' ');
+  const locality = item.district || item.subregion || item.city;
+  const regionPart = [item.city, item.region].filter(Boolean).filter(x => x !== locality).join(', ');
+  
+  const parts = [streetPart, locality, regionPart, item.postalCode].filter(Boolean);
+  if (parts.length > 0) {
+    return parts.join(', ');
+  }
+  // Fallback if street/locality are null
+  return [item.name, item.city || item.region].filter(Boolean).join(', ');
+}
+
 export function useLocation(): LocationState {
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [address, setAddress] = useState<string | null>(null);
@@ -63,9 +77,7 @@ export function useLocation(): LocationState {
             longitude: loc.coords.longitude
           });
           if (geocode && geocode.length > 0) {
-            const item = geocode[0];
-            const addrParts = [item.name, item.street, item.subregion || item.city, item.region].filter(Boolean);
-            setAddress(addrParts.join(', '));
+            setAddress(formatGeocodeAddress(geocode[0]));
           }
         } catch (geoErr) {
           console.warn("Reverse geocode failed", geoErr);
