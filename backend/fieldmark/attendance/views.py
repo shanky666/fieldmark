@@ -247,6 +247,29 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
+    @action(detail=True, methods=['post', 'patch'], url_path='verify')
+    def verify(self, request, pk=None):
+        """Admin verifies record with approve or reject action."""
+        record = self.get_object()
+        user = request.user
+        if not (user.is_superuser or user.is_staff):
+            return Response({'error': 'unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+        
+        act = request.data.get('action', 'approve')
+        if act == 'approve':
+            record.status = AttendanceRecord.StatusChoices.APPROVED
+            record.rejection_note = None
+        elif act == 'reject':
+            record.status = AttendanceRecord.StatusChoices.REJECTED
+            record.rejection_note = request.data.get('rejection_note', 'Rejected by administrator')
+        else:
+            return Response({'error': 'invalid_action', 'message': 'Action must be approve or reject'}, status=status.HTTP_400_BAD_REQUEST)
+
+        record.verified_by = user
+        record.verified_at = timezone.now()
+        record.save()
+        return Response(AttendanceRecordSerializer(record, context={'request': request}).data, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'], url_path='approve')
     def approve(self, request, pk=None):
         """Admin approves record."""
@@ -260,7 +283,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         record.verified_by = user
         record.verified_at = timezone.now()
         record.save()
-        return Response(AttendanceRecordSerializer(record).data, status=status.HTTP_200_OK)
+        return Response(AttendanceRecordSerializer(record, context={'request': request}).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='reject')
     def reject(self, request, pk=None):
@@ -276,7 +299,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         record.verified_by = user
         record.verified_at = timezone.now()
         record.save()
-        return Response(AttendanceRecordSerializer(record).data, status=status.HTTP_200_OK)
+        return Response(AttendanceRecordSerializer(record, context={'request': request}).data, status=status.HTTP_200_OK)
     @action(detail=False, methods=['post'], url_path='bulk-approve')
     def bulk_approve(self, request):
         """Bulk approves all eligible records."""

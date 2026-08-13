@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Switch, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Switch, TouchableOpacity, Alert, TextInput, ActivityIndicator, Modal } from 'react-native';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
 
@@ -316,7 +316,7 @@ export default function Settings() {
       </ScrollView>
 
       {/* Add Shift Modal */}
-      {addShiftVisible && (
+      <Modal visible={addShiftVisible} transparent animationType="slide" onRequestClose={() => setAddShiftVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
@@ -350,10 +350,10 @@ export default function Settings() {
             </View>
           </View>
         </View>
-      )}
+      </Modal>
 
       {/* Add Zone Modal */}
-      {addZoneVisible && (
+      <Modal visible={addZoneVisible} transparent animationType="slide" onRequestClose={() => setAddZoneVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
@@ -397,10 +397,10 @@ export default function Settings() {
             </View>
           </View>
         </View>
-      )}
+      </Modal>
 
       {/* Add Admin Modal */}
-      {addAdminVisible && (
+      <Modal visible={addAdminVisible} transparent animationType="slide" onRequestClose={() => setAddAdminVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
@@ -432,7 +432,7 @@ export default function Settings() {
             </View>
           </View>
         </View>
-      )}
+      </Modal>
     </SafeAreaView>
   );
 }
