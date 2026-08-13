@@ -22,8 +22,46 @@ export function formatGeocodeAddress(item: Location.LocationGeocodedAddress): st
   if (parts.length > 0) {
     return parts.join(', ');
   }
-  // Fallback if street/locality are null
   return [item.name, item.city || item.region].filter(Boolean).join(', ');
+}
+
+export async function fetchLiveAddress(lat: number, lng: number): Promise<string> {
+  // 1. Try Nominatim (OpenStreetMap live API) for accurate live street address
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+      headers: { 'User-Agent': 'FieldMarkApp/1.0' }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.address) {
+        const a = data.address;
+        const road = a.road || a.pedestrian || a.suburb || a.neighbourhood || a.residential;
+        const locality = a.suburb || a.neighbourhood || a.city_district || a.district || a.city || a.town || a.village;
+        const cityState = [a.city || a.town || a.county, a.state, a.postcode].filter(Boolean).filter(x => x !== locality).join(', ');
+        
+        const parts = [road, locality, cityState].filter(Boolean);
+        if (parts.length > 0) {
+          return parts.join(', ');
+        } else if (data.display_name) {
+          return data.display_name.split(', ').slice(0, 3).join(', ');
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Nominatim reverse geocode failed, trying Expo fallback", e);
+  }
+
+  // 2. Native Expo reverse geocode fallback
+  try {
+    const geocode = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+    if (geocode && geocode.length > 0) {
+      return formatGeocodeAddress(geocode[0]);
+    }
+  } catch (geoErr) {
+    console.warn("Expo reverse geocode failed", geoErr);
+  }
+
+  return `${lat.toFixed(5)}° N, ${lng.toFixed(5)}° E`;
 }
 
 export function useLocation(): LocationState {
@@ -55,33 +93,27 @@ export function useLocation(): LocationState {
       const isGranted = await requestPermission();
       if (!isGranted) return;
 
-      // 1. Try last known position for immediate fallback
-      let loc = await Location.getLastKnownPositionAsync();
-
-      // 2. Fetch high accuracy current position
+      // Force fresh pinpoint GPS fix from satellite/cellular sensors
+      let loc: Location.LocationObject | null = null;
       try {
-        const current = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
+        loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Highest,
         });
-        if (current) loc = current;
       } catch (err) {
-        console.warn("High accuracy GPS fetch timed out, using fallback", err);
+        console.warn("Highest accuracy GPS fetch timed out, trying High accuracy", err);
+        try {
+          loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.High,
+          });
+        } catch (e) {
+          loc = await Location.getLastKnownPositionAsync();
+        }
       }
 
       if (loc) {
         setLocation(loc);
-        // Reverse geocode to get real readable location address name
-        try {
-          const geocode = await Location.reverseGeocodeAsync({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude
-          });
-          if (geocode && geocode.length > 0) {
-            setAddress(formatGeocodeAddress(geocode[0]));
-          }
-        } catch (geoErr) {
-          console.warn("Reverse geocode failed", geoErr);
-        }
+        const liveAddress = await fetchLiveAddress(loc.coords.latitude, loc.coords.longitude);
+        setAddress(liveAddress);
       } else {
         setErrorMsg("Unable to lock GPS position. Ensure location services are turned on.");
       }
