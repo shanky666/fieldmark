@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { secureStorage } from '../utils/secureStorage';
 import i18n from 'i18next';
 import { firebaseAuth } from '../config/firebase';
-import { apiClient } from '../api/client';
+import { apiClient, registerAuthFailureHandler } from '../api/client';
 
 export type UserRole = 'WORKER' | 'SUPERVISOR' | 'ADMIN' | null;
 
@@ -71,6 +71,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Save tokens
       if (access) {
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
         await secureStorage.setItem(
           'access_token',
           access
@@ -209,6 +210,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // ----------------------------------------------------
 
       if (access) {
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
         await secureStorage.setItem(
           'access_token',
           access
@@ -405,6 +407,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } = res.data;
 
       if (access) {
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
         await secureStorage.setItem(
           'access_token',
           access
@@ -528,6 +531,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } = res.data;
 
       if (access) {
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${access}`;
         await secureStorage.setItem(
           'access_token',
           access
@@ -676,6 +680,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
 
     try {
+      delete apiClient.defaults.headers.common['Authorization'];
       await firebaseAuth.signOut();
 
       await secureStorage.deleteItem(
@@ -846,6 +851,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // --------------------------------------------------------
 
       if (role && token) {
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
         set({
           isAuthenticated: true,
@@ -919,3 +925,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 }));
+
+registerAuthFailureHandler(() => {
+  delete apiClient.defaults.headers.common['Authorization'];
+  useAuthStore.setState({
+    isAuthenticated: false,
+    role: null,
+    workerId: null,
+    userProfile: null,
+    isLoading: false,
+    isLoggingIn: false,
+  });
+});
