@@ -112,7 +112,7 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         // Take the photo and capture GPS simultaneously for accuracy
         const [photo, freshLocation] = await Promise.all([
           cameraRef.current.takePictureAsync({
-            quality: 0.8,
+            quality: 0.5,
             skipProcessing: false,
           }),
           // Fresh GPS fix at the exact moment of capture
@@ -242,7 +242,11 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
       } else if (typeof data?.error === 'string') {
         errMsg = data.error;
       } else if (typeof data === 'string') {
-        errMsg = data;
+        if (data.includes('<!doctype') || data.includes('<html')) {
+          errMsg = "Submission failed (400 Bad Request). Please try again.";
+        } else {
+          errMsg = data;
+        }
       } else if (error.message) {
         errMsg = error.message;
       }

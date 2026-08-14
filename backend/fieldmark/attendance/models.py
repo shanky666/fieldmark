@@ -25,7 +25,7 @@ class AttendanceRecord(models.Model):
 
     latitude = models.FloatField()
     longitude = models.FloatField()
-    photo_url = models.CharField(max_length=500)
+    photo_url = models.TextField()
     photo_hash = models.CharField(max_length=32, null=True, blank=True)
 
     photo_exif_lat = models.FloatField(null=True, blank=True)

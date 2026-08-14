@@ -250,6 +250,10 @@ else:
     MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
 
+# Increase request body & file upload max memory size (25 MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 26214400
+FILE_UPLOAD_MAX_MEMORY_SIZE = 26214400
+
 # OTP configuration
 USE_MOCK_SMS = os.environ.get('USE_MOCK_SMS', 'True').lower() == 'true'
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')

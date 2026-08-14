@@ -188,13 +188,22 @@ export default function Verify({ navigation }: any) {
               const durationStr = item.duration_formatted || '--';
 
               const rawUrl = item.photo_url || item.photo;
-              const photoUri = rawUrl
-                ? (rawUrl.startsWith('http') || rawUrl.startsWith('data:'))
-                  ? rawUrl
-                  : rawUrl.startsWith('/')
-                  ? `${CONFIG.API_BASE_URL}${rawUrl}`
-                  : `${CONFIG.API_BASE_URL}/media/${rawUrl.replace(/^media\//, '')}`
-                : null;
+              let photoUri: string | null = null;
+              if (rawUrl) {
+                if (rawUrl.startsWith('data:')) {
+                  photoUri = rawUrl;
+                } else if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+                  if (rawUrl.startsWith('https://') && (rawUrl.includes('192.168.') || rawUrl.includes('10.0.') || rawUrl.includes('127.0.0.1') || rawUrl.includes('localhost'))) {
+                    photoUri = rawUrl.replace('https://', 'http://');
+                  } else {
+                    photoUri = rawUrl;
+                  }
+                } else if (rawUrl.startsWith('/')) {
+                  photoUri = `${CONFIG.API_BASE_URL}${rawUrl}`;
+                } else {
+                  photoUri = `${CONFIG.API_BASE_URL}/media/${rawUrl.replace(/^media\//, '')}`;
+                }
+              }
 
               return (
                 <View key={item.id} style={styles.vCard}>
