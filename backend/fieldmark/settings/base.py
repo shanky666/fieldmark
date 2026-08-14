@@ -19,6 +19,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# Reverse Proxy SSL Header for Render / PaaS deployment
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

@@ -29,29 +29,24 @@ export async function syncOfflineQueue(): Promise<boolean> {
 
   for (const record of queue) {
     try {
-      // 1. Get S3 pre-signed upload URL
-      const presignResponse = await apiClient.post('/api/s3/presign/', {
-        filename: 'offline_attendance.jpg',
-        content_type: 'image/jpeg',
-      });
-      const { upload_url, s3_key } = presignResponse.data;
-
-      // 2. Upload file via binary PUT
-      const uploadResult = await FileSystem.uploadAsync(upload_url, record.photo_local_uri, {
-        httpMethod: 'PUT',
-        headers: { 'Content-Type': 'image/jpeg' },
-        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-      });
-
-      if (uploadResult.status !== 200 && uploadResult.status !== 201) {
-        throw new Error(`S3 upload failed with status ${uploadResult.status}`);
+      // Direct Render Upload: Read local offline photo as Base64
+      let photoPayload: string = record.photo_local_uri;
+      if (record.photo_local_uri && !record.photo_local_uri.startsWith('http') && !record.photo_local_uri.startsWith('data:')) {
+        try {
+          const base64Data = await FileSystem.readAsStringAsync(record.photo_local_uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          photoPayload = `data:image/jpeg;base64,${base64Data}`;
+        } catch (readErr) {
+          console.warn('Could not read offline record photo as Base64', readErr);
+        }
       }
 
-      // 3. Post attendance check-in record
+      // Post attendance check-in record directly to Render
       await apiClient.post('/api/attendance/', {
         latitude: record.latitude,
         longitude: record.longitude,
-        photo_url: s3_key,
+        photo_url: photoPayload,
         device_id: record.device_id,
         marked_at: record.marked_at,
         is_offline_submission: true,

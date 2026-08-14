@@ -1,0 +1,11 @@
+{
+  "name": "fieldmark-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix app start",
+    "android": "npm --prefix app run android",
+    "bundle:android": "npm --prefix app run bundle:android",
+    "build:apk": "npm --prefix app run build:apk"
+  }
+}

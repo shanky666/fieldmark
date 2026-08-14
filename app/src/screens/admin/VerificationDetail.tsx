@@ -139,11 +139,11 @@ export default function VerificationDetail({ route, navigation }: VerificationDe
 
   const rawUrl = record.photo_url || record.photo;
   const photoUri = rawUrl
-    ? rawUrl.startsWith('http')
+    ? (rawUrl.startsWith('http') || rawUrl.startsWith('data:'))
       ? rawUrl
       : rawUrl.startsWith('/')
       ? `${CONFIG.API_BASE_URL}${rawUrl}`
-      : `${CONFIG.API_BASE_URL}/api/media-serve/?key=${rawUrl.replace(/^media\//, '')}`
+      : `${CONFIG.API_BASE_URL}/media/${rawUrl.replace(/^media\//, '')}`
     : null;
 
   return (

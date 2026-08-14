@@ -46,6 +46,8 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
             return None
         url = str(obj.photo_url)
         if url.startswith('http://') or url.startswith('https://') or url.startswith('data:'):
+            if url.startswith('http://') and 'localhost' not in url and '127.0.0.1' not in url:
+                return url.replace('http://', 'https://', 1)
             return url
         
         # S3 / R2 Presigned GET URL handling for deployed environments
@@ -60,11 +62,14 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
                     endpoint_url=settings.AWS_S3_ENDPOINT_URL,
                     config=boto3.session.Config(signature_version='s3v4')
                 )
-                return s3_client.generate_presigned_url(
+                res = s3_client.generate_presigned_url(
                     'get_object',
                     Params={'Bucket': settings.AWS_STORAGE_BUCKET_NAME, 'Key': url},
                     ExpiresIn=3600
                 )
+                if res.startswith('http://') and 'localhost' not in res and '127.0.0.1' not in res:
+                    return res.replace('http://', 'https://', 1)
+                return res
             except Exception:
                 pass
                 
@@ -78,7 +83,10 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
 
         request = self.context.get('request')
         if request:
-            return request.build_absolute_uri(relative_path)
+            full_uri = request.build_absolute_uri(relative_path)
+            if full_uri.startswith('http://') and 'localhost' not in full_uri and '127.0.0.1' not in full_uri:
+                return full_uri.replace('http://', 'https://', 1)
+            return full_uri
         return relative_path
 
     def validate(self, data):
@@ -88,6 +96,32 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
 
         user = request.user
         data['worker'] = user
+
+        # Process Base64 photo payloads directly into Render media storage
+        photo_url_val = self.initial_data.get('photo_url') or data.get('photo_url')
+        if photo_url_val and isinstance(photo_url_val, str) and photo_url_val.startswith('data:image'):
+            import base64, uuid, os
+            from django.conf import settings
+            try:
+                header, encoded = photo_url_val.split(',', 1)
+                file_ext = 'jpg'
+                if 'png' in header:
+                    file_ext = 'png'
+                elif 'webp' in header:
+                    file_ext = 'webp'
+                
+                img_bytes = base64.b64decode(encoded)
+                filename = f"checkin_{uuid.uuid4().hex[:12]}.{file_ext}"
+                relative_path = f"attendance/{filename}"
+                target_path = os.path.join(settings.MEDIA_ROOT, 'attendance', filename)
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                
+                with open(target_path, 'wb') as f:
+                    f.write(img_bytes)
+                
+                data['photo_url'] = relative_path
+            except Exception as exc:
+                pass
 
         # Always determine the attendance day from the server's IST date.
         # This prevents yesterday's attendance from blocking today's check-in.

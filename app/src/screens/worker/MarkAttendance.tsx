@@ -195,30 +195,24 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         return;
       }
 
-      // Online check-in path: S3 Presign + Upload + Submit API
-      // 1. Get presigned upload URL
-      const presignRes = await apiClient.post('/api/s3/presign/', {
-        filename: 'checkin.jpg',
-        content_type: 'image/jpeg'
-      });
-      const { upload_url, s3_key } = presignRes.data;
-
-      // 2. Binary content PUT upload via FileSystem
-      const uploadRes = await FileSystem.uploadAsync(upload_url, photoUri!, {
-        httpMethod: 'PUT',
-        headers: { 'Content-Type': 'image/jpeg' },
-        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT
-      });
-
-      if (uploadRes.status !== 200 && uploadRes.status !== 201) {
-        throw new Error("Photo upload to storage container failed.");
+      // Online check-in path: Direct Render Upload
+      let photoPayload: string = photoUri!;
+      if (photoUri && !photoUri.startsWith('http') && !photoUri.startsWith('data:')) {
+        try {
+          const base64Data = await FileSystem.readAsStringAsync(photoUri, {
+            encoding: FileSystem.EncodingType.Base64
+          });
+          photoPayload = `data:image/jpeg;base64,${base64Data}`;
+        } catch (readErr) {
+          console.warn("Could not read local photo file as Base64", readErr);
+        }
       }
 
-      // 3. Post AttendanceRecord with photo-time GPS coordinates
+      // Post AttendanceRecord with photo-time GPS coordinates directly to Render
       await apiClient.post('/api/attendance/', {
         latitude: submitLat,
         longitude: submitLng,
-        photo_url: s3_key,
+        photo_url: photoPayload,
         device_id: devId,
         marked_at: timestamp,
         liveness_passed: !clientLivenessBypassed,

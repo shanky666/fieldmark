@@ -8,7 +8,10 @@ export function useNetworkStatus(): boolean {
     async function checkNetwork() {
       try {
         const state = await Network.getNetworkStateAsync();
-        setIsOnline(!!state.isConnected && !!state.isInternetReachable);
+        // On Android, isInternetReachable can be false/null even with active connection.
+        // If isConnected is true, we consider the device online.
+        const online = state.isConnected !== false && (state.isInternetReachable !== false || state.isConnected === true);
+        setIsOnline(online);
       } catch (e) {
         setIsOnline(true); // Fallback to online
       }

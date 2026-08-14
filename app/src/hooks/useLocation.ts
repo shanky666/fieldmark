@@ -14,7 +14,17 @@ export interface LocationState {
 
 export function formatGeocodeAddress(item: Location.LocationGeocodedAddress): string {
   if (!item) return '';
-  const streetPart = [item.streetNumber, item.street].filter(Boolean).join(' ');
+  
+  // Filter out obscure POI/Gate/Site names like 'Site Gate 2'
+  let namePart = item.name || '';
+  if (/site|gate|plot|building|door|facility|unit|block|temp/i.test(namePart) || /^\d+$/.test(namePart)) {
+    namePart = '';
+  }
+  if (namePart === item.street || namePart === item.city || namePart === item.district) {
+    namePart = '';
+  }
+
+  const streetPart = [namePart, item.streetNumber, item.street].filter(Boolean).join(' ');
   const locality = item.district || item.subregion || item.city;
   const regionPart = [item.city, item.region].filter(Boolean).filter(x => x !== locality).join(', ');
   
@@ -22,33 +32,30 @@ export function formatGeocodeAddress(item: Location.LocationGeocodedAddress): st
   if (parts.length > 0) {
     return parts.join(', ');
   }
-  return [item.name, item.city || item.region].filter(Boolean).join(', ');
+  return [item.city, item.region].filter(Boolean).join(', ');
 }
 
 export async function fetchLiveAddress(lat: number, lng: number): Promise<string> {
-  // 1. Try Nominatim (OpenStreetMap live API) for accurate live street address
+  // 1. Live OpenStreetMap Nominatim reverse geocode for exact street address
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
-      headers: { 'User-Agent': 'FieldMarkApp/1.0' }
+      headers: { 'User-Agent': 'FieldMarkApp/1.0 (contact@fieldmark.org)' }
     });
     if (res.ok) {
       const data = await res.json();
       if (data && data.address) {
         const a = data.address;
-        const road = a.road || a.pedestrian || a.suburb || a.neighbourhood || a.residential;
-        const locality = a.suburb || a.neighbourhood || a.city_district || a.district || a.city || a.town || a.village;
-        const cityState = [a.city || a.town || a.county, a.state, a.postcode].filter(Boolean).filter(x => x !== locality).join(', ');
-        
-        const parts = [road, locality, cityState].filter(Boolean);
+        const road = a.road || a.pedestrian || a.path || a.suburb || a.neighbourhood;
+        const locality = a.suburb || a.neighbourhood || a.quarter || a.city_district || a.city || a.town;
+        const city = a.city || a.town || a.county;
+        const parts = [road, locality, city !== locality ? city : null, a.postcode].filter(Boolean);
         if (parts.length > 0) {
-          return parts.join(', ');
-        } else if (data.display_name) {
-          return data.display_name.split(', ').slice(0, 3).join(', ');
+          return Array.from(new Set(parts)).join(', ');
         }
       }
     }
   } catch (e) {
-    console.warn("Nominatim reverse geocode failed, trying Expo fallback", e);
+    console.warn("Nominatim live geocode fetch failed, using fallback", e);
   }
 
   // 2. Native Expo reverse geocode fallback
