@@ -168,7 +168,7 @@ export default function VerificationDetail({ route, navigation }: VerificationDe
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Photo view */}
         <View style={styles.imageCard}>
-          <Image source={{ uri: photoUri }} style={styles.image} resizeMode="cover" />
+          <Image source={{ uri: photoUri || undefined }} style={styles.image} resizeMode="cover" />
         </View>
 
         {/* Worker & Shift Details Card */}

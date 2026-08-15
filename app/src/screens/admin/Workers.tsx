@@ -6,12 +6,11 @@ export default function Workers({ navigation }: any) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedZoneFilter, setSelectedZoneFilter] = useState('all');
 
-  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [addModalType, setAddModalType] = useState<'WORKER' | 'SUPERVISOR' | null>(null);
   const [fname, setFname] = useState('');
   const [lname, setLname] = useState('');
   const [phone, setPhone] = useState('');
   const [employeeIdInput, setEmployeeIdInput] = useState('');
-  const [role, setRole] = useState('WORKER');
   const [initialPassword, setInitialPassword] = useState('');
 
   const [zonesList, setZonesList] = useState<any[]>([]);
@@ -81,13 +80,13 @@ export default function Workers({ navigation }: any) {
         name: `${fname.trim()} ${lname.trim()}`.trim(),
         employee_id: employeeIdInput.trim() || undefined,
         phone: phone.trim(),
-        role: role,
+        role: addModalType || 'WORKER',
         password: initialPassword.trim()
       });
 
-      setAddModalVisible(false);
+      setAddModalType(null);
       setFname(''); setLname(''); setPhone(''); setEmployeeIdInput(''); setInitialPassword('');
-      Alert.alert('Worker Added', `✓ ${fname} registered in database.`);
+      Alert.alert('Success', `✓ ${fname} registered as ${addModalType === 'SUPERVISOR' ? 'Supervisor' : 'Employee'}.`);
       fetchWorkers();
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || 'Failed to add worker to database.');
@@ -181,18 +180,31 @@ export default function Workers({ navigation }: any) {
 
       </ScrollView>
 
-      {/* Floating Action Button (+) */}
-      <TouchableOpacity style={styles.fab} onPress={() => setAddModalVisible(true)} activeOpacity={0.85}>
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
+      {/* Bottom Action Buttons instead of single FAB */}
+      <View style={styles.actionButtonsContainer}>
+        <TouchableOpacity style={styles.actionButton} onPress={() => setAddModalType('WORKER')} activeOpacity={0.85}>
+          <Text style={styles.actionButtonIcon}>+</Text>
+          <Text style={styles.actionButtonText}>Create Employee</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.actionButton, styles.actionButtonSup]} onPress={() => setAddModalType('SUPERVISOR')} activeOpacity={0.85}>
+          <Text style={styles.actionButtonIcon}>+</Text>
+          <Text style={styles.actionButtonText}>Create Supervisor</Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Add Worker Sheet Modal */}
-      <Modal visible={addModalVisible} transparent animationType="slide">
+      {/* Add Worker/Supervisor Sheet Modal */}
+      <Modal visible={addModalType !== null} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Add Employee</Text>
-            <Text style={styles.modalSub}>Register a new employee into the database.</Text>
+            <Text style={styles.modalTitle}>
+              {addModalType === 'SUPERVISOR' ? 'Add Supervisor' : 'Add Employee'}
+            </Text>
+            <Text style={styles.modalSub}>
+              {addModalType === 'SUPERVISOR' 
+                ? 'Register a new supervisor into the database.' 
+                : 'Register a new employee into the database.'}
+            </Text>
 
             <View style={styles.fieldRow}>
               <View style={styles.fieldFlex}>
@@ -216,21 +228,18 @@ export default function Workers({ navigation }: any) {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>DESIGNATION / ROLE</Text>
-              <TextInput style={styles.input} placeholder="Technician, Mason, Engineer" placeholderTextColor="#9BAFA2" value={role} onChangeText={setRole} />
-            </View>
-
-            <View style={styles.field}>
               <Text style={styles.label}>INITIAL PASSWORD</Text>
               <TextInput style={styles.input} placeholder="Enter a password" placeholderTextColor="#9BAFA2" value={initialPassword} onChangeText={setInitialPassword} secureTextEntry />
             </View>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.btnGhost} onPress={() => setAddModalVisible(false)}>
+              <TouchableOpacity style={styles.btnGhost} onPress={() => setAddModalType(null)}>
                 <Text style={styles.btnGhostText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.btnPrimary} onPress={saveNewWorker}>
-                <Text style={styles.btnPrimaryText}>Save Employee</Text>
+                <Text style={styles.btnPrimaryText}>
+                  {addModalType === 'SUPERVISOR' ? 'Save Supervisor' : 'Save Employee'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -372,27 +381,6 @@ const styles = StyleSheet.create({
     color: '#63796B',
     marginTop: 4,
   },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 20,
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#2F8F5B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#1F6B42',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  fabIcon: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '300',
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(10, 20, 14, 0.6)',
@@ -480,6 +468,45 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  actionButtonsContainer: {
+    position: 'absolute',
+    bottom: 24,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    backgroundColor: '#2F8F5B',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#1F6B42',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  actionButtonSup: {
+    backgroundColor: '#B9791C',
+    shadowColor: '#935F12',
+  },
+  actionButtonIcon: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '600',
+    marginRight: 6,
+    marginTop: -2,
+  },
+  actionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
 
