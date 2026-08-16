@@ -12,7 +12,7 @@ export function useCamera() {
     setIsCapturing(true);
     try {
       const options = {
-        quality: 0.8,
+        quality: 0.85,
         skipProcessing: false,
       };
       

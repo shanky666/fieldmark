@@ -168,7 +168,13 @@ export default function VerificationDetail({ route, navigation }: VerificationDe
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Photo view */}
         <View style={styles.imageCard}>
-          <Image source={{ uri: photoUri || undefined }} style={styles.image} resizeMode="cover" />
+          {photoUri ? (
+            <Image source={{ uri: photoUri }} style={styles.image} resizeMode="cover" />
+          ) : (
+            <View style={[styles.image, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#F1F5F9' }]}>
+              <Text style={{ color: '#64748B' }}>📷 No Photo Available</Text>
+            </View>
+          )}
         </View>
 
         {/* Worker & Shift Details Card */}

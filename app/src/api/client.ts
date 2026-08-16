@@ -80,6 +80,15 @@ apiClient.interceptors.response.use(
         }
       }
     }
+
+    if (!error.response) {
+      if (error.code === 'ECONNABORTED') {
+        error.message = `Connection timed out. Server at ${CONFIG.API_BASE_URL} took too long to respond.`;
+      } else if (error.message === 'Network Error' || error.code === 'ERR_NETWORK') {
+        error.message = `Network Error: Unable to connect to server at ${CONFIG.API_BASE_URL}. Please check if the Django backend is running.`;
+      }
+    }
+
     return Promise.reject(error);
   }
 );

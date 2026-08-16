@@ -112,7 +112,7 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         // Take the photo and capture GPS simultaneously for accuracy
         const [photo, freshLocation] = await Promise.all([
           cameraRef.current.takePictureAsync({
-            quality: 0.5,
+            quality: 0.85,
             skipProcessing: false,
           }),
           // Fresh GPS fix at the exact moment of capture
