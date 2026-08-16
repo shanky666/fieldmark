@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, Switch, TouchableOpacity, Alert, TextInput, ActivityIndicator, Modal } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
 
 export default function Settings() {
+  const navigation = useNavigation<any>();
   const { logout } = useAuthStore();
 
   const [shifts, setShifts] = useState<any[]>([]);
@@ -298,13 +300,19 @@ export default function Settings() {
           </View>
         </View>
 
-        {/* Admin Management */}
+        {/* Staff & Admin Management */}
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Admin management</Text>
+          <Text style={styles.sectionTitle}>Staff & Admin management</Text>
         </View>
         <View style={styles.groupCard}>
+          <TouchableOpacity style={styles.itemRow} onPress={() => navigation.navigate('AddSupervisor')}>
+            <Text style={[styles.itemText, { color: '#B9791C', fontWeight: '700' }]}>+ Add new supervisor</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.itemRow} onPress={() => navigation.navigate('AddWorker', { role: 'WORKER' })}>
+            <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>+ Add new employee</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => setAddAdminVisible(true)}>
-            <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>+ Add new admin</Text>
+            <Text style={[styles.itemText, { color: '#1A6DB5', fontWeight: '700' }]}>+ Add new admin</Text>
           </TouchableOpacity>
         </View>
 

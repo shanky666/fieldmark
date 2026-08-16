@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useTranslation } from 'react-i18next';
 
@@ -8,14 +9,18 @@ import { apiClient } from '../../api/client';
 import { AdminStackParamList } from '../../navigation/AdminNavigator';
 
 type AddWorkerScreenNavProp = StackNavigationProp<AdminStackParamList, 'AddWorker'>;
+type AddWorkerScreenRouteProp = RouteProp<AdminStackParamList, 'AddWorker'>;
 
 interface AddWorkerProps {
-  navigation: AddWorkerScreenNavProp;
+  navigation: any;
+  route?: any;
 }
 
-export default function AddWorker({ navigation }: AddWorkerProps) {
+export default function AddWorker({ navigation, route }: AddWorkerProps) {
   const { t } = useTranslation();
+  const initialRole = route?.params?.role || 'WORKER';
 
+  const [accountRole, setAccountRole] = useState<'WORKER' | 'SUPERVISOR'>(initialRole);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [employeeId, setEmployeeId] = useState('');
@@ -75,7 +80,7 @@ export default function AddWorker({ navigation }: AddWorkerProps) {
     setSubmitting(true);
     try {
       await apiClient.post('/api/workers/list/', {
-        username: fullPhone, // matches USERNAME_FIELD phone requirements
+        username: fullPhone,
         name,
         phone: fullPhone,
         employee_id: employeeId,
@@ -83,14 +88,19 @@ export default function AddWorker({ navigation }: AddWorkerProps) {
         assigned_zone: selectedZoneId,
         password,
         contract_start_date: contractStart || null,
-        contract_end_date: contractEnd || null
+        contract_end_date: contractEnd || null,
+        is_staff: accountRole === 'SUPERVISOR',
+        role: accountRole
       });
 
-      Alert.alert(t('common.success'), "Worker registered successfully.");
+      const successMsg = accountRole === 'SUPERVISOR' 
+        ? "Supervisor registered successfully." 
+        : "Employee registered successfully.";
+      Alert.alert(t('common.success'), successMsg);
       navigation.goBack();
     } catch (e: any) {
-      console.error("Worker register error", e);
-      const msg = e.response?.data?.message || "Failed to register worker. Check employee ID or phone uniqueness.";
+      console.error("User register error", e);
+      const msg = e.response?.data?.message || "Failed to register. Check employee ID or phone uniqueness.";
       Alert.alert(t('common.error'), msg);
     } finally {
       setSubmitting(false);
@@ -112,10 +122,37 @@ export default function AddWorker({ navigation }: AddWorkerProps) {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← {t('common.back')}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('admin.addWorker')}</Text>
+        <Text style={styles.headerTitle}>
+          {accountRole === 'SUPERVISOR' ? 'Add New Supervisor' : 'Add New Employee'}
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
+        {/* Role Selector Segment */}
+        <View style={styles.roleSegmentCard}>
+          <Text style={styles.roleSegmentLabel}>ACCOUNT ROLE</Text>
+          <View style={styles.roleSegmentRow}>
+            <TouchableOpacity 
+              style={[styles.roleBtn, accountRole === 'WORKER' && styles.roleBtnActive]}
+              onPress={() => setAccountRole('WORKER')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.roleBtnText, accountRole === 'WORKER' && styles.roleBtnTextActive]}>
+                👷 Employee
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.roleBtn, accountRole === 'SUPERVISOR' && styles.roleBtnActiveSupervisor]}
+              onPress={() => setAccountRole('SUPERVISOR')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.roleBtnText, accountRole === 'SUPERVISOR' && styles.roleBtnTextActive]}>
+                👨‍💼 Supervisor
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.card}>
           {/* Name */}
           <Text style={styles.label}>Full Name *</Text>
@@ -285,6 +322,52 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
     textTransform: 'uppercase',
+  },
+  roleSegmentCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 14,
+  },
+  roleSegmentLabel: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: COLORS.lightText,
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  roleSegmentRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  roleBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: COLORS.lightGray,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  roleBtnActive: {
+    backgroundColor: '#2F8F5B',
+    borderColor: '#2F8F5B',
+  },
+  roleBtnActiveSupervisor: {
+    backgroundColor: '#B9791C',
+    borderColor: '#B9791C',
+  },
+  roleBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.darkText,
+  },
+  roleBtnTextActive: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   input: {
     height: 44,

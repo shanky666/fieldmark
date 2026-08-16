@@ -23,7 +23,8 @@ export type AdminStackParamList = {
   AdminTabs: undefined;
   VerificationDetail: { recordId: number };
   WorkerDetail: { workerId: number };
-  AddWorker: undefined;
+  AddWorker: { role?: 'WORKER' | 'SUPERVISOR' } | undefined;
+  AddSupervisor: { role?: 'WORKER' | 'SUPERVISOR' } | undefined;
   AdminGrievanceDetail: { threadId: string; employeeName: string };
 };
 
@@ -117,6 +118,7 @@ export default function AdminNavigator() {
       <Stack.Screen name="VerificationDetail" component={VerificationDetail} />
       <Stack.Screen name="WorkerDetail" component={WorkerDetail} />
       <Stack.Screen name="AddWorker" component={AddWorker} />
+      <Stack.Screen name="AddSupervisor" component={AddWorker} initialParams={{ role: 'SUPERVISOR' }} />
       <Stack.Screen name="AdminGrievanceDetail" component={AdminGrievanceDetail} />
     </Stack.Navigator>
   );

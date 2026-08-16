@@ -31,7 +31,7 @@ class WorkerSerializer(serializers.ModelSerializer):
             'id', 'phone', 'name', 'employee_id', 'password', 'worker_type', 
             'assigned_zone', 'zone_detail', 'shift', 'shift_detail', 'supervisor_name',
             'contract_start_date', 'contract_end_date', 'profile_photo_url', 
-            'fcm_token', 'preferred_language', 'is_active', 'created_at',
+            'fcm_token', 'preferred_language', 'is_active', 'is_staff', 'created_at',
             'last_password_reset_at', 'password_reset_by_name',
             'last_status_changed_at', 'status_changed_by_name', 'created_by_name'
         ]
@@ -46,6 +46,10 @@ class WorkerSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop('password', None) or self.initial_data.get('password')
+        is_staff = validated_data.get('is_staff', False)
+        if 'is_staff' in self.initial_data:
+            is_staff = str(self.initial_data.get('is_staff')).lower() in ['true', '1']
+
         user = Worker.objects.create_user(
             phone=validated_data['phone'],
             name=validated_data.get('name', ''),
@@ -56,7 +60,8 @@ class WorkerSerializer(serializers.ModelSerializer):
             contract_start_date=validated_data.get('contract_start_date'),
             contract_end_date=validated_data.get('contract_end_date'),
             preferred_language=validated_data.get('preferred_language', Worker.LanguageChoices.EN),
-            is_active=validated_data.get('is_active', True)
+            is_active=validated_data.get('is_active', True),
+            is_staff=is_staff
         )
         if password:
             user.set_password(password)
