@@ -195,16 +195,35 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         return;
       }
 
-      // Online check-in path: Direct Render Upload
+      // Online check-in path: Stream binary photo upload to Render / S3
       let photoPayload: string = photoUri!;
       if (photoUri && !photoUri.startsWith('http') && !photoUri.startsWith('data:')) {
         try {
-          const base64Data = await FileSystem.readAsStringAsync(photoUri, {
-            encoding: FileSystem.EncodingType.Base64
+          // Request presigned / mock upload URL from Django
+          const presignRes = await apiClient.post('/api/s3/presign/', {
+            filename: `attendance_${Date.now()}.jpg`,
+            content_type: 'image/jpeg'
           });
-          photoPayload = `data:image/jpeg;base64,${base64Data}`;
-        } catch (readErr) {
-          console.warn("Could not read local photo file as Base64", readErr);
+          const { upload_url, s3_key } = presignRes.data;
+
+          // Stream binary file directly via FileSystem.uploadAsync (avoids base64 JSON bloat)
+          await FileSystem.uploadAsync(upload_url, photoUri, {
+            httpMethod: 'PUT',
+            headers: { 'Content-Type': 'image/jpeg' },
+            uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT
+          });
+
+          photoPayload = s3_key;
+        } catch (uploadErr) {
+          console.warn("Binary stream upload failed, falling back to base64", uploadErr);
+          try {
+            const base64Data = await FileSystem.readAsStringAsync(photoUri, {
+              encoding: FileSystem.EncodingType.Base64
+            });
+            photoPayload = `data:image/jpeg;base64,${base64Data}`;
+          } catch (readErr) {
+            console.warn("Could not read local photo file as Base64", readErr);
+          }
         }
       }
 
