@@ -81,12 +81,28 @@ export default function Leave({ navigation }: any) {
       fetchLeaveData();
     } catch (e: any) {
       console.error('[LEAVE] Submit failed:', e?.response?.data || e?.message || e);
-      Alert.alert(
-        'Error',
-        e?.response?.data?.detail ||
-        e?.response?.data?.error ||
-        'Failed to submit leave request. Please try again.'
-      );
+      const data = e?.response?.data;
+      let msg = 'Failed to submit leave request. Please try again.';
+      if (data?.detail) {
+        msg = data.detail;
+      } else if (typeof data?.error === 'string') {
+        msg = data.error;
+      } else if (data && typeof data === 'object') {
+        const errors: string[] = [];
+        Object.keys(data).forEach((key) => {
+          const val = data[key];
+          if (Array.isArray(val)) {
+            errors.push(`${key.replace('_', ' ')}: ${val.join(', ')}`);
+          } else if (typeof val === 'string') {
+            errors.push(val);
+          }
+        });
+        if (errors.length > 0) msg = errors.join('\n');
+      } else if (e?.message) {
+        msg = e.message;
+      }
+
+      Alert.alert('Submission Notice', msg);
     } finally {
       setSubmitting(false);
     }

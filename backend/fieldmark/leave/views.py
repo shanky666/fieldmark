@@ -13,6 +13,9 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveRequestSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def perform_create(self, serializer):
+        serializer.save(worker=self.request.user)
+
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
