@@ -309,7 +309,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: true,
         isLoggingIn: false,
 
-        role: 'WORKER',
+        role: (role as UserRole) || 'WORKER',
 
         workerId: worker_id
           ? Number(worker_id)
@@ -622,7 +622,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         '/api/workers/me/'
       );
 
-      if (res.data) {
+      if (res.data && typeof res.data === 'object' && res.data.id) {
         set({
           userProfile: {
             ...res.data,

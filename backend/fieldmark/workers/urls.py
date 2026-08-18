@@ -8,5 +8,6 @@ router.register(r'zones', ZoneViewSet, basename='zone')
 router.register(r'list', WorkerViewSet, basename='worker')
 
 urlpatterns = [
+    path('me/', WorkerViewSet.as_view({'get': 'me'}), name='worker-me-direct'),
     path('', include(router.urls)),
 ]
