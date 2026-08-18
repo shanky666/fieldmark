@@ -1,8 +1,9 @@
 import { Platform } from 'react-native';
 
 const getApiBaseUrl = () => {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+  const envUrl = (process.env as any).EXPO_PUBLIC_API_URL;
+  if (envUrl) {
+    return envUrl;
   }
 
   if (Platform.OS === 'web') {

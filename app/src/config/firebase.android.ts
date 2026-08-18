@@ -14,7 +14,7 @@ import auth from '@react-native-firebase/auth';
 export const firebaseConfig = {
   // Config is read from google-services.json by the native Firebase SDK
   // These values are kept for reference only
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'fieldmark-atia-c178d',
+  projectId: (process.env as any).EXPO_PUBLIC_FIREBASE_PROJECT_ID || 'fieldmark-atia-c178d',
 };
 
 export interface FirebaseUser {

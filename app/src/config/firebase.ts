@@ -12,14 +12,16 @@ import {
   ConfirmationResult,
 } from 'firebase/auth';
 
+const env = process.env as any;
+
 export const firebaseConfig = {
-  apiKey:            process.env.EXPO_PUBLIC_FIREBASE_API_KEY            || 'AIzaSyCf_heThSYHIUDQVu85RbSqAvOqDtzLtIA',
-  authDomain:        process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN        || 'fieldmark-atia-c178d.firebaseapp.com',
-  projectId:         process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID         || 'fieldmark-atia-c178d',
-  storageBucket:     process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET     || 'fieldmark-atia-c178d.firebasestorage.app',
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID|| '709305379833',
-  appId:             process.env.EXPO_PUBLIC_FIREBASE_APP_ID             || '1:709305379833:web:cc550f8f2833507e7a6b28',
-  measurementId:     process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID     || 'G-VBYL2F1RR9',
+  apiKey:            env.EXPO_PUBLIC_FIREBASE_API_KEY            || 'AIzaSyCf_heThSYHIUDQVu85RbSqAvOqDtzLtIA',
+  authDomain:        env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN        || 'fieldmark-atia-c178d.firebaseapp.com',
+  projectId:         env.EXPO_PUBLIC_FIREBASE_PROJECT_ID         || 'fieldmark-atia-c178d',
+  storageBucket:     env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET     || 'fieldmark-atia-c178d.firebasestorage.app',
+  messagingSenderId: env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID|| '709305379833',
+  appId:             env.EXPO_PUBLIC_FIREBASE_APP_ID             || '1:709305379833:web:cc550f8f2833507e7a6b28',
+  measurementId:     env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID     || 'G-VBYL2F1RR9',
 };
 
 export interface FirebaseUser {
