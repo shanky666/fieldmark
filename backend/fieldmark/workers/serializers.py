@@ -44,6 +44,31 @@ class WorkerSerializer(serializers.ModelSerializer):
                 return supervisor.name
         return None
 
+    def validate_employee_id(self, value):
+        if not value or not str(value).strip():
+            return None
+        clean_val = str(value).strip()
+        instance = getattr(self, 'instance', None)
+        qs = Worker.objects.filter(employee_id__iexact=clean_val)
+        if instance:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("An account with this Employee ID already exists.")
+        return clean_val
+
+    def validate_phone(self, value):
+        if not value:
+            raise serializers.ValidationError("Phone number is required.")
+        from fieldmark.auth_otp.views import normalize_phone
+        norm_phone = normalize_phone(value)
+        instance = getattr(self, 'instance', None)
+        qs = Worker.objects.filter(phone=norm_phone)
+        if instance:
+            qs = qs.exclude(pk=instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("An account with this Phone number already exists.")
+        return norm_phone
+
     def create(self, validated_data):
         password = validated_data.pop('password', None) or self.initial_data.get('password')
         is_staff = validated_data.get('is_staff', False)

@@ -79,19 +79,23 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
 
     setSubmitting(true);
     try {
-      await apiClient.post('/api/workers/list/', {
-        username: fullPhone,
-        name,
+      const payload: any = {
+        name: name.trim(),
         phone: fullPhone,
-        employee_id: employeeId,
         worker_type: workerType,
         assigned_zone: selectedZoneId,
         password,
-        contract_start_date: contractStart || null,
-        contract_end_date: contractEnd || null,
+        contract_start_date: contractStart.trim() || null,
+        contract_end_date: contractEnd.trim() || null,
         is_staff: accountRole === 'SUPERVISOR',
         role: accountRole
-      });
+      };
+
+      if (employeeId.trim()) {
+        payload.employee_id = employeeId.trim();
+      }
+
+      await apiClient.post('/api/workers/list/', payload);
 
       const successMsg = accountRole === 'SUPERVISOR' 
         ? "Supervisor registered successfully." 
@@ -100,7 +104,14 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
       navigation.goBack();
     } catch (e: any) {
       console.error("User register error", e);
-      const msg = e.response?.data?.message || "Failed to register. Check employee ID or phone uniqueness.";
+      let msg = e.response?.data?.message;
+      if (!msg && e.response?.data && typeof e.response.data === 'object') {
+        const fieldErrors = Object.entries(e.response.data)
+          .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+          .join('\n');
+        if (fieldErrors) msg = fieldErrors;
+      }
+      if (!msg) msg = e?.message || "Failed to register worker. Please check your inputs.";
       Alert.alert(t('common.error'), msg);
     } finally {
       setSubmitting(false);
