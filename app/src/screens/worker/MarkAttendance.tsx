@@ -112,7 +112,7 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
         // Take the photo and capture GPS simultaneously for accuracy
         const [photo, freshLocation] = await Promise.all([
           cameraRef.current.takePictureAsync({
-            quality: 0.85,
+            quality: 0.45,
             skipProcessing: false,
           }),
           // Fresh GPS fix at the exact moment of capture
@@ -204,7 +204,10 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
             filename: `attendance_${Date.now()}.jpg`,
             content_type: 'image/jpeg'
           });
-          const { upload_url, s3_key } = presignRes.data;
+          let { upload_url, s3_key } = presignRes.data;
+          if (upload_url && upload_url.startsWith('http://') && upload_url.includes('onrender.com')) {
+            upload_url = upload_url.replace('http://', 'https://');
+          }
 
           // Stream binary file directly via FileSystem.uploadAsync (avoids base64 JSON bloat)
           await FileSystem.uploadAsync(upload_url, photoUri, {

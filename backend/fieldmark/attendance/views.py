@@ -75,8 +75,11 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         record = serializer.save()
-        # Trigger Celery checks asynchronously
-        run_attendance_async_checks.delay(record.id)
+        # Trigger Celery checks asynchronously if broker is available
+        try:
+            run_attendance_async_checks.delay(record.id)
+        except Exception as e:
+            print(f"Async checks dispatch skipped: {e}")
 
     @action(detail=False, methods=['get'], url_path='me')
     def my_attendance(self, request):

@@ -46,6 +46,8 @@ class S3PresignView(APIView):
             # Fallback: Local mock upload url (points to our LocalMockUploadView)
             # Resolve request absolute URI to hit correct host
             host_url = request.build_absolute_uri('/')[:-1] # strip trailing slash
+            if host_url.startswith('http://') and not ('localhost' in host_url or '127.0.0.1' in host_url):
+                host_url = 'https://' + host_url[7:]
             upload_url = f"{host_url}/api/s3/mock-upload/?key={s3_key}"
 
         return Response({
