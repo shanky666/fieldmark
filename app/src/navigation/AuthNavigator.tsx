@@ -13,8 +13,6 @@ export type AuthStackParamList = {
   SupervisorLogin: undefined;
   AdminLogin: undefined;
   Register?: { role?: 'WORKER' | 'SUPERVISOR' };
-  PhoneEntry?: undefined;
-  OTPVerify?: { phone: string };
   AdminTOTP?: { sessionToken: string };
 };
 
