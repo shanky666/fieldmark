@@ -73,8 +73,31 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    def create(self, request, *args, **kwargs):
+        now_ist = timezone.now().astimezone(ist_tz)
+        hour = now_ist.hour
+        minute = now_ist.minute
+        
+        # Check-in window: 9:00 AM - 9:15 AM
+        time_valid = (hour == 9 and 0 <= minute <= 15)
+        
+        if hour < 9:
+            return Response({'error': 'too_early', 'message': 'Check-in opens at 9:00 AM.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        
+        if not time_valid:
+            # After 9:15 AM -> mark Absent
+            data['status'] = AttendanceRecord.StatusChoices.ABSENT
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
     def perform_create(self, serializer):
-        record = serializer.save()
+        record = serializer.save(worker=self.request.user)
         # Trigger Celery checks asynchronously if broker is available
         try:
             run_attendance_async_checks.delay(record.id)
@@ -219,7 +242,25 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
     def checkout(self, request):
         """Check out the authenticated worker from today's attendance record (IST date)."""
         user = request.user
-        today_ist = timezone.now().astimezone(ist_tz).date()
+        now_ist = timezone.now().astimezone(ist_tz)
+        today_ist = now_ist.date()
+        hour = now_ist.hour
+        minute = now_ist.minute
+
+        # Check-out window: 4:50 PM to 5:20 PM (16:50 to 17:20)
+        valid_checkout = (hour == 16 and minute >= 50) or (hour == 17 and minute <= 20)
+
+        if not valid_checkout:
+            if hour < 16 or (hour == 16 and minute < 50):
+                return Response(
+                    {'error': 'too_early', 'message': 'Checkout opens at 4:50 PM.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                return Response(
+                    {'error': 'too_late', 'message': 'Checkout closed at 5:20 PM.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         record = AttendanceRecord.objects.filter(
             worker=user,
@@ -242,8 +283,13 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Allow passing work_details during checkout if they want, or they can PATCH it later.
+        work_details = request.data.get('work_details')
+        if work_details:
+            record.work_details = work_details
+
         record.check_out_at = timezone.now()
-        record.save(update_fields=['check_out_at'])
+        record.save(update_fields=['check_out_at', 'work_details'])
 
         return Response(
             AttendanceRecordSerializer(record).data,

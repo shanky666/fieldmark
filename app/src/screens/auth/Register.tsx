@@ -70,27 +70,12 @@ export default function Register({ navigation, route }: Props) {
               <Text style={styles.emoji}>📝</Text>
             </View>
             <Text style={styles.title}>Register Account</Text>
-            <Text style={styles.subtitle}>Enter your details and Employee ID to register for FieldMark</Text>
+            <Text style={styles.subtitle}>
+              Register as a new field employee
+            </Text>
           </View>
 
           <View style={styles.form}>
-            
-            {/* Role selector */}
-            <Text style={styles.label}>SELECT ROLE</Text>
-            <View style={styles.roleRow}>
-              <TouchableOpacity 
-                style={[styles.roleBtn, role === 'WORKER' && styles.roleBtnActive]}
-                onPress={() => setRole('WORKER')}
-              >
-                <Text style={[styles.roleBtnText, role === 'WORKER' && styles.roleBtnTextActive]}>👷 Employee</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.roleBtn, role === 'SUPERVISOR' && styles.roleBtnActive]}
-                onPress={() => setRole('SUPERVISOR')}
-              >
-                <Text style={[styles.roleBtnText, role === 'SUPERVISOR' && styles.roleBtnTextActive]}>📋 Supervisor</Text>
-              </TouchableOpacity>
-            </View>
 
             <View style={styles.field}>
               <Text style={styles.label}>FULL NAME</Text>

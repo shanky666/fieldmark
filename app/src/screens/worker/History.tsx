@@ -106,6 +106,11 @@ export default function History() {
                     <Text style={styles.miniHours}>
                       {checkInStr} – {checkOutStr} {durationStr ? `· ${durationStr}` : ''}
                     </Text>
+                    {item.work_details ? (
+                      <Text style={{ fontSize: 11, color: '#63796B', marginTop: 4, fontStyle: 'italic' }}>
+                        Work: {item.work_details}
+                      </Text>
+                    ) : null}
                   </View>
                   <View style={[
                     styles.badge, 

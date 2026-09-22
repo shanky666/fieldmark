@@ -13,6 +13,7 @@ class AttendanceRecord(models.Model):
         APPROVED = 'APPROVED', 'Approved'
         REJECTED = 'REJECTED', 'Rejected'
         FLAGGED = 'FLAGGED', 'Flagged'
+        ABSENT = 'ABSENT', 'Absent'
 
     worker = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -22,6 +23,7 @@ class AttendanceRecord(models.Model):
     date = models.DateField(default=timezone.now)
     marked_at = models.DateTimeField(default=timezone.now)
     check_out_at = models.DateTimeField(null=True, blank=True)
+    work_details = models.TextField(null=True, blank=True)
 
     latitude = models.FloatField()
     longitude = models.FloatField()

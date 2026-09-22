@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
   SafeAreaView, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
+  ImageBackground, Image
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -16,12 +17,12 @@ interface Props {
 export default function WorkerLogin({ navigation }: Props) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const { loginWorker, isLoading } = useAuthStore();
 
   const handleLogin = async () => {
-    console.log('[BUTTON] SIGN IN PRESSED');
     if (!identifier.trim()) {
       setErrorMsg('Please enter your Employee ID or Phone number.');
       return;
@@ -46,65 +47,106 @@ export default function WorkerLogin({ navigation }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          
+          {/* Top Decorative Leaves (Placeholder) */}
+          <View style={styles.topDecorationLeft} />
+          <View style={styles.topDecorationRight} />
 
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.backArrow}>← Back</Text>
-          </TouchableOpacity>
-
-          <View style={styles.header}>
-            <View style={styles.badgeIcon}>
-              <Text style={styles.emoji}>👷</Text>
+          <View style={styles.content}>
+            
+            {/* Logo Area */}
+            <View style={styles.logoContainer}>
+              {/* Using text to approximate the logo since we don't have the image asset */}
+              <View style={styles.logoPlaceholder}>
+                <Text style={styles.logoAtfa}>Atfa</Text>
+                <Text style={styles.logoSub}>FARMER PRODUCER{'\n'}COMPANY LIMITED</Text>
+              </View>
             </View>
-            <Text style={styles.title}>Employee Login</Text>
-            <Text style={styles.subtitle}>
-              Enter your assigned User ID / Employee ID and Password
-            </Text>
+
+            {/* Title & Subtitle */}
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.title}>Field Staff Attendance App</Text>
+              <Text style={styles.subtitle}>Track  •  Monitor  •  Empower</Text>
+            </View>
+
+            {/* Login Form */}
+            <View style={styles.form}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputIcon}>👤</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Employee ID / Mobile Number"
+                  placeholderTextColor="#8F9B94"
+                  value={identifier}
+                  onChangeText={txt => { setIdentifier(txt); setErrorMsg(''); }}
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputIcon}>🔒</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor="#8F9B94"
+                  value={password}
+                  onChangeText={txt => { setPassword(txt); setErrorMsg(''); }}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIconBtn}>
+                  <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                </TouchableOpacity>
+              </View>
+
+              {errorMsg ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{errorMsg}</Text>
+                </View>
+              ) : null}
+
+              <TouchableOpacity
+                style={[styles.submitBtn, isLoading && styles.btnDisabled]}
+                onPress={handleLogin}
+                disabled={isLoading}
+                activeOpacity={0.8}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <View style={styles.submitBtnContent}>
+                    <Text style={styles.submitBtnText}>Login</Text>
+                    <Text style={styles.submitBtnArrow}>→</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.forgotBtn}>
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.addEmployeeBtn} onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.addEmployeeText}>+ Add New Employee</Text>
+              </TouchableOpacity>
+
+            </View>
           </View>
 
-          <View style={styles.form}>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>EMPLOYEE ID OR PHONE</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="e.g. EMP-101 or 9876543210"
-                placeholderTextColor="#9BAFA2"
-                value={identifier}
-                onChangeText={txt => { setIdentifier(txt); setErrorMsg(''); }}
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>PASSWORD</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter password"
-                placeholderTextColor="#9BAFA2"
-                value={password}
-                onChangeText={txt => { setPassword(txt); setErrorMsg(''); }}
-                secureTextEntry
-                autoCapitalize="none"
-              />
-            </View>
-
-            {errorMsg ? (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>⚠ {errorMsg}</Text>
+          {/* Bottom Agricultural Landscape & SFAC Branding */}
+          <View style={styles.footerContainer}>
+            {/* Background Placeholder Shape */}
+            <View style={styles.footerBgShape}>
+              <View style={styles.sfacContainer}>
+                <Text style={styles.sfacLogo}>🌱 SFAC</Text>
+                <View style={styles.sfacDivider} />
+                <View>
+                  <Text style={styles.sfacSupported}>Supported by</Text>
+                  <Text style={styles.sfacTitle}>SFAC</Text>
+                  <Text style={styles.sfacScheme}>under 10K FPO Scheme</Text>
+                </View>
               </View>
-            ) : null}
-
-            <TouchableOpacity
-              style={[styles.submitBtn, isLoading && styles.btnDisabled]}
-              onPress={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading
-                ? <ActivityIndicator color="#FFF" />
-                : <Text style={styles.submitBtnText}>Sign In</Text>}
-            </TouchableOpacity>
-
+            </View>
           </View>
 
         </ScrollView>
@@ -116,117 +158,219 @@ export default function WorkerLogin({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F7F5',
+    backgroundColor: '#FAFCFA',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'space-between',
+  },
+  topDecorationLeft: {
+    position: 'absolute',
+    top: -20,
+    left: -20,
+    width: 100,
+    height: 100,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 50,
+    opacity: 0.5,
+  },
+  topDecorationRight: {
+    position: 'absolute',
+    top: 20,
+    right: -30,
+    width: 80,
+    height: 120,
+    backgroundColor: '#E8F5E9',
+    borderBottomLeftRadius: 60,
+    opacity: 0.5,
   },
   content: {
-    padding: 24,
-    justifyContent: 'center',
-    flexGrow: 1,
-  },
-  backBtn: {
-    marginBottom: 16,
-  },
-  backArrow: {
-    fontSize: 16,
-    color: '#2D5F3E',
-    fontWeight: '600',
-  },
-  header: {
+    paddingHorizontal: 24,
+    paddingTop: 80,
     alignItems: 'center',
-    marginBottom: 32,
+    flex: 1,
   },
-  badgeIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#E2EFE7',
+  logoContainer: {
+    marginBottom: 40,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
   },
-  emoji: {
-    fontSize: 32,
+  logoPlaceholder: {
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: '#F2A900',
+    paddingBottom: 10,
+  },
+  logoAtfa: {
+    fontSize: 64,
+    fontWeight: '900',
+    color: '#0A5D31',
+    fontStyle: 'italic',
+    letterSpacing: -2,
+    lineHeight: 70,
+  },
+  logoSub: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0A5D31',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  headerTextContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1A3322',
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0A5D31',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#5C7365',
-    textAlign: 'center',
-    paddingHorizontal: 16,
+    color: '#7B8D83',
+    fontWeight: '500',
   },
   form: {
+    width: '100%',
+    maxWidth: 400,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+    borderWidth: 1.2,
+    borderColor: '#E2EBE5',
+    borderRadius: 12,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    height: 56,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
+    elevation: 1,
   },
-  field: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#5C7365',
-    letterSpacing: 0.5,
-    marginBottom: 6,
+  inputIcon: {
+    fontSize: 18,
+    color: '#0A5D31',
+    marginRight: 12,
   },
   input: {
-    backgroundColor: '#F8FAF8',
-    borderWidth: 1,
-    borderColor: '#D0DDD5',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    flex: 1,
     fontSize: 15,
     color: '#1A3322',
   },
+  eyeIconBtn: {
+    padding: 8,
+  },
+  eyeIcon: {
+    fontSize: 18,
+    color: '#7B8D83',
+  },
   errorBox: {
-    backgroundColor: '#FDF2F2',
-    borderWidth: 1,
-    borderColor: '#F8B4B4',
-    borderRadius: 8,
-    padding: 10,
     marginBottom: 16,
+    alignItems: 'center',
   },
   errorText: {
     color: '#C81E1E',
     fontSize: 13,
+    fontWeight: '500',
   },
   submitBtn: {
-    backgroundColor: '#2D5F3E',
-    borderRadius: 10,
-    paddingVertical: 14,
+    backgroundColor: '#1C7541',
+    borderRadius: 12,
+    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
+    shadowColor: '#1C7541',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   btnDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
+  },
+  submitBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   submitBtnText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
   },
-  registerLink: {
-    marginTop: 16,
+  submitBtnArrow: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '600',
+    marginLeft: 10,
+    marginTop: -2,
+  },
+  forgotBtn: {
+    marginTop: 20,
     alignItems: 'center',
   },
-  registerText: {
-    color: '#5C7365',
+  forgotText: {
+    color: '#1C7541',
     fontSize: 14,
+    fontWeight: '500',
   },
-  registerTextBold: {
-    color: '#2D5F3E',
-    fontWeight: 'bold',
+  addEmployeeBtn: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  addEmployeeText: {
+    color: '#F2A900',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  footerContainer: {
+    marginTop: 40,
+    width: '100%',
+    alignItems: 'center',
+  },
+  footerBgShape: {
+    width: '100%',
+    backgroundColor: '#E8F5E9',
+    borderTopLeftRadius: 100,
+    borderTopRightRadius: 100,
+    paddingTop: 40,
+    paddingBottom: 30,
+    alignItems: 'center',
+    borderTopWidth: 4,
+    borderTopColor: '#F2A900',
+  },
+  sfacContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sfacLogo: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0A5D31',
+  },
+  sfacDivider: {
+    width: 1.5,
+    height: 35,
+    backgroundColor: '#A3C4B1',
+    marginHorizontal: 16,
+  },
+  sfacSupported: {
+    fontSize: 10,
+    color: '#5C7365',
+    fontWeight: '500',
+  },
+  sfacTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#0A5D31',
+    marginVertical: 1,
+  },
+  sfacScheme: {
+    fontSize: 10,
+    color: '#5C7365',
+    fontWeight: '500',
   },
 });

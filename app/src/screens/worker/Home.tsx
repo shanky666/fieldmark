@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image, Alert, Modal, KeyboardAvoidingView, TextInput, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
@@ -153,6 +153,10 @@ export default function Home({ navigation }: any) {
     }
   };
 
+  const [workDetailsVisible, setWorkDetailsVisible] = useState(false);
+  const [workDetailsText, setWorkDetailsText] = useState('');
+  const [checkoutRecordId, setCheckoutRecordId] = useState<number | null>(null);
+
   const performCheckout = async () => {
     try {
       const res = await apiClient.post('/api/attendance/checkout/');
@@ -167,8 +171,15 @@ export default function Home({ navigation }: any) {
       setIsCompletedToday(true);
       setCameraModalVisible(false);
       setPreviewPhoto(null);
+      setCheckoutRecordId(res.data.id);
 
-      Alert.alert("Attendance Marked", "Checked out successfully at " + ts);
+      Alert.alert(
+        "Attendance Marked",
+        "Checked out successfully at " + ts,
+        [
+          { text: "OK", onPress: () => setWorkDetailsVisible(true) }
+        ]
+      );
     } catch (error: any) {
       console.error('Checkout failed:', error);
       const msg =
@@ -176,6 +187,20 @@ export default function Home({ navigation }: any) {
         error.response?.data?.error ||
         'Failed to check out. Please try again.';
       Alert.alert('Checkout Error', msg);
+    }
+  };
+
+  const submitWorkDetails = async () => {
+    if (!checkoutRecordId) return;
+    try {
+      await apiClient.patch(`/api/attendance/${checkoutRecordId}/`, {
+        work_details: workDetailsText
+      });
+      setWorkDetailsVisible(false);
+      Alert.alert("Success", "Work details saved successfully!");
+    } catch (err) {
+      console.error("Failed to save work details", err);
+      Alert.alert("Error", "Could not save work details.");
     }
   };
 
@@ -328,6 +353,11 @@ export default function Home({ navigation }: any) {
                     <Text style={styles.miniHours}>
                       {checkInStr} – {checkOutStr} {durationStr ? `· ${durationStr}` : ''}
                     </Text>
+                    {item.work_details ? (
+                      <Text style={{ fontSize: 11, color: '#63796B', marginTop: 4, fontStyle: 'italic' }}>
+                        Work: {item.work_details}
+                      </Text>
+                    ) : null}
                   </View>
                   <View style={[styles.badge, isPresent ? styles.badgePresent : styles.badgeLate]}>
                     <Text style={isPresent ? styles.badgePresentText : styles.badgeLateText}>
@@ -344,7 +374,46 @@ export default function Home({ navigation }: any) {
 
       </ScrollView>
 
-          </SafeAreaView>
+      <Modal visible={workDetailsVisible} animationType="slide" transparent>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Work Details</Text>
+            <Text style={styles.modalSub}>Please summarize your activities today.</Text>
+            
+            <TextInput
+              style={{
+                backgroundColor: '#F8FAF8',
+                borderWidth: 1,
+                borderColor: '#D0DDD5',
+                borderRadius: 12,
+                padding: 16,
+                minHeight: 120,
+                textAlignVertical: 'top',
+                color: '#1A3322',
+                marginBottom: 20,
+                marginTop: 10
+              }}
+              placeholder="E.g. Met with 5 farmers in Zone A..."
+              placeholderTextColor="#9BAFA2"
+              multiline
+              value={workDetailsText}
+              onChangeText={setWorkDetailsText}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={{ flex: 1, padding: 16, alignItems: 'center' }} onPress={() => setWorkDetailsVisible(false)}>
+                <Text style={{ color: '#63796B', fontWeight: '600' }}>Skip</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={{ flex: 1, backgroundColor: '#2D5F3E', borderRadius: 12, padding: 16, alignItems: 'center' }} onPress={submitWorkDetails}>
+                <Text style={{ color: '#FFF', fontWeight: '700' }}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+    </SafeAreaView>
   );
 }
 

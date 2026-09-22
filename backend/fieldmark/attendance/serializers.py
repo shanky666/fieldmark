@@ -33,7 +33,7 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
             'photo_exif_lat', 'photo_exif_lng', 'exif_gps_delta_meters', 
             'device_id', 'gps_match', 'status', 'liveness_passed', 'verified_by', 
             'verified_by_name', 'verified_at', 'rejection_note', 
-            'is_offline_submission', 'offline_queued_at', 'anomaly_flags'
+            'is_offline_submission', 'offline_queued_at', 'anomaly_flags', 'work_details'
         ]
         read_only_fields = [
             'id', 'gps_match', 'status', 'photo_hash', 'photo_exif_lat', 

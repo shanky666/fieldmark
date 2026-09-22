@@ -21,7 +21,7 @@ const Stack = createStackNavigator<AuthStackParamList>();
 export default function AuthNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName="RoleSelect"
+      initialRouteName="WorkerLogin"
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: '#F3FAF5' }
