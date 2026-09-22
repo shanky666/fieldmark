@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, ActivityIndicator, Animated, TextInput, ScrollView } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
 import * as Location from 'expo-location';
 import * as Speech from 'expo-speech';
@@ -45,7 +45,7 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
   // States
   const [submitting, setSubmitting] = useState(false);
   const [livenessWarn, setLivenessWarn] = useState(false);
-  const [livenessReason, setLivenessReason] = useState('');
+  const [livenessReason, setLivenessReason] = useState<string | null>(null);
   const [clientLivenessBypassed, setClientLivenessBypassed] = useState(false);
 
   // GPS & Address captured at the exact moment the photo is taken
@@ -109,17 +109,16 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
   const handleCapture = async () => {
     if (cameraRef.current) {
       try {
-        // Take the photo and capture GPS simultaneously for accuracy
-        const [photo, freshLocation] = await Promise.all([
-          cameraRef.current.takePictureAsync({
-            quality: 0.45,
-            skipProcessing: false,
-          }),
-          // Fresh GPS fix at the exact moment of capture
-          Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-          }).catch(() => null), // Fallback gracefully if GPS times out
-        ]);
+        // Fix for Camera crash: Do not call takePictureAsync and getCurrentPositionAsync simultaneously.
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.45,
+          skipProcessing: false,
+        });
+        
+        // Fresh GPS fix at the exact moment of capture
+        const freshLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        }).catch(() => null); // Fallback gracefully if GPS times out
 
         if (photo?.uri) {
           let lat = gps.latitude;
@@ -444,9 +443,6 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
             {capturedLocation.accuracy ? ` (±${capturedLocation.accuracy.toFixed(0)}m accuracy)` : ''}
           </Text>
           <Text style={styles.previewDetailText}>📅 Date: {new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</Text>
-          <Text style={styles.previewDetailText}>
-            🏢 Zone Match: {isZoneMatch() ? "Matched ✓" : "Mismatch ⚠"}
-          </Text>
         </View>
       </View>
 
@@ -777,5 +773,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.primary,
     marginTop: 16,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 13,
+    color: COLORS.darkText,
+    marginBottom: 6,
+    fontWeight: '600',
+  },
+  textInput: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 44,
+    color: COLORS.darkText,
   },
 });

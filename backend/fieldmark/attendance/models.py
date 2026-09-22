@@ -59,6 +59,12 @@ class AttendanceRecord(models.Model):
     is_offline_submission = models.BooleanField(default=False)
     offline_queued_at = models.DateTimeField(null=True, blank=True)
     anomaly_flags = models.JSONField(default=list, blank=True)
+    
+    # Required Field Visit Questions
+    panchayat_visited = models.CharField(max_length=255, null=True, blank=True)
+    fic_visited = models.CharField(max_length=255, null=True, blank=True)
+    members_attended = models.IntegerField(null=True, blank=True)
+    purpose_of_visit = models.TextField(null=True, blank=True)
 
     @property
     def duration_seconds(self):

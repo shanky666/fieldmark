@@ -107,9 +107,19 @@ export default function History() {
                       {checkInStr} – {checkOutStr} {durationStr ? `· ${durationStr}` : ''}
                     </Text>
                     {item.work_details ? (
-                      <Text style={{ fontSize: 11, color: '#63796B', marginTop: 4, fontStyle: 'italic' }}>
-                        Work: {item.work_details}
+                      <Text style={{ fontSize: 12, color: '#63796B', marginTop: 4, fontStyle: 'italic' }}>
+                        Notes: {item.work_details}
                       </Text>
+                    ) : null}
+                    
+                    {item.panchayat_visited ? (
+                      <View style={{ marginTop: 8, padding: 8, backgroundColor: '#E8F5E9', borderRadius: 8 }}>
+                        <Text style={{ fontSize: 11, color: '#1F6B42', fontWeight: 'bold' }}>Field Visit Details:</Text>
+                        <Text style={{ fontSize: 11, color: '#333' }}>Panchayat: {item.panchayat_visited}</Text>
+                        <Text style={{ fontSize: 11, color: '#333' }}>FIC: {item.fic_visited}</Text>
+                        <Text style={{ fontSize: 11, color: '#333' }}>Members: {item.members_attended}</Text>
+                        <Text style={{ fontSize: 11, color: '#333' }}>Purpose: {item.purpose_of_visit}</Text>
+                      </View>
                     ) : null}
                   </View>
                   <View style={[

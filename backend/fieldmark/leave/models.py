@@ -40,6 +40,7 @@ class LeaveRequest(models.Model):
     )
     approved_at = models.DateTimeField(null=True, blank=True)
     rejection_note = models.TextField(null=True, blank=True)
+    proof_document = models.FileField(upload_to='leave_proofs/', null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

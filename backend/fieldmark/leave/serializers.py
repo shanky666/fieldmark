@@ -11,7 +11,7 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'worker', 'worker_detail', 'leave_type', 'start_date', 
             'end_date', 'reason', 'status', 'approved_by', 
-            'approved_by_name', 'approved_at', 'rejection_note', 'created_at'
+            'approved_by_name', 'approved_at', 'rejection_note', 'proof_document', 'created_at'
         ]
         read_only_fields = ['id', 'worker', 'status', 'approved_by', 'approved_at', 'created_at']
 

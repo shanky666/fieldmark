@@ -2,23 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '../../api/client';
 import { useAuthStore } from '../../store/auth';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 
 export default function Leave({ navigation }: any) {
-  const { workerId } = useAuthStore();
   const [selectedType, setSelectedType] = useState('casual');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [reason, setReason] = useState('');
+  const [proofUri, setProofUri] = useState<string | null>(null);
+  const [proofName, setProofName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Dynamic state
   const [balance, setBalance] = useState<any>(null);
   const [myRequests, setMyRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchLeaveData();
-    // Default from/to date to today YYYY-MM-DD
     const todayStr = new Date().toISOString().split('T')[0];
     setFromDate(todayStr);
     setToDate(todayStr);
@@ -40,6 +41,21 @@ export default function Leave({ navigation }: any) {
     }
   };
 
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled === false && result.assets && result.assets.length > 0) {
+        setProofUri(result.assets[0].uri);
+        setProofName(result.assets[0].name);
+      }
+    } catch (err) {
+      console.warn("Document picker error:", err);
+    }
+  };
+
   const submitLeave = async () => {
     if (!reason.trim()) {
       Alert.alert('Reason Required', 'Please enter a brief reason for your leave request.');
@@ -56,6 +72,11 @@ export default function Leave({ navigation }: any) {
       return;
     }
 
+    if (!proofUri) {
+      Alert.alert('Proof Required', 'Please upload a supporting document (PDF, JPG, PNG).');
+      return;
+    }
+
     const leaveTypeMap: Record<string, string> = {
       casual: 'CASUAL',
       sick: 'SICK',
@@ -65,175 +86,115 @@ export default function Leave({ navigation }: any) {
 
     setSubmitting(true);
     try {
-      await apiClient.post('/api/leave/', {
-        leave_type: leaveTypeMap[selectedType],
-        start_date: fromDate,
-        end_date: toDate,
-        reason: reason.trim(),
+      // Create form data
+      const formData = new FormData();
+      formData.append('leave_type', leaveTypeMap[selectedType]);
+      formData.append('start_date', fromDate);
+      formData.append('end_date', toDate);
+      formData.append('reason', reason.trim());
+
+      const fileType = proofName?.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg';
+      formData.append('proof_document', {
+        uri: proofUri,
+        name: proofName || 'proof.jpg',
+        type: fileType,
+      } as any);
+
+      await apiClient.post('/api/leave/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      Alert.alert(
-        'Success',
-        'Leave request submitted for review.'
-      );
+      Alert.alert('Success', 'Leave request submitted for review.');
 
       setReason('');
+      setProofUri(null);
+      setProofName(null);
       fetchLeaveData();
     } catch (e: any) {
-      console.error('[LEAVE] Submit failed:', e?.response?.data || e?.message || e);
-      const data = e?.response?.data;
-      let msg = 'Failed to submit leave request. Please try again.';
-      if (data?.detail) {
-        msg = data.detail;
-      } else if (typeof data?.error === 'string') {
-        msg = data.error;
-      } else if (data && typeof data === 'object') {
-        const errors: string[] = [];
-        Object.keys(data).forEach((key) => {
-          const val = data[key];
-          if (Array.isArray(val)) {
-            errors.push(`${key.replace('_', ' ')}: ${val.join(', ')}`);
-          } else if (typeof val === 'string') {
-            errors.push(val);
-          }
-        });
-        if (errors.length > 0) msg = errors.join('\n');
-      } else if (e?.message) {
-        msg = e.message;
-      }
-
+      const msg = e?.response?.data?.detail || e?.response?.data?.error || 'Failed to submit leave request.';
       Alert.alert('Submission Notice', msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const casualLeft = balance ? Math.max(0, (balance.casual_total || 12) - (balance.casual_used || 0)) : '--';
-  const sickLeft = balance ? Math.max(0, (balance.sick_total || 6) - (balance.sick_used || 0)) : '--';
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.pageTitle}>Leave Requests</Text>
+        <Text style={styles.pageTitle}>Leave Module</Text>
 
-        {/* Quota Grid */}
-        <View style={styles.statGrid}>
-          <View style={styles.statTile}>
-            <Text style={[styles.statNum, { color: '#2F8F5B' }]}>{casualLeft}</Text>
-            <Text style={styles.statLbl}>Casual left</Text>
-          </View>
-          <View style={styles.statTile}>
-            <Text style={[styles.statNum, { color: '#6E56A6' }]}>{sickLeft}</Text>
-            <Text style={styles.statLbl}>Sick left</Text>
-          </View>
-        </View>
-
-        {/* Apply for Leave Card */}
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Apply for leave</Text>
+          <Text style={styles.sectionTitle}>Apply for Leave</Text>
         </View>
 
         <View style={styles.formCard}>
           <Text style={styles.label}>LEAVE TYPE</Text>
           <View style={styles.typeGrid}>
-            <TouchableOpacity 
-              style={[styles.typeBtn, selectedType === 'casual' && styles.typeBtnSel]}
-              onPress={() => setSelectedType('casual')}
-            >
-              <Text style={[styles.typeBtnText, selectedType === 'casual' && styles.typeBtnTextSel]}>🌿 Casual</Text>
+            <TouchableOpacity style={[styles.typeBtn, selectedType === 'casual' && styles.typeBtnSel]} onPress={() => setSelectedType('casual')}>
+              <Text style={[styles.typeBtnText, selectedType === 'casual' && styles.typeBtnTextSel]}>Casual</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.typeBtn, selectedType === 'sick' && styles.typeBtnSel]}
-              onPress={() => setSelectedType('sick')}
-            >
-              <Text style={[styles.typeBtnText, selectedType === 'sick' && styles.typeBtnTextSel]}>🤒 Sick</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.typeBtn, selectedType === 'holiday' && styles.typeBtnSel]}
-              onPress={() => setSelectedType('holiday')}
-            >
-              <Text style={[styles.typeBtnText, selectedType === 'holiday' && styles.typeBtnTextSel]}>🌾 Field holiday</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.typeBtn, selectedType === 'unpaid' && styles.typeBtnSel]}
-              onPress={() => setSelectedType('unpaid')}
-            >
-              <Text style={[styles.typeBtnText, selectedType === 'unpaid' && styles.typeBtnTextSel]}>📋 Unpaid</Text>
+            <TouchableOpacity style={[styles.typeBtn, selectedType === 'sick' && styles.typeBtnSel]} onPress={() => setSelectedType('sick')}>
+              <Text style={[styles.typeBtnText, selectedType === 'sick' && styles.typeBtnTextSel]}>Sick</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldFlex}>
-              <Text style={styles.label}>FROM DATE</Text>
-              <TextInput style={styles.input} value={fromDate} placeholder="YYYY-MM-DD" placeholderTextColor="#9BAFA2" onChangeText={setFromDate} />
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              <Text style={styles.label}>START DATE (YYYY-MM-DD)</Text>
+              <TextInput style={styles.input} value={fromDate} onChangeText={setFromDate} placeholder="YYYY-MM-DD" />
             </View>
-            <View style={styles.fieldFlex}>
-              <Text style={styles.label}>TO DATE</Text>
-              <TextInput style={styles.input} value={toDate} placeholder="YYYY-MM-DD" placeholderTextColor="#9BAFA2" onChangeText={setToDate} />
+            <View style={{ flex: 1, marginLeft: 8 }}>
+              <Text style={styles.label}>END DATE (YYYY-MM-DD)</Text>
+              <TextInput style={styles.input} value={toDate} onChangeText={setToDate} placeholder="YYYY-MM-DD" />
             </View>
           </View>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>REASON</Text>
-            <TextInput 
-              style={[styles.input, styles.textarea]} 
-              placeholder="Briefly describe your reason…" 
-              placeholderTextColor="#9BAFA2"
-              multiline
-              numberOfLines={3}
-              value={reason}
-              onChangeText={setReason}
-            />
-          </View>
+          <Text style={styles.label}>LEAVE REASON</Text>
+          <TextInput
+            style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+            value={reason}
+            onChangeText={setReason}
+            placeholder="Reason for leave..."
+            multiline
+          />
 
-          <TouchableOpacity style={[styles.btnPrimary, submitting && { opacity: 0.7 }]} onPress={submitLeave} disabled={submitting}>
-            {submitting ? (
-              <ActivityIndicator color="#FFF" size="small" />
-            ) : (
-              <Text style={styles.btnPrimaryText}>Submit Request</Text>
-            )}
+          <Text style={styles.label}>PROOF DOCUMENT (REQUIRED)</Text>
+          <TouchableOpacity style={styles.uploadBtn} onPress={pickDocument}>
+            <Text style={styles.uploadBtnText}>{proofName ? `📎 ${proofName}` : '📎 Upload PDF / JPG / PNG'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.submitBtn, submitting && { opacity: 0.7 }]} onPress={submitLeave} disabled={submitting}>
+            {submitting ? <ActivityIndicator color="#FFF" /> : <Text style={styles.submitBtnText}>Submit Leave Request</Text>}
           </TouchableOpacity>
         </View>
 
-        {/* My Requests List */}
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>My requests</Text>
+          <Text style={styles.sectionTitle}>Leave History</Text>
         </View>
 
         {loading ? (
-          <ActivityIndicator color="#2F8F5B" style={{ marginVertical: 20 }} />
+          <ActivityIndicator color="#1F6B42" style={{ marginTop: 20 }} />
         ) : myRequests.length === 0 ? (
-          <View style={styles.reqCard}>
-            <Text style={{ color: '#63796B', fontSize: 13, textAlign: 'center', paddingVertical: 10 }}>
-              No leave requests submitted yet.
-            </Text>
-          </View>
+          <Text style={{ textAlign: 'center', color: '#666', marginTop: 20 }}>No leave requests found.</Text>
         ) : (
-          myRequests.map((r: any) => (
-            <View key={r.id} style={styles.reqCard}>
-              <View style={styles.reqTop}>
-                <View>
-                  <Text style={styles.reqName}>{r.leave_type} · {r.start_date}</Text>
-                  <Text style={styles.reqMeta}>To {r.end_date} · Submitted {r.created_at?.substring(0, 10) || r.start_date}</Text>
-                </View>
+          myRequests.map((req, idx) => (
+            <View key={req.id || idx} style={styles.historyCard}>
+              <View style={styles.row}>
+                <Text style={styles.historyDates}>{req.start_date} to {req.end_date}</Text>
                 <View style={[
-                  styles.badgeApproved, 
-                  r.status === 'PENDING' && { backgroundColor: '#FBEDD3' },
-                  r.status === 'REJECTED' && { backgroundColor: '#FBE5E1' }
+                  styles.badge, 
+                  req.status === 'APPROVED' ? styles.badgeApproved : req.status === 'REJECTED' ? styles.badgeRejected : styles.badgePending
                 ]}>
-                  <Text style={[
-                    styles.badgeApprovedText,
-                    r.status === 'PENDING' && { color: '#B9791C' },
-                    r.status === 'REJECTED' && { color: '#C24936' }
-                  ]}>{r.status}</Text>
+                  <Text style={styles.badgeText}>{req.status}</Text>
                 </View>
               </View>
-              <View style={styles.reqBody}>
-                <Text style={styles.reqBodyText}>{r.reason}</Text>
-              </View>
+              <Text style={styles.historyType}>{req.leave_type}</Text>
+              <Text style={styles.historyReason} numberOfLines={2}>Reason: {req.reason}</Text>
+              {req.proof_document && (
+                <Text style={styles.historyDoc}>📎 Document attached</Text>
+              )}
             </View>
           ))
         )}
@@ -244,172 +205,53 @@ export default function Leave({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3FAF5',
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#16241C',
-    marginBottom: 14,
-  },
-  statGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  statTile: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DCEEE2',
-    borderRadius: 16,
-    padding: 14,
-  },
-  statNum: {
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  statLbl: {
-    fontSize: 11.5,
-    color: '#63796B',
-    marginTop: 2,
-  },
-  sectionHead: {
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#16241C',
-  },
+  container: { flex: 1, backgroundColor: '#F4F8F5' },
+  content: { padding: 20, paddingBottom: 40 },
+  pageTitle: { fontSize: 24, fontWeight: '900', color: '#1F6B42', marginBottom: 20 },
+  sectionHead: { marginBottom: 16 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#333' },
+  
   formCard: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DCEEE2',
-    borderRadius: 22,
-    padding: 16,
+    backgroundColor: '#FFF', borderRadius: 16, padding: 20, marginBottom: 30,
+    borderWidth: 1, borderColor: '#E8F5E9', elevation: 2,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4,
   },
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#63796B',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  typeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 14,
-  },
-  typeBtn: {
-    width: '48%',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderWidth: 1.5,
-    borderColor: '#DCEEE2',
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-  },
-  typeBtnSel: {
-    borderColor: '#2F8F5B',
-    backgroundColor: '#DCF2E3',
-  },
-  typeBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#63796B',
-  },
-  typeBtnTextSel: {
-    color: '#1F6B42',
-    fontWeight: '700',
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
-  },
-  fieldFlex: {
-    flex: 1,
-  },
-  field: {
-    marginBottom: 14,
-  },
+  label: { fontSize: 12, fontWeight: '700', color: '#888', marginBottom: 8, marginTop: 12 },
   input: {
-    borderWidth: 1.5,
-    borderColor: '#DCEEE2',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 13.5,
-    color: '#16241C',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5', borderRadius: 8, paddingHorizontal: 12, height: 44,
+    borderWidth: 1, borderColor: '#EEE', fontSize: 14, color: '#333'
   },
-  textarea: {
-    height: 70,
-    textAlignVertical: 'top',
+  typeGrid: { flexDirection: 'row', gap: 12, marginBottom: 8 },
+  typeBtn: {
+    flex: 1, backgroundColor: '#F5F5F5', paddingVertical: 12, borderRadius: 8,
+    alignItems: 'center', borderWidth: 1, borderColor: '#EEE'
   },
-  btnPrimary: {
-    backgroundColor: '#2F8F5B',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
+  typeBtnSel: { backgroundColor: '#E8F5E9', borderColor: '#1F6B42' },
+  typeBtnText: { color: '#666', fontWeight: '600' },
+  typeBtnTextSel: { color: '#1F6B42', fontWeight: 'bold' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  
+  uploadBtn: {
+    backgroundColor: '#FFF3E0', padding: 16, borderRadius: 8, borderWidth: 1, borderColor: '#FFE0B2',
+    alignItems: 'center', marginBottom: 24, marginTop: 4, borderStyle: 'dashed'
   },
-  btnPrimaryText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  uploadBtnText: { color: '#E87722', fontWeight: 'bold', fontSize: 14 },
+  
+  submitBtn: { backgroundColor: '#1F6B42', padding: 16, borderRadius: 12, alignItems: 'center' },
+  submitBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+
+  historyCard: {
+    backgroundColor: '#FFF', borderRadius: 12, padding: 16, marginBottom: 12,
+    borderWidth: 1, borderColor: '#EEE'
   },
-  reqCard: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DCEEE2',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
-  },
-  reqTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  reqName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#16241C',
-  },
-  reqMeta: {
-    fontSize: 11,
-    color: '#63796B',
-    marginTop: 2,
-  },
-  badgeApproved: {
-    backgroundColor: '#DCF2E3',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  badgeApprovedText: {
-    color: '#1F6B42',
-    fontSize: 10.5,
-    fontWeight: '700',
-  },
-  reqBody: {
-    backgroundColor: '#F3FAF5',
-    borderRadius: 8,
-    padding: 8,
-    marginTop: 8,
-  },
-  reqBodyText: {
-    fontSize: 12,
-    color: '#63796B',
-  },
+  historyDates: { fontSize: 14, fontWeight: 'bold', color: '#333' },
+  historyType: { fontSize: 12, color: '#1F6B42', fontWeight: '600', marginTop: 4 },
+  historyReason: { fontSize: 13, color: '#666', marginTop: 8 },
+  historyDoc: { fontSize: 12, color: '#E87722', marginTop: 8, fontStyle: 'italic' },
+  
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  badgeApproved: { backgroundColor: '#E8F5E9' },
+  badgeRejected: { backgroundColor: '#FFEBEE' },
+  badgePending: { backgroundColor: '#E3F2FD' },
+  badgeText: { fontSize: 10, fontWeight: 'bold', color: '#333' }
 });

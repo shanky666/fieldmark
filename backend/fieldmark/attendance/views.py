@@ -86,18 +86,21 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
             
         data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
         
-        if not time_valid:
-            # After 9:15 AM -> mark Absent
-            data['status'] = AttendanceRecord.StatusChoices.ABSENT
-
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        
+        save_kwargs = {'worker': self.request.user}
+        if not time_valid:
+            save_kwargs['status'] = AttendanceRecord.StatusChoices.ABSENT
+            
+        self.perform_create(serializer, **save_kwargs)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    def perform_create(self, serializer):
-        record = serializer.save(worker=self.request.user)
+    def perform_create(self, serializer, **kwargs):
+        if not kwargs:
+            kwargs = {'worker': self.request.user}
+        record = serializer.save(**kwargs)
         # Trigger Celery checks asynchronously if broker is available
         try:
             run_attendance_async_checks.delay(record.id)
@@ -288,8 +291,21 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         if work_details:
             record.work_details = work_details
 
+        record.panchayat_visited = request.data.get('panchayat_visited', record.panchayat_visited)
+        record.fic_visited = request.data.get('fic_visited', record.fic_visited)
+        
+        # members_attended
+        members = request.data.get('members_attended')
+        if members is not None:
+            try:
+                record.members_attended = int(members)
+            except ValueError:
+                pass
+                
+        record.purpose_of_visit = request.data.get('purpose_of_visit', record.purpose_of_visit)
+
         record.check_out_at = timezone.now()
-        record.save(update_fields=['check_out_at', 'work_details'])
+        record.save(update_fields=['check_out_at', 'work_details', 'panchayat_visited', 'fic_visited', 'members_attended', 'purpose_of_visit'])
 
         return Response(
             AttendanceRecordSerializer(record).data,

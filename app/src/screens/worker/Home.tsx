@@ -1,66 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Image, Alert, Modal, KeyboardAvoidingView, TextInput, Platform } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Alert, Modal, KeyboardAvoidingView, TextInput, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import * as Location from 'expo-location';
-import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
-import { CONFIG } from '../../constants/config';
 
 export default function Home({ navigation }: any) {
-  const { userProfile, logout } = useAuthStore();
-
-  const [locationText, setLocationText] = useState('Fetching location…');
-  // Null until real GPS is acquired — avoids showing fake hardcoded coordinates
-  const [coords, setCoords] = useState<{ lat: number; lng: number; acc: number } | null>(null);
-  const [address, setAddress] = useState<string>('Acquiring location…');
+  const { userProfile } = useAuthStore();
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
   const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
+  const [workedHours, setWorkedHours] = useState<string | null>(null);
+  const [status, setStatus] = useState<string>('Pending');
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [isCompletedToday, setIsCompletedToday] = useState(false);
-  const [lastStamp, setLastStamp] = useState<{ photoUri: string; time: string; date: string; status: string } | null>(null);
+  const [checkoutRecordId, setCheckoutRecordId] = useState<number | null>(null);
 
-  const [cameraModalVisible, setCameraModalVisible] = useState(false);
-  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
-
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationText('Location permission denied');
-        setAddress('Location unavailable');
-        return;
-      }
-
-      try {
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-        const acc = Math.round(loc.coords.accuracy || 10);
-        setCoords({ lat: loc.coords.latitude, lng: loc.coords.longitude, acc });
-        setLocationText(`Location ready · ±${acc}m`);
-
-        // Reverse geocode to get real address
-        try {
-          const geo = await Location.reverseGeocodeAsync({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-          });
-          if (geo && geo.length > 0) {
-            const g = geo[0];
-            const parts = [g.name, g.street, g.subregion || g.city, g.region].filter(Boolean);
-            setAddress(parts.join(', '));
-          } else {
-            setAddress(`${loc.coords.latitude.toFixed(5)}, ${loc.coords.longitude.toFixed(5)}`);
-          }
-        } catch {
-          setAddress(`${loc.coords.latitude.toFixed(5)}, ${loc.coords.longitude.toFixed(5)}`);
-        }
-      } catch (e) {
-        setLocationText('GPS unavailable');
-        setAddress('Unable to get location');
-      }
-    })();
-  }, []);
+  const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
+  const [panchayatVisited, setPanchayatVisited] = useState('');
+  const [ficVisited, setFicVisited] = useState('');
+  const [membersAttended, setMembersAttended] = useState('');
+  const [purposeOfVisit, setPurposeOfVisit] = useState('');
+  const [workDetailsText, setWorkDetailsText] = useState('');
 
   const fetchTodayAttendance = useCallback(async () => {
     try {
@@ -68,22 +27,16 @@ export default function Home({ navigation }: any) {
       const record = res.data?.id ? res.data : (res.data?.today_record || null);
 
       if (record) {
+        setCheckoutRecordId(record.id);
+        setStatus(record.status);
+        setWorkDetailsText(record.work_details || '');
+        
         const checkIn = new Date(record.marked_at);
-        setCheckInTime(
-          checkIn.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit'
-          })
-        );
+        setCheckInTime(checkIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
 
         if (record.check_out_at) {
           const checkOut = new Date(record.check_out_at);
-          setCheckOutTime(
-            checkOut.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit'
-            })
-          );
+          setCheckOutTime(checkOut.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
           setIsCheckedIn(false);
           setIsCompletedToday(true);
         } else {
@@ -91,24 +44,12 @@ export default function Home({ navigation }: any) {
           setIsCheckedIn(true);
           setIsCompletedToday(false);
         }
-
-        if (record.photo_url) {
-          let photoUri = String(record.photo_url);
-          if (!photoUri.startsWith('http') && !photoUri.startsWith('data:')) {
-            const cleanPath = photoUri.startsWith('/media/') ? photoUri : `/media/${photoUri.replace(/^\/+/, '')}`;
-            photoUri = `${CONFIG.API_BASE_URL.replace(/\/+$/, '')}${cleanPath}`;
-          }
-
-          setLastStamp({
-            photoUri,
-            time: checkIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            date: record.date,
-            status: record.status || 'APPROVED'
-          });
-        }
+        
+        setWorkedHours(record.duration_formatted || '--');
       } else {
         setCheckInTime(null);
         setCheckOutTime(null);
+        setWorkedHours(null);
         setIsCheckedIn(false);
         setIsCompletedToday(false);
       }
@@ -117,708 +58,245 @@ export default function Home({ navigation }: any) {
     }
   }, []);
 
-  const fetchHistory = useCallback(async () => {
-    try {
-      const res = await apiClient.get('/api/attendance/me/');
-      setHistory(res.data);
-    } catch (error) {
-      console.error('Failed to load attendance history:', error);
-    }
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
       fetchTodayAttendance();
-      fetchHistory();
-    }, [fetchTodayAttendance, fetchHistory])
+    }, [fetchTodayAttendance])
   );
 
-  const handleCardPress = () => {
-    if (isCompletedToday) {
-      Alert.alert("Attendance Completed", "You have already completed check-in and check-out for today.");
+  const handleCheckoutPress = () => {
+    setCheckoutModalVisible(true);
+  };
+
+  const performCheckout = async () => {
+    if (!panchayatVisited.trim() || !ficVisited.trim() || !membersAttended.trim() || !purposeOfVisit.trim()) {
+      Alert.alert("Required Fields", "Please fill in all the required field visit details.");
       return;
     }
 
-    if (isCheckedIn) {
-      Alert.alert(
-        "Check Out Confirmation",
-        "Are you sure you want to check out?",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Check Out", style: "destructive", onPress: performCheckout }
-        ]
-      );
-    } else {
-      navigation.navigate('MarkAttendance');
-    }
-  };
-
-  const [workDetailsVisible, setWorkDetailsVisible] = useState(false);
-  const [workDetailsText, setWorkDetailsText] = useState('');
-  const [checkoutRecordId, setCheckoutRecordId] = useState<number | null>(null);
-
-  const performCheckout = async () => {
     try {
-      const res = await apiClient.post('/api/attendance/checkout/');
-      const checkOutDate = new Date(res.data.check_out_at);
-      const ts = checkOutDate.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
+      const res = await apiClient.post('/api/attendance/checkout/', {
+        panchayat_visited: panchayatVisited.trim(),
+        fic_visited: ficVisited.trim(),
+        members_attended: parseInt(membersAttended.trim()) || 0,
+        purpose_of_visit: purposeOfVisit.trim(),
+        work_details: workDetailsText.trim()
       });
-
-      setCheckOutTime(ts);
+      
+      const checkOutDate = new Date(res.data.check_out_at);
+      setCheckOutTime(checkOutDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      setWorkedHours(res.data.duration_formatted);
       setIsCheckedIn(false);
       setIsCompletedToday(true);
-      setCameraModalVisible(false);
-      setPreviewPhoto(null);
-      setCheckoutRecordId(res.data.id);
+      setCheckoutModalVisible(false);
 
-      Alert.alert(
-        "Attendance Marked",
-        "Checked out successfully at " + ts,
-        [
-          { text: "OK", onPress: () => setWorkDetailsVisible(true) }
-        ]
-      );
+      Alert.alert("Success", "Checked out successfully and details saved.");
     } catch (error: any) {
-      console.error('Checkout failed:', error);
-      const msg =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        'Failed to check out. Please try again.';
+      const msg = error.response?.data?.message || 'Failed to check out. Please try again.';
       Alert.alert('Checkout Error', msg);
     }
   };
 
-  const submitWorkDetails = async () => {
-    if (!checkoutRecordId) return;
-    try {
-      await apiClient.patch(`/api/attendance/${checkoutRecordId}/`, {
-        work_details: workDetailsText
-      });
-      setWorkDetailsVisible(false);
-      Alert.alert("Success", "Work details saved successfully!");
-    } catch (err) {
-      console.error("Failed to save work details", err);
-      Alert.alert("Error", "Could not save work details.");
-    }
-  };
-
-  const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' });
+  const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.content}>
         
-        {/* Top Greeting Row */}
-        <View style={styles.greetRow}>
-          <View>
-            <Text style={styles.eyebrow}>{todayStr}</Text>
-            <Text style={styles.pageTitle}>Hi, {userProfile?.name ? userProfile.name.split(' ')[0] : 'Worker'} 👋</Text>
-            <View style={styles.shiftChip}>
-              <View style={styles.dot} />
-              <Text style={styles.shiftText}>{userProfile?.shift_detail?.name || userProfile?.zone_detail?.name || userProfile?.assigned_zone || 'General Shift'}</Text>
+        <View style={styles.header}>
+          <Text style={styles.logoText}>ATFA FIELD STAFF</Text>
+          <Text style={styles.dateText}>{todayStr}</Text>
+          <Text style={styles.empName}>{userProfile?.name}</Text>
+          <Text style={styles.empId}>ID: {userProfile?.employee_id}</Text>
+        </View>
+
+        <View style={styles.summaryCard}>
+          <Text style={styles.cardTitle}>TODAY'S ATTENDANCE</Text>
+          
+          <View style={styles.row}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Check-In</Text>
+              <Text style={styles.val}>{checkInTime || '--:--'}</Text>
+            </View>
+            <View style={styles.col}>
+              <Text style={styles.label}>Check-Out</Text>
+              <Text style={styles.val}>{checkOutTime || '--:--'}</Text>
             </View>
           </View>
-          <View style={styles.avatarGroup}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {userProfile?.name
-                  ? userProfile.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
-                  : 'EMP'}
-              </Text>
+          
+          <View style={[styles.row, { marginTop: 16 }]}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Worked Hours</Text>
+              <Text style={styles.val}>{workedHours || '--'}</Text>
             </View>
-            <TouchableOpacity style={styles.bellBtn} onPress={() => navigation.navigate('MessagesTab')}>
-              <Text style={styles.bellIcon}>🔔</Text>
-              <View style={styles.notifDot} />
-            </TouchableOpacity>
+            <View style={styles.col}>
+              <Text style={styles.label}>Required</Text>
+              <Text style={styles.val}>8 Hours</Text>
+            </View>
+          </View>
+          
+          <View style={{ marginTop: 16 }}>
+            <Text style={styles.label}>Status</Text>
+            <Text style={[styles.val, { color: status === 'ABSENT' ? '#D32F2F' : '#1F6B42' }]}>{status}</Text>
           </View>
         </View>
 
-        {/* Check-In Action Card */}
-        <TouchableOpacity style={styles.checkinCard} onPress={handleCardPress} activeOpacity={0.9}>
-          <View style={styles.camBtn}>
-            <Text style={styles.camIcon}>{isCompletedToday ? '✓' : isCheckedIn ? '⌛' : '📸'}</Text>
-          </View>
-          <Text style={styles.ciTitle}>
-            {isCompletedToday ? 'Attendance Completed' : isCheckedIn ? 'Checked in' : 'Mark your attendance'}
-          </Text>
-          <Text style={styles.ciSub}>
-            {isCompletedToday 
-              ? 'Check-in and check-out completed for today'
-              : isCheckedIn 
-                ? 'Checked in at ' + (checkInTime || '') + ' · Tap to check out' 
-                : 'Snap a geo-tagged photo to check in'}
-          </Text>
-          <View style={styles.locStatus}>
-            <View style={styles.pulse} />
-            <Text style={styles.locText}>{locationText}</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* Log Box Row */}
-        <View style={styles.logRow}>
-          <View style={styles.logBox}>
-            <Text style={styles.eyebrowSmall}>Check-in</Text>
-            <Text style={[styles.logTime, !checkInTime && styles.emptyTime]}>
-              {checkInTime || '--:--'}
-            </Text>
-          </View>
-          <View style={styles.logBox}>
-            <Text style={styles.eyebrowSmall}>Check-out</Text>
-            <Text style={[styles.logTime, !checkOutTime && styles.emptyTime]}>
-              {checkOutTime || '--:--'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Last Verified Entry Stamp */}
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Latest entry</Text>
-        </View>
-
-        {lastStamp ? (
-          <View style={styles.stampWrap}>
-            <View style={styles.stampPhotoBox}>
-              <Image source={{ uri: lastStamp.photoUri }} style={styles.stampPhoto} />
-              <View style={styles.stampOverlay}>
-                <Text style={styles.stampAddr}>📍 {address}</Text>
-                {coords ? (
-                  <Text style={styles.stampCoords}>
-                    {coords.lat.toFixed(5)}° N, {coords.lng.toFixed(5)}° E · ±{coords.acc}m
-                  </Text>
-                ) : null}
-              </View>
-              <View style={[
-                styles.stampRibbon,
-                lastStamp.status === 'REJECTED' ? styles.ribbonRejected :
-                lastStamp.status === 'FLAGGED' ? styles.ribbonFlagged :
-                lastStamp.status === 'PENDING' ? styles.ribbonPending : styles.ribbonApproved
-              ]}>
-                <Text style={styles.ribbonText}>
-                  {lastStamp.status === 'REJECTED' ? '❌ REJECTED' :
-                   lastStamp.status === 'FLAGGED' ? '⚠️ FLAGGED' :
-                   lastStamp.status === 'PENDING' ? '⏳ PENDING' : '✓ APPROVED'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.stampFoot}>
-              <Text style={styles.stampFootTime}>{lastStamp.time}</Text>
-              <Text style={styles.stampFootDate}>{lastStamp.date}</Text>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.emptyCap} onPress={handleCardPress}>
-            <Text style={styles.emptyCapIcon}>📷</Text>
-            <Text style={styles.emptyCapText}>No photo entry yet today</Text>
+        {!isCheckedIn && !isCompletedToday && (
+          <TouchableOpacity 
+            style={styles.checkInBtn} 
+            onPress={() => navigation.navigate('MarkAttendance')}
+          >
+            <Text style={styles.checkInBtnText}>CHECK IN</Text>
           </TouchableOpacity>
         )}
 
-        {/* Recent History */}
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Recent history</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('HistoryTab')}>
-            <Text style={styles.linkSm}>See all</Text>
-          </TouchableOpacity>
-        </View>
+        {isCheckedIn && (
+          <View style={styles.checkoutContainer}>
+            <Text style={styles.checkoutLabel}>CHECK-OUT</Text>
+            <Text style={styles.checkoutSub}>End Today's Attendance</Text>
+            <Text style={styles.checkoutWindow}>Checkout window: 4:50 PM – 5:20 PM</Text>
+            <TouchableOpacity 
+              style={styles.checkOutBtn} 
+              onPress={handleCheckoutPress}
+            >
+              <Text style={styles.checkOutBtnText}>CHECK OUT</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
-        <View style={styles.miniHistory}>
-          {history.length > 0 ? (
-            history.slice(0, 3).map((item) => {
-              const dateObj = new Date(item.date);
-              // Handle JS date parsing timezone differences by using split
-              const [year, month, day] = item.date.split('-');
-              const localDate = new Date(Number(year), Number(month) - 1, Number(day));
-              const dateStr = localDate.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'short' });
-              
-              let checkInStr = '--:--';
-              if (item.marked_at) {
-                checkInStr = new Date(item.marked_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-              }
-              
-              let checkOutStr = 'Still checked in';
-              if (item.check_out_at) {
-                checkOutStr = new Date(item.check_out_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-              }
-              
-              let durationStr = item.duration_formatted || '';
-              
-              const isPresent = item.status === 'APPROVED' || item.status === 'PENDING';
-              
-              return (
-                <View key={item.id} style={styles.miniRow}>
-                  <View style={[styles.statusDot, { backgroundColor: isPresent ? '#2F8F5B' : '#B9791C' }]} />
-                  <View style={styles.miniInfo}>
-                    <Text style={styles.miniDay}>{dateStr}</Text>
-                    <Text style={styles.miniHours}>
-                      {checkInStr} – {checkOutStr} {durationStr ? `· ${durationStr}` : ''}
-                    </Text>
-                    {item.work_details ? (
-                      <Text style={{ fontSize: 11, color: '#63796B', marginTop: 4, fontStyle: 'italic' }}>
-                        Work: {item.work_details}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <View style={[styles.badge, isPresent ? styles.badgePresent : styles.badgeLate]}>
-                    <Text style={isPresent ? styles.badgePresentText : styles.badgeLateText}>
-                      {item.status}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })
-          ) : (
-            <Text style={{ textAlign: 'center', color: '#63796B', marginTop: 20 }}>No attendance history yet</Text>
-          )}
+        <View style={styles.navGrid}>
+          <TouchableOpacity style={styles.navBtn} onPress={() => navigation.navigate('HistoryTab' as any)}>
+            <Text style={styles.navBtnText}>ATTENDANCE HISTORY</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navBtn} onPress={() => navigation.navigate('LeaveTab' as any)}>
+            <Text style={styles.navBtnText}>LEAVE</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navBtn} onPress={() => navigation.navigate('SalaryTab' as any)}>
+            <Text style={styles.navBtnText}>SALARY / SUMMARY</Text>
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
 
-      <Modal visible={workDetailsVisible} animationType="slide" transparent>
+      <Modal visible={checkoutModalVisible} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Work Details</Text>
-            <Text style={styles.modalSub}>Please summarize your activities today.</Text>
-            
-            <TextInput
-              style={{
-                backgroundColor: '#F8FAF8',
-                borderWidth: 1,
-                borderColor: '#D0DDD5',
-                borderRadius: 12,
-                padding: 16,
-                minHeight: 120,
-                textAlignVertical: 'top',
-                color: '#1A3322',
-                marginBottom: 20,
-                marginTop: 10
-              }}
-              placeholder="E.g. Met with 5 farmers in Zone A..."
-              placeholderTextColor="#9BAFA2"
-              multiline
-              value={workDetailsText}
-              onChangeText={setWorkDetailsText}
-            />
+          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
+            <View style={styles.modalSheet}>
+              <Text style={styles.modalTitle}>Field Visit Details</Text>
+              <Text style={styles.modalSub}>Required before check-out.</Text>
+              
+              <Text style={styles.inputLabel}>Panchayat Visited *</Text>
+              <TextInput style={styles.textInput} placeholder="Enter Panchayat name" value={panchayatVisited} onChangeText={setPanchayatVisited} />
+              
+              <Text style={styles.inputLabel}>FIC Visited *</Text>
+              <TextInput style={styles.textInput} placeholder="Enter FIC name" value={ficVisited} onChangeText={setFicVisited} />
+              
+              <Text style={styles.inputLabel}>Members Attended *</Text>
+              <TextInput style={styles.textInput} placeholder="Number of members" keyboardType="number-pad" value={membersAttended} onChangeText={setMembersAttended} />
+              
+              <Text style={styles.inputLabel}>Purpose of Visit *</Text>
+              <TextInput style={[styles.textInput, { height: 60, textAlignVertical: 'top' }]} placeholder="Describe the purpose" multiline value={purposeOfVisit} onChangeText={setPurposeOfVisit} />
+              
+              <Text style={styles.inputLabel}>Additional Notes (Optional)</Text>
+              <TextInput style={[styles.textInput, { height: 60, textAlignVertical: 'top' }]} placeholder="Any other details..." multiline value={workDetailsText} onChangeText={setWorkDetailsText} />
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={{ flex: 1, padding: 16, alignItems: 'center' }} onPress={() => setWorkDetailsVisible(false)}>
-                <Text style={{ color: '#63796B', fontWeight: '600' }}>Skip</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={{ flex: 1, backgroundColor: '#2D5F3E', borderRadius: 12, padding: 16, alignItems: 'center' }} onPress={submitWorkDetails}>
-                <Text style={{ color: '#FFF', fontWeight: '700' }}>Submit</Text>
-              </TouchableOpacity>
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setCheckoutModalVisible(false)}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.submitBtn} onPress={performCheckout}>
+                  <Text style={styles.submitBtnText}>Submit & Check-Out</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
-
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3FAF5',
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    paddingBottom: 40,
-  },
-  greetRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 18,
-  },
-  eyebrow: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#9BAFA2',
-    textTransform: 'uppercase',
-    letterSpacing: 0.9,
-    marginBottom: 3,
-  },
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#16241C',
-  },
-  shiftChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#DCF2E3',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    marginTop: 8,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#1F6B42',
-    marginRight: 6,
-  },
-  shiftText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#1F6B42',
-  },
-  avatarGroup: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#2F8F5B',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#FFF',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  bellBtn: {
-    position: 'relative',
-    padding: 4,
-  },
-  bellIcon: {
-    fontSize: 18,
-  },
-  notifDot: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#C24936',
-  },
-  checkinCard: {
-    backgroundColor: '#2F8F5B',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#1F6B42',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.28,
-    shadowRadius: 24,
-    elevation: 6,
-  },
-  camBtn: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 5,
-  },
-  camIcon: {
-    fontSize: 36,
-  },
-  ciTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  ciSub: {
-    fontSize: 12.5,
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  locStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.16)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginTop: 14,
-  },
-  pulse: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#7CF0AE',
-    marginRight: 6,
-  },
-  locText: {
-    fontSize: 11.5,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  logRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
-  logBox: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DCEEE2',
+  container: { flex: 1, backgroundColor: '#F4F8F5' },
+  content: { padding: 20, paddingBottom: 40 },
+  header: { marginBottom: 20, alignItems: 'center' },
+  logoText: { fontSize: 18, fontWeight: '900', color: '#1F6B42', marginBottom: 4 },
+  dateText: { fontSize: 14, color: '#666', marginBottom: 8 },
+  empName: { fontSize: 22, fontWeight: '700', color: '#333' },
+  empId: { fontSize: 14, color: '#666', marginTop: 2 },
+  
+  summaryCard: {
+    backgroundColor: '#FFF',
     borderRadius: 16,
-    padding: 14,
-  },
-  eyebrowSmall: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#9BAFA2',
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  logTime: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#16241C',
-  },
-  emptyTime: {
-    color: '#9BAFA2',
-  },
-  sectionHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 22,
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#16241C',
-  },
-  linkSm: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2F8F5B',
-  },
-  emptyCap: {
-    height: 110,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: '#B9DCC4',
-    borderStyle: 'dashed',
-    backgroundColor: '#EAF6EE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyCapIcon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  emptyCapText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: '#63796B',
-  },
-  stampWrap: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#DCEEE2',
-  },
-  stampPhotoBox: {
-    width: '100%',
-    height: 180,
-    borderRadius: 14,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  stampPhoto: {
-    width: '100%',
-    height: '100%',
-  },
-  stampOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-  },
-  stampAddr: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  stampCoords: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.85)',
-    marginTop: 2,
-  },
-  stampRibbon: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  ribbonApproved: {
-    backgroundColor: '#2F8F5B',
-  },
-  ribbonRejected: {
-    backgroundColor: '#C24936',
-  },
-  ribbonFlagged: {
-    backgroundColor: '#B9791C',
-  },
-  ribbonPending: {
-    backgroundColor: '#1A6DB5',
-  },
-  ribbonText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  stampFoot: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 6,
-    paddingTop: 8,
-  },
-  stampFootTime: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#16241C',
-  },
-  stampFootDate: {
-    fontSize: 11,
-    color: '#63796B',
-  },
-  miniHistory: {
-    gap: 8,
-  },
-  miniRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DCEEE2',
-    borderRadius: 15,
-    padding: 12,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 12,
-  },
-  miniInfo: {
-    flex: 1,
-  },
-  miniDay: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#16241C',
-  },
-  miniHours: {
-    fontSize: 11.5,
-    color: '#63796B',
-    marginTop: 2,
-  },
-  badge: {
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  badgePresent: {
-    backgroundColor: '#DCF2E3',
-  },
-  badgePresentText: {
-    color: '#1F6B42',
-    fontSize: 10.5,
-    fontWeight: '700',
-  },
-  badgeLate: {
-    backgroundColor: '#FBEDD3',
-  },
-  badgeLateText: {
-    color: '#B9791C',
-    fontSize: 10.5,
-    fontWeight: '700',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(10, 20, 14, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: '#F3FAF5',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
     padding: 20,
-    paddingBottom: 36,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E8F5E9',
+    elevation: 2,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4,
   },
-  modalHandle: {
-    width: 38,
-    height: 4,
-    backgroundColor: '#DCEEE2',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 16,
+  cardTitle: { fontSize: 14, fontWeight: 'bold', color: '#1F6B42', marginBottom: 16, textAlign: 'center' },
+  row: { flexDirection: 'row', justifyContent: 'space-between' },
+  col: { flex: 1 },
+  label: { fontSize: 12, color: '#888', marginBottom: 4, textTransform: 'uppercase', fontWeight: '600' },
+  val: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  
+  checkInBtn: {
+    backgroundColor: '#1F6B42',
+    borderRadius: 12,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#16241C',
+  checkInBtnText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+  
+  checkoutContainer: {
+    backgroundColor: '#FFF3E0',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#FFE0B2',
   },
-  modalSub: {
-    fontSize: 12.5,
-    color: '#63796B',
-    marginTop: 2,
-    marginBottom: 16,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 18,
-  },
-  btnGhost: {
-    flex: 1,
-    backgroundColor: '#EAF6EE',
-    borderRadius: 14,
-    paddingVertical: 14,
+  checkoutLabel: { fontSize: 18, fontWeight: '900', color: '#E87722', marginBottom: 4 },
+  checkoutSub: { fontSize: 14, color: '#E87722', marginBottom: 8, fontWeight: '600' },
+  checkoutWindow: { fontSize: 12, color: '#E87722', marginBottom: 16, fontStyle: 'italic' },
+  checkOutBtn: {
+    backgroundColor: '#E87722',
+    borderRadius: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 40,
+    width: '100%',
     alignItems: 'center',
   },
-  btnGhostText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#16241C',
-  },
-  btnPrimary: {
-    flex: 1.5,
-    backgroundColor: '#2F8F5B',
-    borderRadius: 14,
-    paddingVertical: 14,
+  checkOutBtnText: { color: '#FFF', fontSize: 18, fontWeight: 'bold' },
+
+  navGrid: { gap: 12 },
+  navBtn: {
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E8F5E9',
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    elevation: 1,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2,
   },
-  btnPrimaryText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  navBtnText: { color: '#1F6B42', fontWeight: '700', fontSize: 14 },
+  
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalSheet: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 8 },
+  modalSub: { fontSize: 14, color: '#666', marginBottom: 16 },
+  inputLabel: { fontSize: 13, color: '#333', marginBottom: 4, fontWeight: '600' },
+  textInput: {
+    backgroundColor: '#F5F5F5', borderRadius: 8, paddingHorizontal: 12, height: 44,
+    borderWidth: 1, borderColor: '#EEE', fontSize: 14, color: '#333', marginBottom: 12
   },
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 10 },
+  cancelBtn: { flex: 1, paddingVertical: 16, alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 12 },
+  cancelBtnText: { color: '#666', fontWeight: '600', fontSize: 16 },
+  submitBtn: { flex: 1, paddingVertical: 16, alignItems: 'center', backgroundColor: '#1F6B42', borderRadius: 12 },
+  submitBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
 });
-
-
-
-
-
-
-
-
-
