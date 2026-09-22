@@ -55,20 +55,11 @@ export default function WorkerLogin({ navigation }: Props) {
 
           <View style={styles.content}>
             
-            {/* Logo Area */}
-            <View style={styles.logoContainer}>
-              {/* Using text to approximate the logo since we don't have the image asset */}
-              <View style={styles.logoPlaceholder}>
-                <Text style={styles.logoAtfa}>Atfa</Text>
-                <Text style={styles.logoSub}>FARMER PRODUCER{'\n'}COMPANY LIMITED</Text>
-              </View>
-            </View>
-
-            {/* Title & Subtitle */}
-            <View style={styles.headerTextContainer}>
-              <Text style={styles.title}>Field Staff Attendance App</Text>
-              <Text style={styles.subtitle}>Track  •  Monitor  •  Empower</Text>
-            </View>
+            {/* Top Header Image (Logo, Leaves, Title) */}
+            <Image 
+              source={require('../../../assets/images/login_header.png')} 
+              style={{ width: '100%', height: 260, resizeMode: 'contain', marginTop: 20 }} 
+            />
 
             {/* Login Form */}
             <View style={styles.form}>
@@ -129,27 +120,16 @@ export default function WorkerLogin({ navigation }: Props) {
               <TouchableOpacity style={styles.addEmployeeBtn} onPress={() => navigation.navigate('Register')}>
                 <Text style={styles.addEmployeeText}>+ Add New Employee</Text>
               </TouchableOpacity>
-
             </View>
-          </View>
 
-          {/* Bottom Agricultural Landscape & SFAC Branding */}
-          <View style={styles.footerContainer}>
-            {/* Background Placeholder Shape */}
-            <View style={styles.footerBgShape}>
-              <View style={styles.sfacContainer}>
-                <Text style={styles.sfacLogo}>🌱 SFAC</Text>
-                <View style={styles.sfacDivider} />
-                <View>
-                  <Text style={styles.sfacSupported}>Supported by</Text>
-                  <Text style={styles.sfacTitle}>SFAC</Text>
-                  <Text style={styles.sfacScheme}>under 10K FPO Scheme</Text>
-                </View>
-              </View>
-            </View>
           </View>
-
         </ScrollView>
+        
+        {/* Bottom Agricultural Landscape & SFAC Branding Image */}
+        <Image 
+          source={require('../../../assets/images/login_footer.png')} 
+          style={{ width: '100%', height: 200, resizeMode: 'cover', position: 'absolute', bottom: 0, zIndex: -1 }} 
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -190,49 +170,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  logoContainer: {
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  logoPlaceholder: {
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: '#F2A900',
-    paddingBottom: 10,
-  },
-  logoAtfa: {
-    fontSize: 64,
-    fontWeight: '900',
-    color: '#0A5D31',
-    fontStyle: 'italic',
-    letterSpacing: -2,
-    lineHeight: 70,
-  },
-  logoSub: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0A5D31',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-  },
-  headerTextContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0A5D31',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#7B8D83',
-    fontWeight: '500',
-  },
   form: {
     width: '100%',
-    maxWidth: 400,
+    paddingHorizontal: 20,
+    marginTop: 20,
   },
   inputContainer: {
     flexDirection: 'row',

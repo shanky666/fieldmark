@@ -26,8 +26,9 @@ export default function Salary() {
   const monthRecords = history.filter(r => r.date.startsWith(currentMonthStr));
 
   const totalWorkingDays = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-  const presentDays = monthRecords.filter(r => r.status === 'APPROVED' || r.status === 'PENDING').length;
-  const absentDays = monthRecords.filter(r => r.status === 'REJECTED' || r.status === 'ABSENT').length;
+  // Only APPROVED days count for salary. PENDING means they are still working or haven't finished 8 hours.
+  const presentDays = monthRecords.filter(r => r.status === 'APPROVED').length;
+  const absentDays = monthRecords.filter(r => r.status === 'ABSENT' || r.status === 'REJECTED').length;
   const totalRequiredHours = totalWorkingDays * 8;
   
   const totalWorkedSeconds = monthRecords.reduce((acc, r) => acc + (r.duration_seconds || 0), 0);

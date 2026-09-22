@@ -104,10 +104,17 @@ export default function Home({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.content}>
         
         <View style={styles.header}>
-          <Text style={styles.logoText}>ATFA FIELD STAFF</Text>
-          <Text style={styles.dateText}>{todayStr}</Text>
-          <Text style={styles.empName}>{userProfile?.name}</Text>
-          <Text style={styles.empId}>ID: {userProfile?.employee_id}</Text>
+          <View style={{ alignItems: 'center', flex: 1 }}>
+            <Text style={styles.logoText}>ATIA FIELD STAFF</Text>
+            <Text style={styles.dateText}>{todayStr}</Text>
+            <Text style={styles.empName}>{userProfile?.name}</Text>
+            <Text style={styles.empId}>ID: {userProfile?.employee_id}</Text>
+          </View>
+          
+          <TouchableOpacity style={styles.bellBtn} onPress={() => navigation.navigate('MessagesTab' as any)}>
+            <Text style={{ fontSize: 24 }}>🔔</Text>
+            <View style={styles.notifDot} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.summaryCard}>
@@ -219,7 +226,9 @@ export default function Home({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F8F5' },
   content: { padding: 20, paddingBottom: 40 },
-  header: { marginBottom: 20, alignItems: 'center' },
+  header: { marginBottom: 20, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  bellBtn: { padding: 8, position: 'absolute', right: 0, top: 0 },
+  notifDot: { position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderRadius: 5, backgroundColor: '#E87722' },
   logoText: { fontSize: 18, fontWeight: '900', color: '#1F6B42', marginBottom: 4 },
   dateText: { fontSize: 14, color: '#666', marginBottom: 8 },
   empName: { fontSize: 22, fontWeight: '700', color: '#333' },

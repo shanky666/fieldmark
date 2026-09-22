@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, ActivityIndicator, Image, Alert, TouchableOpacity } from 'react-native';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
+import { CONFIG } from '../../constants/config';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 export default function History() {
   const { workerId } = useAuthStore();
   const [history, setHistory] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   useEffect(() => {
     fetchHistoryAndStats();
-  }, []);
+  }, [selectedDate]);
 
   const fetchHistoryAndStats = async () => {
     setLoading(true);
     try {
+      const yyyy = selectedDate.getFullYear();
+      const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
       const [historyRes, statsRes] = await Promise.all([
-        apiClient.get('/api/attendance/me/'),
+        apiClient.get(`/api/attendance/me/?month=${yyyy}-${mm}`),
         workerId ? apiClient.get(`/api/workers/list/${workerId}/stats/`) : Promise.resolve({ data: null })
       ]);
       setHistory(historyRes.data || []);
@@ -29,12 +35,42 @@ export default function History() {
     }
   };
 
+  const downloadCSV = async () => {
+    if (history.length === 0) {
+      Alert.alert('No Data', 'No attendance records available to download.');
+      return;
+    }
+
+    try {
+      const header = 'Date,Check-In,Check-Out,Duration,Status,Panchayat,FIC,Members,Purpose\n';
+      const rows = history.map(item => {
+        const checkIn = item.marked_at ? new Date(item.marked_at).toLocaleTimeString() : '--';
+        const checkOut = item.check_out_at ? new Date(item.check_out_at).toLocaleTimeString() : '--';
+        return `${item.date},${checkIn},${checkOut},${item.duration_formatted || '--'},${item.status},"${item.panchayat_visited || ''}","${item.fic_visited || ''}","${item.members_attended || ''}","${item.purpose_of_visit || ''}"`;
+      }).join('\n');
+
+      const csvData = header + rows;
+      const yyyy = selectedDate.getFullYear();
+      const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const fileUri = FileSystem.documentDirectory + `attendance_history_${yyyy}_${mm}.csv`;
+      
+      await FileSystem.writeAsStringAsync(fileUri, csvData, { encoding: FileSystem.EncodingType.UTF8 });
+      
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri);
+      } else {
+        Alert.alert('Sharing Unavailable', 'Unable to share or save the file on this device.');
+      }
+    } catch (error) {
+      console.error('Download failed', error);
+      Alert.alert('Error', 'Failed to generate CSV file.');
+    }
+  };
+
   const presentCount = stats?.days_present ?? history.filter(h => h.status === 'APPROVED').length;
   const pendingCount = stats?.days_pending ?? history.filter(h => h.status === 'PENDING').length;
   const absentCount = stats?.days_absent ?? history.filter(h => h.status === 'REJECTED').length;
   const attendanceRate = stats?.approval_rate_pct ?? (history.length > 0 ? Math.round((presentCount / history.length) * 100) : 100);
-
-  const currentMonthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   return (
     <SafeAreaView style={styles.container}>
@@ -63,7 +99,31 @@ export default function History() {
 
         {/* Monthly History Section */}
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>{currentMonthYear}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => {
+              const newDate = new Date(selectedDate);
+              newDate.setMonth(newDate.getMonth() - 1);
+              setSelectedDate(newDate);
+            }} style={{ padding: 8 }}>
+              <Text style={{ fontSize: 18, color: '#1F6B42', fontWeight: 'bold' }}>{"<"}</Text>
+            </TouchableOpacity>
+            
+            <Text style={[styles.sectionTitle, { marginHorizontal: 8, marginBottom: 0 }]}>
+              {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </Text>
+            
+            <TouchableOpacity onPress={() => {
+              const newDate = new Date(selectedDate);
+              newDate.setMonth(newDate.getMonth() + 1);
+              setSelectedDate(newDate);
+            }} style={{ padding: 8 }}>
+              <Text style={{ fontSize: 18, color: '#1F6B42', fontWeight: 'bold' }}>{">"}</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity onPress={downloadCSV} style={{ backgroundColor: '#E8F5E9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
+            <Text style={{ color: '#1F6B42', fontSize: 12, fontWeight: 'bold' }}>Download CSV</Text>
+          </TouchableOpacity>
         </View>
 
         {loading ? (
@@ -119,6 +179,19 @@ export default function History() {
                         <Text style={{ fontSize: 11, color: '#333' }}>FIC: {item.fic_visited}</Text>
                         <Text style={{ fontSize: 11, color: '#333' }}>Members: {item.members_attended}</Text>
                         <Text style={{ fontSize: 11, color: '#333' }}>Purpose: {item.purpose_of_visit}</Text>
+                      </View>
+                    ) : null}
+                    
+                    {item.photo_url ? (
+                      <View style={{ marginTop: 8 }}>
+                        <Text style={{ fontSize: 11, color: '#63796B', marginBottom: 4, fontWeight: 'bold' }}>Attendance Photo:</Text>
+                        <View style={{ height: 100, width: 100, borderRadius: 8, overflow: 'hidden', backgroundColor: '#E8F5E9' }}>
+                          <Image 
+                            source={{ uri: String(item.photo_url).startsWith('http') ? item.photo_url : `${CONFIG.API_BASE_URL.replace(/\/+$/, '')}${item.photo_url.startsWith('/') ? '' : '/'}${item.photo_url}` }} 
+                            style={{ width: '100%', height: '100%' }} 
+                            resizeMode="cover" 
+                          />
+                        </View>
                       </View>
                     ) : null}
                   </View>

@@ -305,7 +305,15 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         record.purpose_of_visit = request.data.get('purpose_of_visit', record.purpose_of_visit)
 
         record.check_out_at = timezone.now()
-        record.save(update_fields=['check_out_at', 'work_details', 'panchayat_visited', 'fic_visited', 'members_attended', 'purpose_of_visit'])
+        
+        # 8 Hour strict rule for salary
+        duration = (record.check_out_at - record.marked_at).total_seconds()
+        if duration >= (8 * 3600) - 300: # allow 5 mins grace for clock drift
+            record.status = 'APPROVED'
+        else:
+            record.status = 'ABSENT'
+            
+        record.save(update_fields=['check_out_at', 'work_details', 'panchayat_visited', 'fic_visited', 'members_attended', 'purpose_of_visit', 'status'])
 
         return Response(
             AttendanceRecordSerializer(record).data,

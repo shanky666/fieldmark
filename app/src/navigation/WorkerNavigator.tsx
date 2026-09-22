@@ -23,6 +23,7 @@ export type WorkerStackParamList = {
   WorkerTabs: undefined;
   MarkAttendance: undefined;
   CorrectionRequest: undefined;
+  MessagesTab: undefined;
   HistoryDetail: { recordId: number };
   NewGrievance: undefined;
   GrievanceThread: { threadId: string; supervisorName: string };
@@ -84,14 +85,6 @@ function WorkerTabNavigator() {
         }}
       />
       <Tab.Screen 
-        name="MessagesTab" 
-        component={GrievanceInbox} 
-        options={{
-          tabBarLabel: t('worker.messages'),
-          tabBarIcon: ({ focused }) => <TabBarIcon label="💬" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
         name="ProfileTab" 
         component={Profile} 
         options={{
@@ -109,6 +102,7 @@ export default function WorkerNavigator() {
       <Stack.Screen name="WorkerTabs" component={WorkerTabNavigator} />
       <Stack.Screen name="MarkAttendance" component={MarkAttendance} />
       <Stack.Screen name="CorrectionRequest" component={CorrectionRequest} />
+      <Stack.Screen name="MessagesTab" component={GrievanceInbox} />
       <Stack.Screen name="HistoryDetail" component={HistoryDetail} />
       <Stack.Screen name="NewGrievance" component={NewGrievance} />
       <Stack.Screen name="GrievanceThread" component={GrievanceThread} />
