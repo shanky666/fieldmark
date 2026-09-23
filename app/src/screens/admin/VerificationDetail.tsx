@@ -183,7 +183,6 @@ export default function VerificationDetail({ route, navigation }: VerificationDe
             <View>
               <Text style={styles.workerName}>{record.worker_name || record.worker_detail?.name || `Worker #${record.worker}`}</Text>
               <Text style={styles.employeeId}>Employee ID: {record.worker_employee_id || record.worker_detail?.employee_id || 'N/A'}</Text>
-              <Text style={styles.employeeId}>Zone: {record.zone_name || record.worker_detail?.zone_detail?.name || 'Assigned Zone'}</Text>
             </View>
             <StatusBadge status={record.status} />
           </View>
@@ -217,7 +216,7 @@ export default function VerificationDetail({ route, navigation }: VerificationDe
           {record.check_out_at && (
             <>
               <View style={styles.divider} />
-              <Text style={styles.label}>Checkout Questionnaire Answers</Text>
+              <Text style={styles.label}>Checkout Details</Text>
               <View style={styles.gpsGrid}>
                 <View style={styles.gpsCell}>
                   <Text style={styles.gpsCellTitle}>PANCHAYAT VISITED</Text>
@@ -238,6 +237,14 @@ export default function VerificationDetail({ route, navigation }: VerificationDe
                   <Text style={styles.gpsCellVal}>{record.purpose_of_visit || 'N/A'}</Text>
                 </View>
               </View>
+              {record.work_details ? (
+                <View style={[styles.gpsGrid, { marginTop: 10 }]}>
+                  <View style={[styles.gpsCell, { width: '100%' }]}>
+                    <Text style={styles.gpsCellTitle}>WORK DETAILS</Text>
+                    <Text style={styles.gpsCellVal}>{record.work_details}</Text>
+                  </View>
+                </View>
+              ) : null}
             </>
           )}
 

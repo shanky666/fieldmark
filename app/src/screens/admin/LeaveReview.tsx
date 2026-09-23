@@ -89,6 +89,18 @@ export default function LeaveReview() {
 
         {item.reason ? <Text style={styles.reasonText}>"{item.reason}"</Text> : null}
 
+        {item.proof_document ? (
+          <TouchableOpacity 
+            style={{ marginVertical: 6 }} 
+            onPress={() => {
+              const url = item.proof_document.startsWith('http') ? item.proof_document : `${CONFIG.API_BASE_URL}${item.proof_document}`;
+              import('react-native').then(({ Linking }) => Linking.openURL(url));
+            }}
+          >
+            <Text style={{ color: '#1A6DB5', fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' }}>📎 View Proof Document</Text>
+          </TouchableOpacity>
+        ) : null}
+
         {item.status === 'REJECTED' && item.rejection_note ? (
           <Text style={styles.rejectionNoteText}>Rejection note: {item.rejection_note}</Text>
         ) : null}

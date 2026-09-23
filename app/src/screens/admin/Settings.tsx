@@ -230,55 +230,8 @@ export default function Settings() {
           </TouchableOpacity>
         </View>
 
-        {/* Shift Management */}
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Shift management</Text>
-        </View>
 
-        <View style={styles.groupCard}>
-          {loadingData ? (
-            <ActivityIndicator color="#2F8F5B" style={{ marginVertical: 14 }} />
-          ) : shifts.length === 0 ? (
-            <Text style={styles.emptyText}>No shifts configured. Tap below to add a shift.</Text>
-          ) : (
-            shifts.map((s, idx) => (
-              <View key={s.id} style={[styles.itemRow, idx === shifts.length - 1 && { borderBottomWidth: 1, borderBottomColor: '#DCEEE2' }]}>
-                <Text style={styles.itemText}>🕒 {s.name} · {s.window_start?.substring(0, 5)}–{s.window_end?.substring(0, 5)}</Text>
-                <TouchableOpacity onPress={() => handleDeleteShift(s.id, s.name)}>
-                  <Text style={styles.deleteBtnText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => setAddShiftVisible(true)}>
-            <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>+ Add new shift</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Zone Management */}
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Zone management</Text>
-        </View>
-
-        <View style={styles.groupCard}>
-          {loadingData ? (
-            <ActivityIndicator color="#2F8F5B" style={{ marginVertical: 14 }} />
-          ) : zones.length === 0 ? (
-            <Text style={styles.emptyText}>No geofence zones configured. Tap below to add a zone.</Text>
-          ) : (
-            zones.map((z, idx) => (
-              <View key={z.id} style={[styles.itemRow, idx === zones.length - 1 && { borderBottomWidth: 1, borderBottomColor: '#DCEEE2' }]}>
-                <Text style={styles.itemText}>📍 {z.name} · {z.radius_meters || 500}m radius</Text>
-                <TouchableOpacity onPress={() => handleDeleteZone(z.id, z.name)}>
-                  <Text style={styles.deleteBtnText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => setAddZoneVisible(true)}>
-            <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>+ Add new zone</Text>
-          </TouchableOpacity>
-        </View>
 
         {/* Anomaly Rules */}
         <View style={styles.sectionHead}>

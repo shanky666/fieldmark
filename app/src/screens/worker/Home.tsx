@@ -111,10 +111,7 @@ export default function Home({ navigation }: any) {
             <Text style={styles.empId}>ID: {userProfile?.employee_id}</Text>
           </View>
           
-          <TouchableOpacity style={styles.bellBtn} onPress={() => navigation.navigate('MessagesTab' as any)}>
-            <Text style={{ fontSize: 24 }}>🔔</Text>
-            <View style={styles.notifDot} />
-          </TouchableOpacity>
+
         </View>
 
         <View style={styles.summaryCard}>

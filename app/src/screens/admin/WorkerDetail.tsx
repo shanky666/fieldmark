@@ -36,10 +36,6 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
       const workerRes = await apiClient.get(`/api/workers/list/${workerId}/`);
       setWorker(workerRes.data);
 
-      // 2. Fetch all zones for reassignment dropdown
-      const zonesRes = await apiClient.get('/api/workers/zones/');
-      setZones(zonesRes.data);
-
       // 3. Fetch attendance for calendar
       const attRes = await apiClient.get(`/api/attendance/?worker=${workerId}`);
       setAttendance(attRes.data);
@@ -202,31 +198,17 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
           </View>
         </View>
 
-        {/* Zone Reassignment */}
+        {/* Salary & Attendance Summary */}
         <View style={styles.card}>
-          <Text style={styles.cardSectionTitle}>Reassign Zone</Text>
-          <Text style={styles.currentZoneText}>
-            Current: {worker.zone_detail?.name || 'Unassigned'}
-          </Text>
-          {updating && <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 10 }} />}
-          
-          <View style={styles.pillRow}>
-            {zones.map((zone) => {
-              const isCurrent = worker.assigned_zone === zone.id;
-              return (
-                <TouchableOpacity
-                  key={zone.id}
-                  style={[styles.pill, isCurrent && styles.activePill]}
-                  disabled={updating || isCurrent}
-                  onPress={() => handleReassignZone(zone.id, zone.name)}
-                >
-                  <Text style={[styles.pillLabel, isCurrent && styles.activePillLabel]}>
-                    {zone.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <Text style={styles.cardSectionTitle}>Monthly Salary Summary</Text>
+          <Text style={{ fontSize: 13, color: '#63796B', marginBottom: 8 }}>Fixed Monthly Salary: ₹6,000</Text>
+          <Text style={{ fontSize: 13, color: '#63796B', marginBottom: 8 }}>Requirement: 8 hours/day</Text>
+          <TouchableOpacity 
+            style={[styles.statusBtn, { backgroundColor: '#F3FAF5', borderWidth: 1, borderColor: '#2F8F5B', alignSelf: 'flex-start', marginTop: 10 }]}
+            onPress={() => Alert.alert('Salary Info', 'Salary tracking relies on 8 hour shifts. Incomplete shifts will deduct the daily rate proportionally or mark as absent.')}
+          >
+            <Text style={[styles.statusBtnText, { color: '#2F8F5B' }]}>View Salary Policy</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Security & Audit History */}

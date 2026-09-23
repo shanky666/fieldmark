@@ -96,12 +96,8 @@ export default function Workers({ navigation }: any) {
   const filteredWorkers = workersList.filter(w => {
     const nameStr = w.name || `${w.first_name || ''} ${w.last_name || ''}`;
     const matchesQuery = `${nameStr} ${w.employee_id || ''} ${w.zone || ''} ${w.role || ''}`.toLowerCase().includes(searchQuery.toLowerCase());
-    if (selectedZoneFilter === 'all') return matchesQuery;
-    if (selectedZoneFilter === 'inactive') return matchesQuery && w.is_active === false;
-    return matchesQuery && (w.assigned_zone_name === selectedZoneFilter || w.zone === selectedZoneFilter || w.zone_detail?.name === selectedZoneFilter);
+    return matchesQuery;
   });
-
-  const filterChips = ['all', ...zonesList.map(z => z.name), 'inactive'];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -120,27 +116,12 @@ export default function Workers({ navigation }: any) {
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search by name, ID, or zone…"
+            placeholder="Search by name or ID…"
             placeholderTextColor="#9BAFA2"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
-
-        {/* Filter Chips */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
-          {filterChips.map(chip => (
-            <TouchableOpacity 
-              key={chip} 
-              style={[styles.zoneChip, selectedZoneFilter === chip && styles.zoneChipSel]}
-              onPress={() => setSelectedZoneFilter(chip)}
-            >
-              <Text style={[styles.zoneChipText, selectedZoneFilter === chip && styles.zoneChipTextSel]}>
-                {chip === 'all' ? 'All' : chip}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
 
         {/* Worker List */}
         {loading ? (
@@ -182,7 +163,7 @@ export default function Workers({ navigation }: any) {
                   )}
                   <View style={styles.empInfo}>
                     <Text style={styles.empName}>{displayName}</Text>
-                    <Text style={styles.empRole}>{e.assigned_zone_name || e.zone || 'Site'} · {isStaff ? 'Supervisor' : 'Employee'}</Text>
+                    <Text style={styles.empRole}>{isStaff ? 'Supervisor' : 'Employee'}</Text>
                   </View>
                   <View style={styles.empRight}>
                     <View style={[styles.badge, isActive ? styles.badgeActive : styles.badgeInactive]}>

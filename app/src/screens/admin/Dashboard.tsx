@@ -8,6 +8,8 @@ export default function Dashboard({ navigation }: any) {
   const [searchQuery, setSearchQuery] = useState('');
 
   const [records, setRecords] = useState<any[]>([]);
+  const [totalWorkers, setTotalWorkers] = useState(0);
+  const [pendingLeaveCount, setPendingLeaveCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,8 +19,20 @@ export default function Dashboard({ navigation }: any) {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/api/attendance/');
-      setRecords(res.data.results || res.data || []);
+      const [attRes, workersRes, leaveRes] = await Promise.all([
+        apiClient.get('/api/attendance/'),
+        apiClient.get('/api/workers/'),
+        apiClient.get('/api/leave/')
+      ]);
+      setRecords(attRes.data.results || attRes.data || []);
+      
+      const workers = workersRes.data.results || workersRes.data || [];
+      // Don't count superusers/staff if possible, or just count all active workers
+      setTotalWorkers(workers.filter((w: any) => !w.is_staff && !w.is_superuser).length || workers.length);
+      
+      const leaves = leaveRes.data.results || leaveRes.data || [];
+      setPendingLeaveCount(leaves.filter((l: any) => l.status === 'PENDING').length);
+
     } catch (e) {
       console.warn("Failed to fetch admin dashboard records", e);
     } finally {
@@ -49,9 +63,9 @@ export default function Dashboard({ navigation }: any) {
     }
   };
 
-  const presentCount = records.filter(r => r.status === 'APPROVED').length;
+  const presentCount = records.filter(r => r.status === 'APPROVED' || r.status === 'PENDING').length;
+  const absentCount = Math.max(0, totalWorkers - presentCount);
   const pendingRecords = records.filter(r => r.status === 'PENDING' || r.status === 'FLAGGED');
-  const pendingCount = pendingRecords.length;
 
   const filteredCheckIns = records.filter(item => {
     const nameStr = item.worker_name || `Worker #${item.worker}`;
@@ -82,17 +96,21 @@ export default function Dashboard({ navigation }: any) {
 
         {/* Scrollable KPI Cards */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.kpiScroll}>
+          <View style={[styles.kpi, styles.kPresent, { backgroundColor: '#EAF6EE' }]}>
+            <Text style={[styles.kpiNum, { color: '#2F8F5B' }]}>{totalWorkers}</Text>
+            <Text style={[styles.kpiLbl, { color: '#2F8F5B' }]}>Total Staff</Text>
+          </View>
           <View style={[styles.kpi, styles.kPresent]}>
             <Text style={[styles.kpiNum, { color: '#1F6B42' }]}>{presentCount}</Text>
             <Text style={[styles.kpiLbl, { color: '#1F6B42' }]}>Present</Text>
           </View>
-          <View style={[styles.kpi, styles.kPending]}>
-            <Text style={[styles.kpiNum, { color: '#1A6DB5' }]}>{pendingCount}</Text>
-            <Text style={[styles.kpiLbl, { color: '#1A6DB5' }]}>Pending</Text>
+          <View style={[styles.kpi, styles.kPending, { backgroundColor: '#FDECEC' }]}>
+            <Text style={[styles.kpiNum, { color: '#C24936' }]}>{absentCount}</Text>
+            <Text style={[styles.kpiLbl, { color: '#C24936' }]}>Absent</Text>
           </View>
-          <View style={[styles.kpi, styles.kPresent, { backgroundColor: '#EAF6EE' }]}>
-            <Text style={[styles.kpiNum, { color: '#2F8F5B' }]}>{records.length}</Text>
-            <Text style={[styles.kpiLbl, { color: '#2F8F5B' }]}>Total Logs</Text>
+          <View style={[styles.kpi, styles.kPending]}>
+            <Text style={[styles.kpiNum, { color: '#1A6DB5' }]}>{pendingLeaveCount}</Text>
+            <Text style={[styles.kpiLbl, { color: '#1A6DB5' }]}>Pending Leave</Text>
           </View>
         </ScrollView>
 
@@ -136,7 +154,11 @@ export default function Dashboard({ navigation }: any) {
                   </View>
                   <View style={styles.empInfo}>
                     <Text style={styles.empName}>{e.worker_name || `Worker #${e.worker}`}</Text>
-                    <Text style={styles.empRole}>{e.zone_name || 'Assigned Zone'}</Text>
+                    {e.latitude && e.longitude ? (
+                      <Text style={styles.empRole}>📍 {e.latitude.substring(0, 7)}, {e.longitude.substring(0, 7)}</Text>
+                    ) : (
+                      <Text style={styles.empRole}>📍 Location pending</Text>
+                    )}
                   </View>
                   <View style={styles.empRight}>
                     <View style={[
@@ -181,7 +203,7 @@ export default function Dashboard({ navigation }: any) {
               </View>
               <View style={styles.vInfo}>
                 <Text style={styles.vName}>{pendingRecords[0].worker_name || `Worker #${pendingRecords[0].worker}`}</Text>
-                <Text style={styles.vMeta}>{pendingRecords[0].zone_name || 'Assigned Zone'} · {pendingRecords[0].date}</Text>
+                <Text style={styles.vMeta}>{pendingRecords[0].date}</Text>
                 <View style={styles.gpsPillOk}>
                   <Text style={styles.gpsPillOkText}>✓ Pending Admin Verification</Text>
                 </View>

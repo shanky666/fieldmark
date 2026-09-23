@@ -138,7 +138,7 @@ export default function Profile() {
           </TouchableOpacity>
           <Text style={styles.name}>{userProfile?.name || 'Employee Profile'}</Text>
           <Text style={styles.roleSub}>
-            {userProfile?.role || 'Field Worker'} · {userProfile?.zone_detail?.name || userProfile?.zone || 'Assigned Zone'}
+            {userProfile?.role || 'Field Worker'}
           </Text>
           
           <View style={styles.idChip}>
@@ -182,17 +182,9 @@ export default function Profile() {
 
         {/* Settings List */}
         <View style={styles.settingsList}>
-          <TouchableOpacity style={styles.settingsItem} onPress={() => setLocationModal(true)}>
-            <Text style={styles.settingsIcon}>📍</Text>
-            <Text style={styles.settingsLabel}>Work location & assigned zone</Text>
-            <Text style={styles.arrow}>›</Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity style={styles.settingsItem} onPress={() => setShiftModal(true)}>
-            <Text style={styles.settingsIcon}>📅</Text>
-            <Text style={styles.settingsLabel}>Shift schedule</Text>
-            <Text style={styles.arrow}>›</Text>
-          </TouchableOpacity>
+
+
 
           <TouchableOpacity style={styles.settingsItem} onPress={fetchMyPhotos}>
             <Text style={styles.settingsIcon}>📸</Text>

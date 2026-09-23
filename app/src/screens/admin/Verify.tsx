@@ -218,7 +218,7 @@ export default function Verify({ navigation }: any) {
                     <TouchableOpacity style={styles.vInfo} onPress={() => navigation.navigate('VerificationDetail', { recordId: item.id })}>
                       <Text style={styles.vName}>{item.worker_name || item.worker_detail?.name || `Worker #${item.worker}`}</Text>
                       <Text style={styles.vMeta}>
-                        ID: {item.worker_employee_id || item.worker_detail?.employee_id || 'N/A'} · {item.zone_name || 'Zone'} · {item.date}
+                        ID: {item.worker_employee_id || item.worker_detail?.employee_id || 'N/A'} · {item.date}
                       </Text>
                       
                       <Text style={[styles.vMeta, { color: '#16241C', fontWeight: '600', marginTop: 4 }]}>
@@ -226,15 +226,11 @@ export default function Verify({ navigation }: any) {
                       </Text>
 
                       <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-                        {item.gps_match === 'MATCHED' ? (
-                          <View style={styles.gpsPillOk}>
-                            <Text style={styles.gpsPillOkText}>✓ In zone</Text>
+                        {item.latitude && item.longitude ? (
+                          <View style={[styles.gpsPillOk, { backgroundColor: '#EBF4F9' }]}>
+                            <Text style={[styles.gpsPillOkText, { color: '#1A6DB5' }]}>📍 {item.latitude.substring(0,6)}, {item.longitude.substring(0,6)}</Text>
                           </View>
-                        ) : (
-                          <View style={styles.gpsPillBad}>
-                            <Text style={styles.gpsPillBadText}>⚠ GPS review</Text>
-                          </View>
-                        )}
+                        ) : null}
 
                         <View style={[styles.gpsPillOk, { backgroundColor: item.check_out_at ? '#DCF2E3' : '#FBEDD3' }]}>
                           <Text style={[styles.gpsPillOkText, { color: item.check_out_at ? '#1F6B42' : '#B9791C' }]}>

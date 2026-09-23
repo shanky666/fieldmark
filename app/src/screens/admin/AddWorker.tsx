@@ -28,34 +28,13 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
   const [workerType, setWorkerType] = useState<'PERMANENT' | 'CONTRACTOR' | 'SEASONAL'>('PERMANENT');
   
   const [zones, setZones] = useState<any[]>([]);
-  const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
-  
   const [contractStart, setContractStart] = useState('');
   const [contractEnd, setContractEnd] = useState('');
-  const [loadingZones, setLoadingZones] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    const fetchZones = async () => {
-      try {
-        const res = await apiClient.get('/api/workers/zones/');
-        const loadedZones = res.data.results || res.data || [];
-        setZones(loadedZones);
-        if (loadedZones.length > 0) {
-          setSelectedZoneId(loadedZones[0].id);
-        }
-      } catch (e) {
-        console.error("Failed to load zones", e);
-      } finally {
-        setLoadingZones(false);
-      }
-    };
-    fetchZones();
-  }, []);
-
   const handleRegister = async () => {
-    if (!name || !phone || !selectedZoneId || !password) {
-      Alert.alert(t('common.error'), "Please fill in all required fields (Name, Phone, Zone, Password).");
+    if (!name || !phone || !password) {
+      Alert.alert(t('common.error'), "Please fill in all required fields (Name, Phone, Password).");
       return;
     }
 
@@ -83,7 +62,6 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
         name: name.trim(),
         phone: fullPhone,
         worker_type: workerType,
-        assigned_zone: selectedZoneId,
         password,
         contract_start_date: contractStart.trim() || null,
         contract_end_date: contractEnd.trim() || null,
@@ -117,14 +95,6 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
       setSubmitting(false);
     }
   };
-
-  if (loadingZones) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -229,21 +199,7 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
             ))}
           </View>
 
-          {/* Assigned Zone */}
-          <Text style={styles.label}>Assigned Zone *</Text>
-          <View style={styles.typeRow}>
-            {zones.map((z) => (
-              <TouchableOpacity
-                key={z.id}
-                style={[styles.pill, selectedZoneId === z.id && styles.activePill]}
-                onPress={() => setSelectedZoneId(z.id)}
-              >
-                <Text style={[styles.pillLabel, selectedZoneId === z.id && styles.activePillLabel]}>
-                  {z.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+
 
           {/* Contract Start Date */}
           <Text style={styles.label}>{t('admin.contractStart')} (Optional)</Text>

@@ -92,14 +92,6 @@ function AdminTabNavigator() {
         }}
       />
       <Tab.Screen 
-        name="GrievancesTab" 
-        component={AdminGrievances} 
-        options={{
-          tabBarLabel: "Issues",
-          tabBarIcon: ({ focused }) => <TabBarIcon label="⚠️" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
         name="SettingsTab" 
         component={Settings} 
         options={{
