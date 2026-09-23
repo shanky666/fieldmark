@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { apiClient } from '../../api/client';
 import { COLORS } from '../../constants/colors';
 
@@ -10,17 +10,14 @@ export default function Salary() {
   const fetchSalaryData = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/api/workers/');
-      let workersList = res.data.results || res.data || [];
+      const res = await apiClient.get('/api/workers/list/');
+      let workersList = Array.isArray(res.data) ? res.data : res.data?.results || [];
       
-      // Filter out admins/staff to only show actual employees
-      workersList = workersList.filter((w: any) => !w.is_staff && !w.is_superuser);
+      workersList = workersList.filter((w: any) => !w.is_superuser);
       
-      // Fetch attendance for all workers to calculate days
       const attRes = await apiClient.get('/api/attendance/');
       const allAttendance = attRes.data.results || attRes.data || [];
 
-      // Calculate stats per worker
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
 
@@ -38,7 +35,6 @@ export default function Salary() {
         let totalWorkedSeconds = 0;
         workerAtt.forEach((a: any) => {
           if (a.duration_formatted) {
-            // duration_formatted usually like "8h 30m"
             const parts = a.duration_formatted.match(/(\d+)h\s*(\d+)m/);
             if (parts) {
               totalWorkedSeconds += (parseInt(parts[1]) * 3600) + (parseInt(parts[2]) * 60);
@@ -73,7 +69,7 @@ export default function Salary() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>Salary & Attendance Summary</Text>
+        <Text style={styles.pageTitle}>Salary Tracking</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -82,11 +78,11 @@ export default function Salary() {
           <Text style={styles.policyTitle}>Current Policy</Text>
           <Text style={styles.policyText}>Monthly Salary: ₹6,000</Text>
           <Text style={styles.policyText}>Required Duty: 8 hours/day</Text>
-          <Text style={styles.policySubtext}>* Only approved and pending records count towards Present days. Leaves must be approved to count as paid.</Text>
+          <Text style={styles.policySubtext}>Only approved and pending records count towards paid present days.</Text>
         </View>
 
         {loading ? (
-          <ActivityIndicator color={COLORS.primary} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={COLORS.primary} size="large" style={{ marginTop: 40 }} />
         ) : workers.length === 0 ? (
           <Text style={styles.emptyText}>No employees found.</Text>
         ) : (
@@ -106,15 +102,15 @@ export default function Salary() {
               
               <View style={styles.statsRow}>
                 <View style={styles.statCol}>
-                  <Text style={styles.statVal}>{worker.presentDays}</Text>
+                  <Text style={[styles.statVal, { color: '#059669' }]}>{worker.presentDays}</Text>
                   <Text style={styles.statLbl}>Present</Text>
                 </View>
                 <View style={styles.statCol}>
-                  <Text style={styles.statVal}>{worker.absentDays}</Text>
+                  <Text style={[styles.statVal, { color: '#DC2626' }]}>{worker.absentDays}</Text>
                   <Text style={styles.statLbl}>Absent</Text>
                 </View>
                 <View style={styles.statCol}>
-                  <Text style={styles.statVal}>{worker.totalWorkedHoursFormatted}</Text>
+                  <Text style={[styles.statVal, { color: '#3B82F6' }]}>{worker.totalWorkedHoursFormatted}</Text>
                   <Text style={styles.statLbl}>Hours Worked</Text>
                 </View>
               </View>
@@ -127,118 +123,24 @@ export default function Salary() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3FAF5',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#16241C',
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 80,
-  },
-  policyCard: {
-    backgroundColor: '#EAF6EE',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#C6E5D0',
-    marginBottom: 20,
-  },
-  policyTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#1F6B42',
-    marginBottom: 8,
-  },
-  policyText: {
-    fontSize: 14,
-    color: '#16241C',
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  policySubtext: {
-    fontSize: 12,
-    color: '#63796B',
-    marginTop: 8,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#63796B',
-    marginTop: 40,
-    fontSize: 14,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  empName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#16241C',
-  },
-  empId: {
-    fontSize: 13,
-    color: '#63796B',
-    marginTop: 2,
-  },
-  badge: {
-    backgroundColor: '#FDECEC',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 16,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#C24936',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 12,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statCol: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statVal: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1F6B42',
-  },
-  statLbl: {
-    fontSize: 12,
-    color: '#63796B',
-    marginTop: 2,
-  },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16, backgroundColor: '#F8FAFC' },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: '#0F172A' },
+  content: { paddingHorizontal: 20, paddingBottom: 80 },
+  policyCard: { backgroundColor: '#F8FAFC', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 20 },
+  policyTitle: { fontSize: 13, fontWeight: '800', color: '#0F172A', marginBottom: 12, textTransform: 'uppercase' },
+  policyText: { fontSize: 15, color: '#0F172A', fontWeight: '700', marginBottom: 4 },
+  policySubtext: { fontSize: 13, color: '#64748B', marginTop: 8, fontWeight: '500' },
+  emptyText: { textAlign: 'center', color: '#64748B', marginTop: 40, fontSize: 14, fontWeight: '500' },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 16, elevation: 2, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  empName: { fontSize: 16, fontWeight: '800', color: '#0F172A' },
+  empId: { fontSize: 13, color: '#64748B', marginTop: 2, fontWeight: '500' },
+  badge: { backgroundColor: '#F1F5F9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  badgeText: { fontSize: 12, fontWeight: '800', color: '#0F172A' },
+  divider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 16 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  statCol: { alignItems: 'center', flex: 1 },
+  statVal: { fontSize: 20, fontWeight: '800' },
+  statLbl: { fontSize: 12, color: '#64748B', marginTop: 4, fontWeight: '700' },
 });

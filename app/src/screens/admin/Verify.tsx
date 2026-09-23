@@ -19,7 +19,6 @@ export default function Verify({ navigation }: any) {
     try {
       const res = await apiClient.get('/api/attendance/');
       let data = res.data.results || res.data || [];
-      // Sort newest first
       data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setRecords(data);
     } catch (e) {
@@ -29,20 +28,20 @@ export default function Verify({ navigation }: any) {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusStyle = (status: string) => {
     switch (status) {
-      case 'APPROVED': return '#2F8F5B';
-      case 'PENDING': return '#1A6DB5';
-      case 'FLAGGED': return '#E48900';
-      case 'REJECTED': return '#C24936';
-      default: return '#63796B';
+      case 'APPROVED': return { bg: '#ECFDF5', text: '#059669' };
+      case 'PENDING': return { bg: '#EFF6FF', text: '#3B82F6' };
+      case 'FLAGGED': return { bg: '#FFF7ED', text: '#EA580C' };
+      case 'REJECTED': return { bg: '#FEF2F2', text: '#DC2626' };
+      default: return { bg: '#F1F5F9', text: '#475569' };
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>Attendance Logs</Text>
+        <Text style={styles.pageTitle}>Attendance</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -54,6 +53,7 @@ export default function Verify({ navigation }: any) {
           records.map((record) => {
             const checkIn = record.marked_at ? new Date(record.marked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
             const checkOut = record.check_out_at ? new Date(record.check_out_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+            const statusStyle = getStatusStyle(record.status);
 
             return (
               <TouchableOpacity 
@@ -66,8 +66,8 @@ export default function Verify({ navigation }: any) {
                     <Text style={styles.empName}>{record.worker_name || `Worker #${record.worker}`}</Text>
                     <Text style={styles.dateText}>📅 {record.date}</Text>
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(record.status) + '20' }]}>
-                    <Text style={[styles.statusText, { color: getStatusColor(record.status) }]}>{record.status}</Text>
+                  <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                    <Text style={[styles.statusText, { color: statusStyle.text }]}>{record.status}</Text>
                   </View>
                 </View>
 
@@ -99,41 +99,42 @@ export default function Verify({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3FAF5',
+    backgroundColor: '#F8FAFC',
   },
   header: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 16,
+    backgroundColor: '#F8FAFC',
   },
   pageTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '800',
-    color: '#16241C',
+    color: '#0F172A',
   },
   content: {
-    padding: 20,
-    paddingBottom: 80,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   emptyText: {
     textAlign: 'center',
-    color: '#63796B',
+    color: '#64748B',
     marginTop: 40,
     fontSize: 14,
+    fontWeight: '500',
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#F1F5F9',
   },
   cardTop: {
     flexDirection: 'row',
@@ -142,46 +143,46 @@ const styles = StyleSheet.create({
   },
   empName: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#16241C',
+    fontWeight: '700',
+    color: '#0F172A',
   },
   dateText: {
     fontSize: 13,
-    color: '#63796B',
+    color: '#64748B',
     marginTop: 4,
+    fontWeight: '500',
   },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 20,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 11,
+    fontWeight: '800',
   },
   divider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 12,
+    backgroundColor: '#F1F5F9',
+    marginVertical: 16,
   },
   detailsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   detailCol: {
-    alignItems: 'center',
     flex: 1,
   },
   detailLbl: {
     fontSize: 11,
-    color: '#63796B',
+    color: '#64748B',
     marginBottom: 4,
     textTransform: 'uppercase',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   detailVal: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#16241C',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
   },
 });

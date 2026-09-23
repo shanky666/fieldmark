@@ -22,7 +22,7 @@ export default function Dashboard({ navigation }: any) {
     try {
       const [attRes, workersRes, leaveRes] = await Promise.all([
         apiClient.get('/api/attendance/'),
-        apiClient.get('/api/workers/'),
+        apiClient.get('/api/workers/list/'),
         apiClient.get('/api/leave/')
       ]);
       
@@ -69,36 +69,56 @@ export default function Dashboard({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.pageTitle}>Admin Dashboard</Text>
-          <Text style={styles.dateChipText}>{todayStr}</Text>
+          <Text style={styles.greeting}>Welcome back,</Text>
+          <Text style={styles.pageTitle}>Administrator</Text>
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.dateContainer}>
+          <Text style={styles.dateText}>Today: {todayStr}</Text>
+        </View>
+
         {loading ? (
           <ActivityIndicator color={COLORS.primary} size="large" style={{ marginTop: 40 }} />
         ) : (
           <View style={styles.grid}>
+            {/* Total Employees */}
             <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('WorkersTab')}>
+              <View style={[styles.iconContainer, { backgroundColor: '#EFF6FF' }]}>
+                <Text style={[styles.iconText, { color: '#3B82F6' }]}>👥</Text>
+              </View>
               <Text style={styles.cardValue}>{totalWorkers}</Text>
               <Text style={styles.cardLabel}>Total Employees</Text>
             </TouchableOpacity>
 
+            {/* Present Today */}
             <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('VerifyTab')}>
-              <Text style={[styles.cardValue, { color: '#1F6B42' }]}>{presentCount}</Text>
+              <View style={[styles.iconContainer, { backgroundColor: '#ECFDF5' }]}>
+                <Text style={[styles.iconText, { color: '#10B981' }]}>✓</Text>
+              </View>
+              <Text style={styles.cardValue}>{presentCount}</Text>
               <Text style={styles.cardLabel}>Present Today</Text>
             </TouchableOpacity>
 
+            {/* Absent Today */}
             <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('VerifyTab')}>
-              <Text style={[styles.cardValue, { color: '#C24936' }]}>{absentCount}</Text>
+              <View style={[styles.iconContainer, { backgroundColor: '#FEF2F2' }]}>
+                <Text style={[styles.iconText, { color: '#EF4444' }]}>✕</Text>
+              </View>
+              <Text style={styles.cardValue}>{absentCount}</Text>
               <Text style={styles.cardLabel}>Absent Today</Text>
             </TouchableOpacity>
 
+            {/* Pending Leaves */}
             <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('LeaveReviewTab')}>
-              <Text style={[styles.cardValue, { color: '#E48900' }]}>{pendingLeaveCount}</Text>
+              <View style={[styles.iconContainer, { backgroundColor: '#FFF7ED' }]}>
+                <Text style={[styles.iconText, { color: '#F97316' }]}>⏳</Text>
+              </View>
+              <Text style={styles.cardValue}>{pendingLeaveCount}</Text>
               <Text style={styles.cardLabel}>Pending Leaves</Text>
             </TouchableOpacity>
           </View>
@@ -111,39 +131,58 @@ export default function Dashboard({ navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3FAF5',
+    backgroundColor: '#F8FAFC', // light grayish blue bg
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 16,
+    backgroundColor: '#F8FAFC',
+  },
+  greeting: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '600',
+    marginBottom: 4,
   },
   pageTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#16241C',
-  },
-  dateChipText: {
-    fontSize: 14,
-    color: '#63796B',
-    marginTop: 4,
+    color: '#0F172A',
   },
   logoutBtn: {
-    backgroundColor: '#FDECEC',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   logoutText: {
-    color: '#C24936',
-    fontWeight: 'bold',
+    color: '#64748B',
+    fontWeight: '700',
+    fontSize: 13,
   },
   content: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  dateContainer: {
+    marginBottom: 20,
+    paddingHorizontal: 4,
+  },
+  dateText: {
+    fontSize: 15,
+    color: '#475569',
+    fontWeight: '600',
   },
   grid: {
     flexDirection: 'row',
@@ -151,31 +190,40 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   card: {
-    backgroundColor: '#FFFFFF',
     width: '48%',
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    padding: 20,
     borderRadius: 16,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#F1F5F9',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 16,
+  },
+  iconText: {
+    fontSize: 18,
+    fontWeight: '900',
   },
   cardValue: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#16241C',
-    marginBottom: 8,
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
   },
   cardLabel: {
-    fontSize: 14,
-    color: '#63796B',
-    textAlign: 'center',
+    fontSize: 13,
+    color: '#64748B',
     fontWeight: '600',
   }
 });

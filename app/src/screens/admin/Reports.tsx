@@ -62,6 +62,7 @@ export default function Reports() {
           <TextInput
             style={styles.input}
             placeholder="e.g. 2024-01-01"
+            placeholderTextColor="#94A3B8"
             value={csvStartDate}
             onChangeText={setCsvStartDate}
           />
@@ -70,6 +71,7 @@ export default function Reports() {
           <TextInput
             style={styles.input}
             placeholder="e.g. 2024-01-31"
+            placeholderTextColor="#94A3B8"
             value={csvEndDate}
             onChangeText={setCsvEndDate}
           />
@@ -88,67 +90,15 @@ export default function Reports() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3FAF5',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
-  },
-  pageTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#16241C',
-  },
-  content: {
-    padding: 20,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#16241C',
-    marginBottom: 8,
-  },
-  cardDesc: {
-    fontSize: 14,
-    color: '#63796B',
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#1F6B42',
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 14,
-  },
-  btn: {
-    backgroundColor: '#1F6B42',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  btnText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 16,
-  }
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16, backgroundColor: '#F8FAFC' },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: '#0F172A' },
+  content: { paddingHorizontal: 20 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
+  cardTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A', marginBottom: 8 },
+  cardDesc: { fontSize: 14, color: '#64748B', marginBottom: 24, fontWeight: '500', lineHeight: 20 },
+  label: { fontSize: 12, fontWeight: '800', color: '#0F172A', marginBottom: 8, textTransform: 'uppercase' },
+  input: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, padding: 14, marginBottom: 20, fontSize: 15, color: '#0F172A' },
+  btn: { backgroundColor: '#0F172A', paddingVertical: 16, borderRadius: 10, alignItems: 'center', marginTop: 10 },
+  btnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 }
 });
