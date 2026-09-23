@@ -165,12 +165,26 @@ class UserLoginView(APIView):
             return Response({'error': 'invalid_input', 'message': 'Phone / Employee ID and password are required'}, status=status.HTTP_400_BAD_REQUEST)
 
         raw_id = str(identifier).strip()
-        digits = ''.join(c for c in raw_id if c.isdigit())[-10:] if any(c.isdigit() for c in raw_id) else raw_id
-
+        
+        # Determine if identifier looks like a phone number (mostly digits)
+        is_phone_like = sum(c.isdigit() for c in raw_id) >= 9
+        
+        # Build query conditions
+        conditions = Q(employee_id__iexact=raw_id) | Q(username__iexact=raw_id) | Q(phone=raw_id) | Q(phone=normalize_phone(raw_id))
+        
+        if is_phone_like:
+            digits = ''.join(c for c in raw_id if c.isdigit())[-10:]
+            if digits:
+                conditions |= Q(phone__endswith=digits)
+                
+        # Try exact matches first to prevent collisions with endswith
         worker = Worker.objects.filter(
-            Q(phone=raw_id) | Q(phone=normalize_phone(raw_id)) | Q(phone__endswith=digits) | Q(employee_id__iexact=raw_id) | Q(username__iexact=raw_id),
+            Q(employee_id__iexact=raw_id) | Q(username__iexact=raw_id) | Q(phone=raw_id) | Q(phone=normalize_phone(raw_id)),
             is_active=True
         ).first()
+
+        if not worker:
+            worker = Worker.objects.filter(conditions, is_active=True).first()
 
         if not worker:
             return Response({'error': 'user_not_found', 'message': 'Account not found. Please check credentials or contact Admin.'}, status=status.HTTP_404_NOT_FOUND)
