@@ -220,9 +220,17 @@ class WorkerViewSet(viewsets.ModelViewSet):
             'approval_rate_pct': approval_rate
         })
 
-    @action(detail=False, methods=['get'], url_path='me')
+    @action(detail=False, methods=['get', 'patch'], url_path='me')
     def me(self, request):
         worker = request.user
+        
+        if request.method == 'PATCH':
+            # Allow updating profile photo and other basic fields
+            serializer = self.get_serializer(worker, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            worker.refresh_from_db()
+            
         serializer = self.get_serializer(worker)
         data = serializer.data
         data['zone_detail'] = {

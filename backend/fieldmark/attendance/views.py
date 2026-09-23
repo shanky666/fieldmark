@@ -86,6 +86,11 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
             
         data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
         
+        is_offline = data.get('is_offline_submission', False)
+        if str(is_offline).lower() not in ['true', '1', 'yes']:
+            # Force server time for online check-in to prevent phone clock spoofing or bugs
+            data['marked_at'] = timezone.now()
+        
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Switch, TouchableOpacity, Alert, Modal, ActivityIndicator, FlatList, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Switch, TouchableOpacity, Alert, Modal, ActivityIndicator, FlatList, Platform, Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
+import { CONFIG } from '../../constants/config';
 
 export default function Profile() {
   const { userProfile, logout, fetchUserProfile } = useAuthStore();
@@ -9,6 +12,7 @@ export default function Profile() {
   const [pushNotif, setPushNotif] = useState(true);
   const [offlineReminder, setOfflineReminder] = useState(true);
   const [weeklySummary, setWeeklySummary] = useState(false);
+  const [uploadingPic, setUploadingPic] = useState(false);
 
   // Modals state
   const [locationModal, setLocationModal] = useState(false);
@@ -21,6 +25,57 @@ export default function Profile() {
   useEffect(() => {
     fetchUserProfile();
   }, []);
+
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        uploadProfilePicture(result.assets[0].uri);
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Could not open image picker.');
+    }
+  };
+
+  const uploadProfilePicture = async (uri: string) => {
+    setUploadingPic(true);
+    try {
+      // Create a presigned URL
+      const presignRes = await apiClient.post('/api/s3/presign/', {
+        filename: `profile_${Date.now()}.jpg`,
+        content_type: 'image/jpeg'
+      });
+      let { upload_url, s3_key } = presignRes.data;
+      if (upload_url && upload_url.startsWith('http://') && upload_url.includes('onrender.com')) {
+        upload_url = upload_url.replace('http://', 'https://');
+      }
+
+      await FileSystem.uploadAsync(upload_url, uri, {
+        httpMethod: 'PUT',
+        headers: { 'Content-Type': 'image/jpeg' },
+        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT
+      });
+
+      // Update worker profile
+      await apiClient.patch('/api/workers/me/', {
+        profile_photo_url: s3_key
+      });
+
+      await fetchUserProfile();
+      Alert.alert('Success', 'Profile picture updated successfully!');
+    } catch (e) {
+      console.warn(e);
+      Alert.alert('Error', 'Failed to upload profile picture.');
+    } finally {
+      setUploadingPic(false);
+    }
+  };
 
   const fetchMyPhotos = async () => {
     setPhotosModal(true);
@@ -52,6 +107,16 @@ export default function Profile() {
     ? userProfile.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
     : 'EMP';
 
+  const rawUrl = userProfile?.profile_photo_url;
+  let photoUri: string | null = null;
+  if (rawUrl) {
+    if (rawUrl.startsWith('http')) {
+      photoUri = rawUrl;
+    } else {
+      photoUri = `${CONFIG.API_BASE_URL}/media/${rawUrl.replace(/^media\//, '')}`;
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -59,9 +124,18 @@ export default function Profile() {
 
         {/* Profile Header Card */}
         <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{nameInitial}</Text>
-          </View>
+          <TouchableOpacity style={styles.avatar} onPress={pickImage} disabled={uploadingPic}>
+            {uploadingPic ? (
+              <ActivityIndicator color="#1F6B42" />
+            ) : photoUri ? (
+              <Image source={{ uri: photoUri }} style={{ width: 80, height: 80, borderRadius: 40 }} />
+            ) : (
+              <Text style={styles.avatarText}>{nameInitial}</Text>
+            )}
+            <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#1F6B42', borderRadius: 12, padding: 4 }}>
+              <Text style={{ fontSize: 10 }}>📷</Text>
+            </View>
+          </TouchableOpacity>
           <Text style={styles.name}>{userProfile?.name || 'Employee Profile'}</Text>
           <Text style={styles.roleSub}>
             {userProfile?.role || 'Field Worker'} · {userProfile?.zone_detail?.name || userProfile?.zone || 'Assigned Zone'}

@@ -197,10 +197,38 @@ export default function Settings() {
     }
   };
 
+  const [changePasswordVisible, setChangePasswordVisible] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordUpdating, setPasswordUpdating] = useState(false);
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword.trim()) {
+      Alert.alert('Required', 'Please enter a new password.');
+      return;
+    }
+    setPasswordUpdating(true);
+    try {
+      await apiClient.patch('/api/workers/me/', { password: newPassword.trim() });
+      setChangePasswordVisible(false);
+      setNewPassword('');
+      Alert.alert('Success', 'Password updated successfully!');
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to update password.');
+    } finally {
+      setPasswordUpdating(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.pageTitle}>Admin Settings</Text>
+
+        <View style={styles.groupCard}>
+          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => setChangePasswordVisible(true)}>
+            <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>🔒 Change My Password</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Shift Management */}
         <View style={styles.sectionHead}>
@@ -436,6 +464,30 @@ export default function Settings() {
               </TouchableOpacity>
               <TouchableOpacity style={[styles.btnPrimary, adminCreating && { opacity: 0.7 }]} onPress={handleAddAdmin} disabled={adminCreating}>
                 <Text style={styles.btnPrimaryText}>{adminCreating ? 'Creating...' : 'Create Admin'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* Change Password Modal */}
+      <Modal visible={changePasswordVisible} transparent animationType="slide" onRequestClose={() => setChangePasswordVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Change My Password</Text>
+            <Text style={styles.modalSub}>Enter your new password below.</Text>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>NEW PASSWORD</Text>
+              <TextInput style={styles.input} placeholder="New secure password" placeholderTextColor="#9BAFA2" value={newPassword} onChangeText={setNewPassword} secureTextEntry />
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.btnGhost} onPress={() => setChangePasswordVisible(false)} disabled={passwordUpdating}>
+                <Text style={styles.btnGhostText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btnPrimary, passwordUpdating && { opacity: 0.7 }]} onPress={handleUpdatePassword} disabled={passwordUpdating}>
+                <Text style={styles.btnPrimaryText}>{passwordUpdating ? 'Updating...' : 'Update Password'}</Text>
               </TouchableOpacity>
             </View>
           </View>

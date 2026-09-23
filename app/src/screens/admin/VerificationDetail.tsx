@@ -213,6 +213,33 @@ export default function VerificationDetail({ route, navigation }: VerificationDe
           <Text style={styles.deltaLabel}>
             Total Working Duration: <Text style={[styles.deltaVal, { color: COLORS.primary }]}>{record.duration_formatted || '--'}</Text>
           </Text>
+          
+          {record.check_out_at && (
+            <>
+              <View style={styles.divider} />
+              <Text style={styles.label}>Checkout Questionnaire Answers</Text>
+              <View style={styles.gpsGrid}>
+                <View style={styles.gpsCell}>
+                  <Text style={styles.gpsCellTitle}>PANCHAYAT VISITED</Text>
+                  <Text style={styles.gpsCellVal}>{record.panchayat_visited || 'N/A'}</Text>
+                </View>
+                <View style={styles.gpsCell}>
+                  <Text style={styles.gpsCellTitle}>FIC VISITED</Text>
+                  <Text style={styles.gpsCellVal}>{record.fic_visited || 'N/A'}</Text>
+                </View>
+              </View>
+              <View style={[styles.gpsGrid, { marginTop: 10 }]}>
+                <View style={styles.gpsCell}>
+                  <Text style={styles.gpsCellTitle}>MEMBERS ATTENDED</Text>
+                  <Text style={styles.gpsCellVal}>{record.members_attended !== null ? record.members_attended : 'N/A'}</Text>
+                </View>
+                <View style={styles.gpsCell}>
+                  <Text style={styles.gpsCellTitle}>PURPOSE OF VISIT</Text>
+                  <Text style={styles.gpsCellVal}>{record.purpose_of_visit || 'N/A'}</Text>
+                </View>
+              </View>
+            </>
+          )}
 
           <View style={styles.divider} />
 

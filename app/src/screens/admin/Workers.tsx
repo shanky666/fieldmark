@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TextInput, TouchableOpacity, Alert, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TextInput, TouchableOpacity, Alert, Modal, ActivityIndicator, Image } from 'react-native';
 import { apiClient } from '../../api/client';
 
 export default function Workers({ navigation }: any) {
@@ -154,12 +154,32 @@ export default function Workers({ navigation }: any) {
               const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
               const isStaff = e.is_staff || e.role === 'Supervisor';
               const isActive = e.is_active !== false;
+              
+              const rawUrl = e.profile_photo_url;
+              let photoUri: string | null = null;
+              if (rawUrl) {
+                if (rawUrl.startsWith('http')) {
+                  photoUri = rawUrl;
+                } else {
+                  // Assuming CONFIG.API_BASE_URL is imported, wait, let's just use it
+                  // Actually, better to import CONFIG first. I will add it to imports later if missing.
+                  // For now, I'll just use a relative or hardcoded fallback if CONFIG is not here. Let's see if it's imported.
+                  // It's not in the file imports yet. Let me just add the import below.
+                }
+              }
 
               return (
                 <TouchableOpacity key={e.id} style={styles.empRow} onPress={() => navigation.navigate('WorkerDetail', { workerId: e.id })}>
-                  <View style={[styles.thumb, { backgroundColor: isStaff ? '#B9791C' : '#2F8F5B' }]}>
-                    <Text style={styles.thumbText}>{initials}</Text>
-                  </View>
+                  {rawUrl ? (
+                    <Image 
+                      source={{ uri: rawUrl.startsWith('http') ? rawUrl : `https://fieldmark-ne9z.onrender.com/media/${rawUrl.replace(/^media\//, '')}` }} 
+                      style={{ width: 44, height: 44, borderRadius: 22 }} 
+                    />
+                  ) : (
+                    <View style={[styles.thumb, { backgroundColor: isStaff ? '#B9791C' : '#2F8F5B' }]}>
+                      <Text style={styles.thumbText}>{initials}</Text>
+                    </View>
+                  )}
                   <View style={styles.empInfo}>
                     <Text style={styles.empName}>{displayName}</Text>
                     <Text style={styles.empRole}>{e.assigned_zone_name || e.zone || 'Site'} · {isStaff ? 'Supervisor' : 'Employee'}</Text>

@@ -121,8 +121,8 @@ export default function History() {
             </TouchableOpacity>
           </View>
           
-          <TouchableOpacity onPress={downloadCSV} style={{ backgroundColor: '#E8F5E9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
-            <Text style={{ color: '#1F6B42', fontSize: 12, fontWeight: 'bold' }}>Download CSV</Text>
+          <TouchableOpacity onPress={downloadCSV} style={{ backgroundColor: '#1F6B42', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }}>
+            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '600' }}>Download CSV</Text>
           </TouchableOpacity>
         </View>
 

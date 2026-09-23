@@ -55,11 +55,26 @@ export default function WorkerLogin({ navigation }: Props) {
 
           <View style={styles.content}>
             
-            {/* Top Header Image (Logo, Leaves, Title) */}
-            <Image 
-              source={require('../../../assets/images/login_header.png')} 
-              style={{ width: '100%', height: 260, resizeMode: 'contain', marginTop: 20 }} 
-            />
+            {/* Logo Area */}
+            <View style={styles.logoContainer}>
+              <View style={styles.logoRow}>
+                <Text style={styles.logoAtia}>Atia</Text>
+                <Text style={styles.leafIcon}>🌿</Text> 
+              </View>
+              <View style={styles.logoDividerContainer}>
+                <View style={styles.logoDivider} />
+                <Text style={styles.logoSub}>
+                  FARMER PRODUCER{'\n'}COMPANY LIMITED
+                </Text>
+                <View style={styles.logoDivider} />
+              </View>
+            </View>
+
+            {/* Title & Subtitle */}
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.title}>Field Staff Attendance App</Text>
+              <Text style={styles.subtitle}>Track   •   Monitor   •   Empower</Text>
+            </View>
 
             {/* Login Form */}
             <View style={styles.form}>
@@ -113,23 +128,34 @@ export default function WorkerLogin({ navigation }: Props) {
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.forgotBtn}>
-                <Text style={styles.forgotText}>Forgot Password?</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.addEmployeeBtn} onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.addEmployeeText}>+ Add New Employee</Text>
-              </TouchableOpacity>
-            </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+                <TouchableOpacity style={styles.forgotBtn}>
+                  <Text style={styles.forgotText}>Forgot Password?</Text>
+                </TouchableOpacity>
 
+                <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                  <Text style={[styles.forgotText, { color: '#2F8F5B', fontWeight: 'bold' }]}>Create Employee</Text>
+                </TouchableOpacity>
+              </View>
+              
+            </View>
           </View>
         </ScrollView>
         
-        {/* Bottom Agricultural Landscape & SFAC Branding Image */}
-        <Image 
-          source={require('../../../assets/images/login_footer.png')} 
-          style={{ width: '100%', height: 200, resizeMode: 'cover', position: 'absolute', bottom: 0, zIndex: -1 }} 
-        />
+        {/* Bottom Agricultural Landscape & SFAC Branding */}
+        <View style={styles.footerContainer}>
+          <View style={styles.footerBgShape}>
+            <View style={styles.sfacContainer}>
+              <Text style={styles.sfacLogo}>🌱 SFAC</Text>
+              <View style={styles.sfacDivider} />
+              <View>
+                <Text style={styles.sfacSupported}>Supported by</Text>
+                <Text style={styles.sfacTitle}>SFAC</Text>
+                <Text style={styles.sfacScheme}>under 10K FPO Scheme</Text>
+              </View>
+            </View>
+          </View>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -169,6 +195,61 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     alignItems: 'center',
     flex: 1,
+  },
+  logoContainer: {
+    marginBottom: 40,
+    alignItems: 'center',
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoAtia: {
+    fontSize: 54,
+    fontWeight: 'bold',
+    color: '#0A5D31',
+    fontStyle: 'italic',
+    letterSpacing: -2,
+    lineHeight: 70,
+  },
+  leafIcon: {
+    fontSize: 32,
+    marginLeft: -10,
+    marginTop: -20,
+  },
+  logoDividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: -10,
+  },
+  logoDivider: {
+    height: 2,
+    backgroundColor: '#F2A900',
+    flex: 1,
+    marginHorizontal: 10,
+    maxWidth: 50,
+  },
+  logoSub: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0A5D31',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  headerTextContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0A5D31',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#7B8D83',
+    fontWeight: '500',
   },
   form: {
     width: '100%',
