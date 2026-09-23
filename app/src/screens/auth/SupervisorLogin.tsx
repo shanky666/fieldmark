@@ -37,7 +37,7 @@ export default function SupervisorLogin({ navigation }: Props) {
       let msg = 'Invalid credentials. Please check your details and try again.';
       if (e?.response?.data) {
         const d = e.response.data;
-        msg = d.error || d.detail || d.message || (d.non_field_errors && d.non_field_errors[0]) || msg;
+        msg = d.message || d.detail || (d.non_field_errors && d.non_field_errors[0]) || d.error || msg;
       }
       setErrorMsg(msg);
     }
