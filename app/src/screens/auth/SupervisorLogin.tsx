@@ -34,7 +34,11 @@ export default function SupervisorLogin({ navigation }: Props) {
     try {
       await loginSupervisor(identifier.trim(), password.trim());
     } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || 'Login failed. Please check your credentials.';
+      let msg = 'Invalid credentials. Please check your details and try again.';
+      if (e?.response?.data) {
+        const d = e.response.data;
+        msg = d.error || d.detail || d.message || (d.non_field_errors && d.non_field_errors[0]) || msg;
+      }
       setErrorMsg(msg);
     }
   };
