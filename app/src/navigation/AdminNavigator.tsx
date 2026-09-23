@@ -19,6 +19,8 @@ import LeaveReview from '../screens/admin/LeaveReview';
 import AdminGrievances from '../screens/admin/Grievances';
 import AdminGrievanceDetail from '../screens/admin/AdminGrievanceDetail';
 
+import Salary from '../screens/admin/Salary';
+
 export type AdminStackParamList = {
   AdminTabs: undefined;
   VerificationDetail: { recordId: number };
@@ -55,48 +57,48 @@ function AdminTabNavigator() {
         name="DashboardTab" 
         component={Dashboard} 
         options={{
-          tabBarLabel: t('admin.dashboard'),
+          tabBarLabel: "Dashboard",
           tabBarIcon: ({ focused }) => <TabBarIcon label="🏠" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
-        name="VerifyTab" 
-        component={Verify} 
-        options={{
-          tabBarLabel: t('admin.verifyTab'),
-          tabBarIcon: ({ focused }) => <TabBarIcon label="👁️" focused={focused} />
         }}
       />
       <Tab.Screen 
         name="WorkersTab" 
         component={Workers} 
         options={{
-          tabBarLabel: t('admin.workersTab'),
+          tabBarLabel: "Employees",
           tabBarIcon: ({ focused }) => <TabBarIcon label="👥" focused={focused} />
         }}
       />
       <Tab.Screen 
-        name="ReportsTab" 
-        component={Reports} 
+        name="VerifyTab" 
+        component={Verify} 
         options={{
-          tabBarLabel: t('admin.reportsTab'),
-          tabBarIcon: ({ focused }) => <TabBarIcon label="📈" focused={focused} />
+          tabBarLabel: "Attendance",
+          tabBarIcon: ({ focused }) => <TabBarIcon label="👁️" focused={focused} />
         }}
       />
       <Tab.Screen 
         name="LeaveReviewTab" 
         component={LeaveReview} 
         options={{
-          tabBarLabel: "Leaves",
+          tabBarLabel: "Leave Requests",
           tabBarIcon: ({ focused }) => <TabBarIcon label="📅" focused={focused} />
         }}
       />
       <Tab.Screen 
-        name="SettingsTab" 
-        component={Settings} 
+        name="SalaryTab" 
+        component={Salary} 
         options={{
-          tabBarLabel: t('admin.settingsTab'),
-          tabBarIcon: ({ focused }) => <TabBarIcon label="⚙️" focused={focused} />
+          tabBarLabel: "Salary",
+          tabBarIcon: ({ focused }) => <TabBarIcon label="💰" focused={focused} />
+        }}
+      />
+      <Tab.Screen 
+        name="ReportsTab" 
+        component={Reports} 
+        options={{
+          tabBarLabel: "Reports",
+          tabBarIcon: ({ focused }) => <TabBarIcon label="📈" focused={focused} />
         }}
       />
     </Tab.Navigator>

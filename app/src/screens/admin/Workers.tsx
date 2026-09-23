@@ -1,251 +1,112 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TextInput, TouchableOpacity, Alert, Modal, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Image, Alert } from 'react-native';
 import { apiClient } from '../../api/client';
+import { COLORS } from '../../constants/colors';
 
 export default function Workers({ navigation }: any) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedZoneFilter, setSelectedZoneFilter] = useState('all');
-
-  const [addModalType, setAddModalType] = useState<'WORKER' | 'SUPERVISOR' | null>(null);
-  const [fname, setFname] = useState('');
-  const [lname, setLname] = useState('');
-  const [phone, setPhone] = useState('');
-  const [employeeIdInput, setEmployeeIdInput] = useState('');
-  const [initialPassword, setInitialPassword] = useState('');
-
-  const [zonesList, setZonesList] = useState<any[]>([]);
   const [workersList, setWorkersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchWorkers();
-    fetchZones();
-  }, []);
-
-  const fetchZones = async () => {
-    try {
-      const res = await apiClient.get('/api/workers/zones/');
-      setZonesList(res.data.results || res.data || []);
-    } catch (e) {
-      console.warn("Failed to fetch zones for filter chips", e);
-    }
-  };
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchWorkers();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const fetchWorkers = async () => {
     setLoading(true);
-
     try {
-      console.log('[WORKERS] Calling /api/workers/list/');
-
       const res = await apiClient.get('/api/workers/list/');
-
-      console.log('[WORKERS] STATUS:', res.status);
-      console.log('[WORKERS] DATA TYPE:', typeof res.data);
-      console.log('[WORKERS] DATA:', JSON.stringify(res.data));
-
-      console.log('[WORKERS] ARRAY LENGTH:', Array.isArray(res.data) ? res.data.length : -1);
-      setWorkersList(
-        Array.isArray(res.data)
-          ? res.data
-          : Array.isArray(res.data?.results)
-            ? res.data.results
-            : []
-      );
-
+      let workers = Array.isArray(res.data) ? res.data : Array.isArray(res.data?.results) ? res.data.results : [];
+      setWorkersList(workers.filter((w: any) => !w.is_superuser)); // hide superadmins
     } catch (e: any) {
-      console.error('[WORKERS] ERROR:', e?.message);
-      console.error('[WORKERS] RESPONSE:', e?.response?.status);
-      console.error('[WORKERS] DATA:', JSON.stringify(e?.response?.data));
+      console.error('Failed to load employees', e);
     } finally {
       setLoading(false);
     }
   };
 
-  const saveNewWorker = async () => {
-    if (!fname.trim()) {
-      Alert.alert('Required', 'Please enter first name.');
-      return;
-    }
-    if (!initialPassword.trim()) {
-      Alert.alert('Required', 'Please enter an Initial Password.');
-      return;
-    }
-    if (!phone.trim()) {
-      Alert.alert('Required', 'Please enter Phone Number.');
-      return;
-    }
-
-    try {
-      await apiClient.post('/api/auth/register/', {
-        name: `${fname.trim()} ${lname.trim()}`.trim(),
-        employee_id: employeeIdInput.trim() || undefined,
-        phone: phone.trim(),
-        role: addModalType || 'WORKER',
-        password: initialPassword.trim()
-      });
-
-      setAddModalType(null);
-      setFname(''); setLname(''); setPhone(''); setEmployeeIdInput(''); setInitialPassword('');
-      Alert.alert('Success', `✓ ${fname} registered as ${addModalType === 'SUPERVISOR' ? 'Supervisor' : 'Employee'}.`);
-      fetchWorkers();
-    } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.message || 'Failed to add worker to database.');
-    }
+  const handleToggleStatus = async (workerId: number, currentStatus: boolean, name: string) => {
+    Alert.alert(
+      currentStatus ? 'Suspend Employee' : 'Activate Employee',
+      `Are you sure you want to ${currentStatus ? 'suspend' : 'activate'} ${name}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: currentStatus ? 'Suspend' : 'Activate', 
+          style: currentStatus ? 'destructive' : 'default',
+          onPress: async () => {
+            try {
+              await apiClient.patch(`/api/workers/list/${workerId}/`, { is_active: !currentStatus });
+              fetchWorkers();
+            } catch (e) {
+              Alert.alert('Error', 'Failed to change status.');
+            }
+          }
+        }
+      ]
+    );
   };
-
-  const filteredWorkers = workersList.filter(w => {
-    const nameStr = w.name || `${w.first_name || ''} ${w.last_name || ''}`;
-    const matchesQuery = `${nameStr} ${w.employee_id || ''} ${w.zone || ''} ${w.role || ''}`.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesQuery;
-  });
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        
-        {/* Header Row */}
-        <View style={styles.headerRow}>
-          <Text style={styles.pageTitle}>Employees</Text>
-          <View style={styles.totalBadge}>
-            <Text style={styles.totalBadgeText}>{workersList.length} total</Text>
-          </View>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name or ID…"
-            placeholderTextColor="#9BAFA2"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-
-        {/* Worker List */}
-        {loading ? (
-          <ActivityIndicator color="#2F8F5B" style={{ marginVertical: 30 }} />
-        ) : filteredWorkers.length === 0 ? (
-          <Text style={{ textAlign: 'center', color: '#63796B', marginVertical: 30 }}>No registered workers found.</Text>
-        ) : (
-          <View style={styles.empList}>
-            {filteredWorkers.map(e => {
-              const displayName = e.name || `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Worker';
-              const initials = displayName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase();
-              const isStaff = e.is_staff || e.role === 'Supervisor';
-              const isActive = e.is_active !== false;
-              
-              const rawUrl = e.profile_photo_url;
-              let photoUri: string | null = null;
-              if (rawUrl) {
-                if (rawUrl.startsWith('http')) {
-                  photoUri = rawUrl;
-                } else {
-                  // Assuming CONFIG.API_BASE_URL is imported, wait, let's just use it
-                  // Actually, better to import CONFIG first. I will add it to imports later if missing.
-                  // For now, I'll just use a relative or hardcoded fallback if CONFIG is not here. Let's see if it's imported.
-                  // It's not in the file imports yet. Let me just add the import below.
-                }
-              }
-
-              return (
-                <TouchableOpacity key={e.id} style={styles.empRow} onPress={() => navigation.navigate('WorkerDetail', { workerId: e.id })}>
-                  {rawUrl ? (
-                    <Image 
-                      source={{ uri: rawUrl.startsWith('http') ? rawUrl : `https://fieldmark-ne9z.onrender.com/media/${rawUrl.replace(/^media\//, '')}` }} 
-                      style={{ width: 44, height: 44, borderRadius: 22 }} 
-                    />
-                  ) : (
-                    <View style={[styles.thumb, { backgroundColor: isStaff ? '#B9791C' : '#2F8F5B' }]}>
-                      <Text style={styles.thumbText}>{initials}</Text>
-                    </View>
-                  )}
-                  <View style={styles.empInfo}>
-                    <Text style={styles.empName}>{displayName}</Text>
-                    <Text style={styles.empRole}>{isStaff ? 'Supervisor' : 'Employee'}</Text>
-                  </View>
-                  <View style={styles.empRight}>
-                    <View style={[styles.badge, isActive ? styles.badgeActive : styles.badgeInactive]}>
-                      <Text style={isActive ? styles.badgeActiveText : styles.badgeInactiveText}>
-                        {isActive ? 'Active' : 'Inactive'}
-                      </Text>
-                    </View>
-                    <Text style={styles.eid}>{e.employee_id || e.eid || `ID #${e.id}`}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-
-      </ScrollView>
-
-      {/* Bottom Action Buttons instead of single FAB */}
-      <View style={styles.actionButtonsContainer}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => setAddModalType('WORKER')} activeOpacity={0.85}>
-          <Text style={styles.actionButtonIcon}>+</Text>
-          <Text style={styles.actionButtonText}>Create Employee</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, styles.actionButtonSup]} onPress={() => setAddModalType('SUPERVISOR')} activeOpacity={0.85}>
-          <Text style={styles.actionButtonIcon}>+</Text>
-          <Text style={styles.actionButtonText}>Create Supervisor</Text>
+      <View style={styles.header}>
+        <Text style={styles.pageTitle}>Employee Management</Text>
+        <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AddWorker', { role: 'WORKER' })}>
+          <Text style={styles.addBtnText}>+ Add Employee</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Add Worker/Supervisor Sheet Modal */}
-      <Modal visible={addModalType !== null} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>
-              {addModalType === 'SUPERVISOR' ? 'Add Supervisor' : 'Add Employee'}
-            </Text>
-            <Text style={styles.modalSub}>
-              {addModalType === 'SUPERVISOR' 
-                ? 'Register a new supervisor into the database.' 
-                : 'Register a new employee into the database.'}
-            </Text>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {loading ? (
+          <ActivityIndicator color={COLORS.primary} size="large" style={{ marginTop: 40 }} />
+        ) : workersList.length === 0 ? (
+          <Text style={styles.emptyText}>No employees found.</Text>
+        ) : (
+          workersList.map((worker) => {
+            const displayName = worker.name || 'Worker';
+            const initials = displayName.substring(0, 2).toUpperCase();
+            const isActive = worker.is_active !== false;
 
-            <View style={styles.fieldRow}>
-              <View style={styles.fieldFlex}>
-                <Text style={styles.label}>FIRST NAME</Text>
-                <TextInput style={styles.input} placeholder="Rajan" placeholderTextColor="#9BAFA2" value={fname} onChangeText={setFname} />
+            return (
+              <View key={worker.id} style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.empBasic}>
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{initials}</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.empName}>{displayName}</Text>
+                      <Text style={styles.empDetails}>ID: {worker.employee_id || worker.id}</Text>
+                      <Text style={styles.empDetails}>{worker.phone}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.statusBadge, isActive ? styles.statusActive : styles.statusInactive]}>
+                    <Text style={[styles.statusText, isActive ? styles.statusActiveText : styles.statusInactiveText]}>
+                      {isActive ? 'Active' : 'Inactive'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.cardActions}>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('WorkerDetail', { workerId: worker.id })}>
+                    <Text style={styles.actionBtnText}>View / Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[styles.actionBtn, isActive ? styles.suspendBtn : styles.activateBtn]} 
+                    onPress={() => handleToggleStatus(worker.id, isActive, displayName)}
+                  >
+                    <Text style={[styles.actionBtnText, isActive ? styles.suspendBtnText : styles.activateBtnText]}>
+                      {isActive ? 'Suspend' : 'Activate'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.fieldFlex}>
-                <Text style={styles.label}>LAST NAME</Text>
-                <TextInput style={styles.input} placeholder="Patil" placeholderTextColor="#9BAFA2" value={lname} onChangeText={setLname} />
-              </View>
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>EMPLOYEE ID (OPTIONAL, AUTO-GENERATED)</Text>
-              <TextInput style={styles.input} placeholder="e.g. EMP-1042" placeholderTextColor="#9BAFA2" value={employeeIdInput} onChangeText={setEmployeeIdInput} autoCapitalize="characters" />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>PHONE NUMBER</Text>
-              <TextInput style={styles.input} placeholder="+91 98765 43210" placeholderTextColor="#9BAFA2" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>INITIAL PASSWORD</Text>
-              <TextInput style={styles.input} placeholder="Enter a password" placeholderTextColor="#9BAFA2" value={initialPassword} onChangeText={setInitialPassword} secureTextEntry />
-            </View>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.btnGhost} onPress={() => setAddModalType(null)}>
-                <Text style={styles.btnGhostText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.btnPrimary} onPress={saveNewWorker}>
-                <Text style={styles.btnPrimaryText}>
-                  {addModalType === 'SUPERVISOR' ? 'Save Supervisor' : 'Save Employee'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+            );
+          })
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -255,261 +116,140 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F3FAF5',
   },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    paddingBottom: 80,
-  },
-  headerRow: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
   pageTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#16241C',
   },
-  totalBadge: {
-    backgroundColor: '#DCF2E3',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  totalBadgeText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#1F6B42',
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DCEEE2',
-    borderRadius: 14,
-    paddingHorizontal: 12,
+  addBtn: {
+    backgroundColor: '#1F6B42',
+    paddingHorizontal: 16,
     paddingVertical: 10,
-    marginBottom: 12,
+    borderRadius: 8,
   },
-  searchIcon: {
-    fontSize: 15,
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 13,
-    color: '#16241C',
-  },
-  chipScroll: {
-    gap: 6,
-    marginBottom: 16,
-  },
-  zoneChip: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DCEEE2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  zoneChipSel: {
-    backgroundColor: '#DCF2E3',
-    borderColor: '#DCF2E3',
-  },
-  zoneChipText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    color: '#63796B',
-  },
-  zoneChipTextSel: {
-    color: '#1F6B42',
-    fontWeight: '700',
-  },
-  empList: {
-    gap: 9,
-  },
-  empRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#DCEEE2',
-    borderRadius: 16,
-    padding: 12,
-  },
-  thumb: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  thumbText: {
+  addBtnText: {
     color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 14,
+    fontWeight: 'bold',
   },
-  empInfo: {
-    flex: 1,
-  },
-  empName: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#16241C',
-  },
-  empRole: {
-    fontSize: 11.5,
-    color: '#63796B',
-    marginTop: 2,
-  },
-  empRight: {
-    alignItems: 'flex-end',
-  },
-  badge: {
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  badgeActive: { backgroundColor: '#DCF2E3' },
-  badgeActiveText: { color: '#1F6B42', fontSize: 10.5, fontWeight: '700' },
-  badgeInactive: { backgroundColor: '#FBE5E1' },
-  badgeInactiveText: { color: '#C24936', fontSize: 10.5, fontWeight: '700' },
-  eid: {
-    fontSize: 11,
-    color: '#63796B',
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(10, 20, 14, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: '#F3FAF5',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+  content: {
     padding: 20,
-    paddingBottom: 36,
+    paddingBottom: 80,
   },
-  modalHandle: {
-    width: 38,
-    height: 4,
-    backgroundColor: '#DCEEE2',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#16241C',
-  },
-  modalSub: {
-    fontSize: 12.5,
+  emptyText: {
+    textAlign: 'center',
     color: '#63796B',
-    marginTop: 2,
-    marginBottom: 14,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
-  },
-  fieldFlex: {
-    flex: 1,
-  },
-  field: {
-    marginBottom: 12,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#63796B',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  input: {
-    borderWidth: 1.5,
-    borderColor: '#DCEEE2',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    marginTop: 40,
     fontSize: 14,
-    color: '#16241C',
+  },
+  card: {
     backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 18,
-  },
-  btnGhost: {
-    flex: 1,
-    backgroundColor: '#EAF6EE',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  btnGhostText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#16241C',
-  },
-  btnPrimary: {
-    flex: 1.5,
-    backgroundColor: '#2F8F5B',
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  btnPrimaryText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  actionButtonsContainer: {
-    position: 'absolute',
-    bottom: 24,
-    left: 20,
-    right: 20,
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    alignItems: 'flex-start',
+    marginBottom: 16,
   },
-  actionButton: {
-    flex: 1,
+  empBasic: {
     flexDirection: 'row',
-    backgroundColor: '#2F8F5B',
-    borderRadius: 14,
-    paddingVertical: 14,
     alignItems: 'center',
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#EAF6EE',
     justifyContent: 'center',
-    shadowColor: '#1F6B42',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
+    alignItems: 'center',
+    marginRight: 12,
   },
-  actionButtonSup: {
-    backgroundColor: '#B9791C',
-    shadowColor: '#935F12',
+  avatarText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1F6B42',
   },
-  actionButtonIcon: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '600',
-    marginRight: 6,
-    marginTop: -2,
+  empName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#16241C',
   },
-  actionButtonText: {
-    color: '#FFFFFF',
+  empDetails: {
     fontSize: 13,
-    fontWeight: '700',
+    color: '#63796B',
+    marginTop: 2,
   },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  statusActive: {
+    backgroundColor: '#EAF6EE',
+  },
+  statusActiveText: {
+    color: '#2F8F5B',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  statusInactive: {
+    backgroundColor: '#FDECEC',
+  },
+  statusInactiveText: {
+    color: '#C24936',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    paddingTop: 12,
+  },
+  actionBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: '#F1F5F9',
+    marginRight: 12,
+  },
+  actionBtnText: {
+    color: '#475569',
+    fontWeight: '600',
+  },
+  suspendBtn: {
+    backgroundColor: '#FDECEC',
+  },
+  suspendBtnText: {
+    color: '#C24936',
+  },
+  activateBtn: {
+    backgroundColor: '#EAF6EE',
+  },
+  activateBtnText: {
+    color: '#1F6B42',
+  }
 });
-
-
-
