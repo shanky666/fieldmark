@@ -138,8 +138,8 @@ export default function LeaveReview() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16, backgroundColor: '#F8FAFC' },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#0F172A' },
+  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16, backgroundColor: '#1F6B42' },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: '#FFFFFF' },
   content: { paddingHorizontal: 20, paddingBottom: 40 },
   emptyText: { textAlign: 'center', color: '#64748B', marginTop: 40, fontSize: 14, fontWeight: '500' },
   card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 16, elevation: 2, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
@@ -158,6 +158,6 @@ const styles = StyleSheet.create({
   btn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
   rejectBtn: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#FECACA', marginRight: 8 },
   rejectBtnText: { color: '#DC2626', fontWeight: '700', fontSize: 14 },
-  approveBtn: { backgroundColor: '#0F172A', marginLeft: 8 },
+  approveBtn: { backgroundColor: '#1F6B42', marginLeft: 8 },
   approveBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 }
 });

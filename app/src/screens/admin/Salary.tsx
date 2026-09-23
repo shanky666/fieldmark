@@ -124,8 +124,8 @@ export default function Salary() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16, backgroundColor: '#F8FAFC' },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#0F172A' },
+  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16, backgroundColor: '#1F6B42' },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: '#FFFFFF' },
   content: { paddingHorizontal: 20, paddingBottom: 80 },
   policyCard: { backgroundColor: '#F8FAFC', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 20 },
   policyTitle: { fontSize: 13, fontWeight: '800', color: '#0F172A', marginBottom: 12, textTransform: 'uppercase' },

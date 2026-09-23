@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Image, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Image, Alert, TextInput, Linking } from 'react-native';
+import * as Location from 'expo-location';
 import { apiClient } from '../../api/client';
 import { CONFIG } from '../../constants/config';
 import { COLORS } from '../../constants/colors';
@@ -10,6 +11,7 @@ export default function VerificationDetail({ route, navigation }: any) {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [rejectionNote, setRejectionNote] = useState('');
+  const [fullAddress, setFullAddress] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRecord();
@@ -19,7 +21,23 @@ export default function VerificationDetail({ route, navigation }: any) {
     setLoading(true);
     try {
       const res = await apiClient.get(`/api/attendance/${recordId}/`);
-      setRecord(res.data);
+      const data = res.data;
+      setRecord(data);
+      
+      const lat = parseFloat(data.latitude);
+      const lng = parseFloat(data.longitude);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        try {
+          const geocodeRes = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+          if (geocodeRes && geocodeRes.length > 0) {
+            const place = geocodeRes[0];
+            const addressStr = [place.name, place.street, place.district, place.city, place.region, place.postalCode, place.country].filter(Boolean).join(', ');
+            setFullAddress(addressStr);
+          }
+        } catch (err) {
+          console.warn("Geocoding failed", err);
+        }
+      }
     } catch (e) {
       console.warn("Failed to load record details", e);
       Alert.alert('Error', "Could not load verification details");
@@ -75,15 +93,21 @@ export default function VerificationDetail({ route, navigation }: any) {
   let photoUri: string | null = null;
   if (rawUrl) {
     if (rawUrl.startsWith('http')) {
-      photoUri = rawUrl;
+      photoUri = rawUrl.replace('127.0.0.1', '10.0.2.2').replace('localhost', '10.0.2.2');
     } else {
-      photoUri = `${CONFIG.API_BASE_URL}/media/${rawUrl.replace(/^media\//, '')}`;
+      const cleanPath = rawUrl.replace(/^\/?media\//, '').replace(/^\//, '');
+      const baseUrl = CONFIG.API_BASE_URL.replace(/\/+$/, '');
+      photoUri = `${baseUrl}/media/${cleanPath}`;
     }
   }
 
   const checkInTime = record.marked_at ? new Date(record.marked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
   const checkOutTime = record.check_out_at ? new Date(record.check_out_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Still Checked In';
   const statusStyle = getStatusStyle(record.status);
+
+  const lat = parseFloat(record.latitude);
+  const lng = parseFloat(record.longitude);
+  const hasLocation = !isNaN(lat) && !isNaN(lng);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -139,11 +163,26 @@ export default function VerificationDetail({ route, navigation }: any) {
 
           <Text style={styles.label}>Location</Text>
           <View style={styles.grid}>
-            <View style={[styles.cell, { flex: 1 }]}>
+            <View style={[styles.cell, { width: '100%' }]}>
               <Text style={styles.cellTitle}>GPS COORDINATES</Text>
               <Text style={styles.cellVal}>
-                {record.latitude && record.longitude ? `📍 ${record.latitude.toFixed(5)}, ${record.longitude.toFixed(5)}` : 'Location pending'}
+                {hasLocation ? `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}` : 'Location pending or not provided'}
               </Text>
+              
+              {hasLocation && fullAddress ? (
+                <Text style={styles.addressText}>{fullAddress}</Text>
+              ) : hasLocation ? (
+                <Text style={styles.addressText}>Fetching full address...</Text>
+              ) : null}
+
+              {hasLocation && (
+                <TouchableOpacity 
+                  style={styles.mapBtn}
+                  onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`)}
+                >
+                  <Text style={styles.mapBtnText}>View on Maps</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -224,10 +263,10 @@ export default function VerificationDetail({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16, backgroundColor: '#F8FAFC' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16, backgroundColor: '#1F6B42' },
   backBtn: { paddingVertical: 8, paddingRight: 12 },
-  backText: { color: '#0F172A', fontSize: 15, fontWeight: '700' },
-  pageTitle: { fontSize: 20, fontWeight: '800', color: '#0F172A', marginLeft: 8 },
+  backText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+  pageTitle: { fontSize: 20, fontWeight: '800', color: '#FFFFFF', marginLeft: 8 },
   content: { paddingHorizontal: 20, paddingBottom: 60 },
   imageCard: { backgroundColor: '#FFFFFF', borderRadius: 16, overflow: 'hidden', marginBottom: 16, elevation: 2, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
   image: { width: '100%', height: 280 },
@@ -243,10 +282,13 @@ const styles = StyleSheet.create({
   cell: { width: '48%', marginBottom: 12 },
   cellTitle: { fontSize: 11, color: '#64748B', fontWeight: '800', marginBottom: 4 },
   cellVal: { fontSize: 15, color: '#0F172A', fontWeight: '700' },
+  addressText: { fontSize: 14, color: '#475569', marginTop: 8, fontWeight: '500', lineHeight: 20 },
+  mapBtn: { marginTop: 12, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignSelf: 'flex-start' },
+  mapBtnText: { color: '#0F172A', fontWeight: '700', fontSize: 13 },
   input: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, padding: 14, fontSize: 14, color: '#0F172A', marginBottom: 16 },
   actionBtnRow: { flexDirection: 'row', justifyContent: 'space-between' },
   btn: { flex: 1, paddingVertical: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  btnApprove: { backgroundColor: '#0F172A', marginLeft: 8 },
+  btnApprove: { backgroundColor: '#1F6B42', marginLeft: 8 },
   btnApproveText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
   btnReject: { backgroundColor: '#FFFFFF', borderColor: '#FECACA', borderWidth: 1, marginRight: 8 },
   btnRejectText: { color: '#DC2626', fontWeight: '700', fontSize: 14 }

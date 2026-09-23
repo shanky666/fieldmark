@@ -91,14 +91,14 @@ export default function Reports() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16, backgroundColor: '#F8FAFC' },
-  pageTitle: { fontSize: 24, fontWeight: '800', color: '#0F172A' },
+  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16, backgroundColor: '#1F6B42' },
+  pageTitle: { fontSize: 24, fontWeight: '800', color: '#FFFFFF' },
   content: { paddingHorizontal: 20 },
   card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
   cardTitle: { fontSize: 18, fontWeight: '800', color: '#0F172A', marginBottom: 8 },
   cardDesc: { fontSize: 14, color: '#64748B', marginBottom: 24, fontWeight: '500', lineHeight: 20 },
   label: { fontSize: 12, fontWeight: '800', color: '#0F172A', marginBottom: 8, textTransform: 'uppercase' },
   input: { backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 10, padding: 14, marginBottom: 20, fontSize: 15, color: '#0F172A' },
-  btn: { backgroundColor: '#0F172A', paddingVertical: 16, borderRadius: 10, alignItems: 'center', marginTop: 10 },
+  btn: { backgroundColor: '#1F6B42', paddingVertical: 16, borderRadius: 10, alignItems: 'center', marginTop: 10 },
   btnText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 }
 });

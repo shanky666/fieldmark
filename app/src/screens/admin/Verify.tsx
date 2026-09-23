@@ -4,8 +4,9 @@ import { apiClient } from '../../api/client';
 import { COLORS } from '../../constants/colors';
 
 export default function Verify({ navigation }: any) {
-  const [records, setRecords] = useState<any[]>([]);
+  const [groupedRecords, setGroupedRecords] = useState<{ worker_name: string, worker_id: number, records: any[] }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedWorker, setExpandedWorker] = useState<number | null>(null);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -19,8 +20,26 @@ export default function Verify({ navigation }: any) {
     try {
       const res = await apiClient.get('/api/attendance/');
       let data = res.data.results || res.data || [];
-      data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setRecords(data);
+      
+      // Group by worker
+      const groups: Record<number, { worker_name: string, worker_id: number, records: any[] }> = {};
+      data.forEach((r: any) => {
+        if (!groups[r.worker]) {
+          groups[r.worker] = { worker_name: r.worker_name || `Worker #${r.worker}`, worker_id: r.worker, records: [] };
+        }
+        groups[r.worker].records.push(r);
+      });
+
+      // Sort each worker's records by date (newest first)
+      const sortedGroups = Object.values(groups).map(group => {
+        group.records.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return group;
+      });
+
+      // Sort groups alphabetically
+      sortedGroups.sort((a, b) => a.worker_name.localeCompare(b.worker_name));
+
+      setGroupedRecords(sortedGroups);
     } catch (e) {
       console.warn("Failed to fetch attendance records", e);
     } finally {
@@ -38,56 +57,79 @@ export default function Verify({ navigation }: any) {
     }
   };
 
+  const toggleExpand = (workerId: number) => {
+    if (expandedWorker === workerId) {
+      setExpandedWorker(null);
+    } else {
+      setExpandedWorker(workerId);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>Attendance</Text>
+        <Text style={styles.pageTitle}>Attendance Directory</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Text style={styles.infoText}>Tap an employee to view their daily attendance history.</Text>
+        
         {loading ? (
           <ActivityIndicator color={COLORS.primary} size="large" style={{ marginTop: 40 }} />
-        ) : records.length === 0 ? (
+        ) : groupedRecords.length === 0 ? (
           <Text style={styles.emptyText}>No attendance records found.</Text>
         ) : (
-          records.map((record) => {
-            const checkIn = record.marked_at ? new Date(record.marked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
-            const checkOut = record.check_out_at ? new Date(record.check_out_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
-            const statusStyle = getStatusStyle(record.status);
+          groupedRecords.map((group) => {
+            const isExpanded = expandedWorker === group.worker_id;
 
             return (
-              <TouchableOpacity 
-                key={record.id} 
-                style={styles.card} 
-                onPress={() => navigation.navigate('VerificationDetail', { recordId: record.id })}
-              >
-                <View style={styles.cardTop}>
-                  <View>
-                    <Text style={styles.empName}>{record.worker_name || `Worker #${record.worker}`}</Text>
-                    <Text style={styles.dateText}>📅 {record.date}</Text>
+              <View key={group.worker_id} style={styles.card}>
+                <TouchableOpacity 
+                  style={styles.cardTop} 
+                  onPress={() => toggleExpand(group.worker_id)}
+                >
+                  <View style={styles.rowContent}>
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{group.worker_name.substring(0, 2).toUpperCase()}</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.empName}>{group.worker_name}</Text>
+                      <Text style={styles.dateText}>{group.records.length} records</Text>
+                    </View>
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                    <Text style={[styles.statusText, { color: statusStyle.text }]}>{record.status}</Text>
-                  </View>
-                </View>
+                  <Text style={styles.expandIcon}>{isExpanded ? '▲' : '▼'}</Text>
+                </TouchableOpacity>
 
-                <View style={styles.divider} />
-                
-                <View style={styles.detailsRow}>
-                  <View style={styles.detailCol}>
-                    <Text style={styles.detailLbl}>Check-In</Text>
-                    <Text style={styles.detailVal}>{checkIn}</Text>
+                {isExpanded && (
+                  <View style={styles.historyList}>
+                    {group.records.map((record) => {
+                      const checkIn = record.marked_at ? new Date(record.marked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                      const checkOut = record.check_out_at ? new Date(record.check_out_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
+                      const statusStyle = getStatusStyle(record.status);
+
+                      return (
+                        <TouchableOpacity 
+                          key={record.id}
+                          style={styles.historyRow}
+                          onPress={() => navigation.navigate('VerificationDetail', { recordId: record.id })}
+                        >
+                          <View style={styles.historyMeta}>
+                            <Text style={styles.historyDate}>{record.date}</Text>
+                            <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                              <Text style={[styles.statusText, { color: statusStyle.text }]}>{record.status}</Text>
+                            </View>
+                          </View>
+                          <View style={styles.historyDetails}>
+                            <Text style={styles.historyTime}>In: {checkIn}</Text>
+                            <Text style={styles.historyTime}>Out: {checkOut}</Text>
+                            <Text style={styles.historyTime}>Hrs: {record.duration_formatted || '--'}</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
-                  <View style={styles.detailCol}>
-                    <Text style={styles.detailLbl}>Check-Out</Text>
-                    <Text style={styles.detailVal}>{checkOut}</Text>
-                  </View>
-                  <View style={styles.detailCol}>
-                    <Text style={styles.detailLbl}>Worked Hrs</Text>
-                    <Text style={styles.detailVal}>{record.duration_formatted || '--'}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
+                )}
+              </View>
             );
           })
         )}
@@ -102,19 +144,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 16,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#1F6B42',
   },
   pageTitle: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#FFFFFF',
   },
   content: {
     paddingHorizontal: 20,
     paddingBottom: 40,
+  },
+  infoText: {
+    color: '#64748B',
+    marginBottom: 20,
+    marginTop: 10,
+    fontWeight: '500',
   },
   emptyText: {
     textAlign: 'center',
@@ -126,7 +177,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOpacity: 0.04,
@@ -135,11 +185,31 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: '#F1F5F9',
+    overflow: 'hidden',
   },
   cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    padding: 20,
+  },
+  rowContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  avatarText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#475569',
   },
   empName: {
     fontSize: 16,
@@ -152,6 +222,37 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: '500',
   },
+  expandIcon: {
+    fontSize: 14,
+    color: '#94A3B8',
+  },
+  historyList: {
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    paddingTop: 10,
+  },
+  historyRow: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  historyMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  historyDate: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -161,28 +262,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 16,
-  },
-  detailsRow: {
+  historyDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  detailCol: {
-    flex: 1,
-  },
-  detailLbl: {
-    fontSize: 11,
-    color: '#64748B',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    fontWeight: '700',
-  },
-  detailVal: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
+  historyTime: {
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '600',
   },
 });

@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#A7F3D0',
     fontWeight: '600',
     marginBottom: 4,
   },
