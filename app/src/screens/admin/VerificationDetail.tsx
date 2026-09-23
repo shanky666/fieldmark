@@ -12,6 +12,7 @@ export default function VerificationDetail({ route, navigation }: any) {
   const [updating, setUpdating] = useState(false);
   const [rejectionNote, setRejectionNote] = useState('');
   const [fullAddress, setFullAddress] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     fetchRecord();
@@ -100,6 +101,8 @@ export default function VerificationDetail({ route, navigation }: any) {
       photoUri = `${baseUrl}/media/${cleanPath}`;
     }
   }
+  
+  console.log("Resolved Photo URI:", photoUri);
 
   const checkInTime = record.marked_at ? new Date(record.marked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
   const checkOutTime = record.check_out_at ? new Date(record.check_out_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Still Checked In';
@@ -120,11 +123,16 @@ export default function VerificationDetail({ route, navigation }: any) {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.imageCard}>
-          {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.image} resizeMode="cover" />
+          {photoUri && !imageError ? (
+            <Image 
+              source={{ uri: photoUri }} 
+              style={styles.image} 
+              resizeMode="cover" 
+              onError={() => setImageError(true)}
+            />
           ) : (
             <View style={[styles.image, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#F8FAFC' }]}>
-              <Text style={{ color: '#94A3B8' }}>📷 No Photo Available</Text>
+              <Text style={{ color: '#94A3B8' }}>{imageError ? '📷 Image Error / Expired' : '📷 No Photo Available'}</Text>
             </View>
           )}
         </View>
@@ -186,10 +194,10 @@ export default function VerificationDetail({ route, navigation }: any) {
             </View>
           </View>
 
-          {record.check_out_at && (
+          {(record.check_out_at || record.panchayat_visited || record.fic_visited || record.purpose_of_visit || record.work_details || record.members_attended !== null) ? (
             <>
               <View style={styles.divider} />
-              <Text style={styles.label}>Checkout Details</Text>
+              <Text style={styles.label}>Survey & Work Details</Text>
               
               <View style={styles.grid}>
                 <View style={styles.cell}>
@@ -222,7 +230,7 @@ export default function VerificationDetail({ route, navigation }: any) {
                 </View>
               ) : null}
             </>
-          )}
+          ) : null}
 
         </View>
 
@@ -270,7 +278,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 20, paddingBottom: 60 },
   imageCard: { backgroundColor: '#FFFFFF', borderRadius: 16, overflow: 'hidden', marginBottom: 16, elevation: 2, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
   image: { width: '100%', height: 280 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 16, elevation: 2, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 4 } },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 20, marginBottom: 16, elevation: 4, borderWidth: 1, borderColor: '#A7F3D0', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   workerName: { fontSize: 18, fontWeight: '800', color: '#0F172A' },
   employeeId: { fontSize: 13, color: '#64748B', marginTop: 4, fontWeight: '500' },
