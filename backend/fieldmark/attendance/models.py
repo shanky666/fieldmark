@@ -14,6 +14,7 @@ class AttendanceRecord(models.Model):
         REJECTED = 'REJECTED', 'Rejected'
         FLAGGED = 'FLAGGED', 'Flagged'
         ABSENT = 'ABSENT', 'Absent'
+        PRESENT = 'PRESENT', 'Present'
 
     worker = models.ForeignKey(
         settings.AUTH_USER_MODEL,

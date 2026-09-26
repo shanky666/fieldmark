@@ -49,10 +49,12 @@ export default function Verify({ navigation }: any) {
 
   const getStatusStyle = (status: string) => {
     switch (status) {
+      case 'PRESENT': return { bg: '#ECFDF5', text: '#059669' };
       case 'APPROVED': return { bg: '#ECFDF5', text: '#059669' };
       case 'PENDING': return { bg: '#EFF6FF', text: '#3B82F6' };
       case 'FLAGGED': return { bg: '#FFF7ED', text: '#EA580C' };
       case 'REJECTED': return { bg: '#FEF2F2', text: '#DC2626' };
+      case 'ABSENT': return { bg: '#FEF2F2', text: '#DC2626' };
       default: return { bg: '#F1F5F9', text: '#475569' };
     }
   };

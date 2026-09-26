@@ -114,8 +114,12 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         if new_flags:
             record.anomaly_flags = list(set(record.anomaly_flags + new_flags))
         if match_status == 'MISMATCH':
-            record.status = 'ABSENT'
-        record.save(update_fields=['gps_match', 'anomaly_flags', 'status'])
+            record.delete() # Roll back the save
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'message': 'You are outside your assigned work zone. Please move inside your zone to check in.'})
+        elif match_status == 'MATCHED' and record.status != 'ABSENT':
+            record.status = 'PRESENT'
+            record.save(update_fields=['gps_match', 'anomaly_flags', 'status'])
         
         # Trigger Celery checks asynchronously if broker is available
         try:

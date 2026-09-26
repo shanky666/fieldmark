@@ -310,6 +310,19 @@ export default function Settings() {
           </View>
         </View>
 
+        {/* Zones & Shifts Management */}
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>Zones & Shifts management</Text>
+        </View>
+        <View style={styles.groupCard}>
+          <TouchableOpacity style={styles.itemRow} onPress={() => setAddZoneVisible(true)}>
+            <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>+ Add new zone</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => setAddShiftVisible(true)}>
+            <Text style={[styles.itemText, { color: '#1A6DB5', fontWeight: '700' }]}>+ Add new shift</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Staff & Admin Management */}
         <View style={styles.sectionHead}>
           <Text style={styles.sectionTitle}>Staff & Admin management</Text>

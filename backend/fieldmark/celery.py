@@ -15,6 +15,11 @@ app.autodiscover_tasks()
 
 # Configure Beat schedules (All times are evaluated in timezone set in settings, e.g. Asia/Kolkata)
 app.conf.beat_schedule = {
+    # Auto mark absent at 9:30 AM daily for missed check-ins
+    'auto_mark_absent_task': {
+        'task': 'fieldmark.attendance.tasks.auto_mark_absent_task',
+        'schedule': crontab(hour=9, minute=30),
+    },
     # Task 1: Morning reminder at 6:00 AM IST on weekdays (Mon-Fri)
     'morning_reminder_task': {
         'task': 'fieldmark.notifications.tasks.morning_reminder',

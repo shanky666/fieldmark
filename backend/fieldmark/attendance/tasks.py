@@ -119,3 +119,44 @@ def weekly_storage_cleanup():
             
     print(f"Weekly storage cleanup completed: Purged photos for {old_records.count()} records ({deleted_files_count} files removed).")
     return deleted_files_count
+
+
+@shared_task
+def auto_mark_absent_task():
+    """
+    Daily task to run at 9:30 AM.
+    Finds all active non-admin workers who have not checked in today 
+    and automatically creates an AttendanceRecord with ABSENT status.
+    """
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    # Active workers who are not superusers
+    active_workers = Worker.objects.filter(is_active=True, is_superuser=False)
+    
+    created_count = 0
+    for worker in active_workers:
+        # Check if they have an attendance record today
+        has_record = AttendanceRecord.objects.filter(
+            worker=worker,
+            date=now.date()
+        ).exists()
+        
+        if not has_record:
+            # Create an ABSENT record
+            AttendanceRecord.objects.create(
+                worker=worker,
+                date=now.date(),
+                status=AttendanceRecord.StatusChoices.ABSENT,
+                marked_at=now,
+                latitude=0.0,
+                longitude=0.0,
+                gps_match=AttendanceRecord.GPSMatchChoices.MISMATCH,
+                anomaly_flags=["AUTO_ABSENT_MISSED_WINDOW"],
+                work_details="System auto-marked absent: Did not check in during the required time window."
+            )
+            created_count += 1
+            
+    print(f"Auto-mark absent completed: Created {created_count} absent records for missed check-ins.")
+    return created_count
