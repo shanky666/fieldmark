@@ -5,9 +5,11 @@ import * as FileSystem from 'expo-file-system';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
 import { CONFIG } from '../../constants/config';
+import { useTranslation } from 'react-i18next';
 
 export default function Profile() {
-  const { userProfile, logout, fetchUserProfile } = useAuthStore();
+  const { userProfile, logout, fetchUserProfile, language, setLanguage } = useAuthStore();
+  const { t } = useTranslation();
 
   const [pushNotif, setPushNotif] = useState(true);
   const [offlineReminder, setOfflineReminder] = useState(true);
@@ -183,8 +185,21 @@ export default function Profile() {
         {/* Settings List */}
         <View style={styles.settingsList}>
 
-
-
+          {/* Language Switcher */}
+          <View style={[styles.settingsItem, { justifyContent: 'space-between' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.settingsIcon}>🌐</Text>
+              <Text style={styles.settingsLabel}>Language / భాష</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity onPress={() => setLanguage('en')} style={[styles.langBtn, language === 'en' && styles.langBtnActive]}>
+                <Text style={[styles.langBtnText, language === 'en' && styles.langBtnTextActive]}>EN</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setLanguage('te')} style={[styles.langBtn, language === 'te' && styles.langBtnActive]}>
+                <Text style={[styles.langBtnText, language === 'te' && styles.langBtnTextActive]}>తెలుగు</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           <TouchableOpacity style={styles.settingsItem} onPress={fetchMyPhotos}>
             <Text style={styles.settingsIcon}>📸</Text>
@@ -418,6 +433,26 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#9BAFA2',
     fontWeight: '600',
+  },
+  langBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#9BAFA2',
+    backgroundColor: '#FFFFFF',
+  },
+  langBtnActive: {
+    borderColor: '#2F8F5B',
+    backgroundColor: '#2F8F5B',
+  },
+  langBtnText: {
+    fontSize: 12,
+    color: '#9BAFA2',
+    fontWeight: '700',
+  },
+  langBtnTextActive: {
+    color: '#FFFFFF',
   },
   modalOverlay: {
     flex: 1,

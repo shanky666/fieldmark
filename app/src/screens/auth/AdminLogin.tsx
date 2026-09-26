@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useAuthStore } from '../../store/auth';
@@ -41,9 +41,10 @@ export default function AdminLogin({ navigation }: Props) {
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <View style={styles.badgeIcon}>
-            <Text style={styles.emoji}>🗂</Text>
-          </View>
+          <Image 
+            source={require('../../../assets/images/atia_logo.png')} 
+            style={{ width: 140, height: 100, resizeMode: 'contain', marginBottom: 8 }} 
+          />
           <Text style={styles.title}>Admin Portal</Text>
           <Text style={styles.subtitle}>Administrator Login for Management & Reports</Text>
         </View>

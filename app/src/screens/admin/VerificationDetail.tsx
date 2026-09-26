@@ -162,6 +162,10 @@ export default function VerificationDetail({ route, navigation }: any) {
               <Text style={styles.cellVal}>{checkOutTime}</Text>
             </View>
             <View style={styles.cell}>
+              <Text style={styles.cellTitle}>CHECKED OUT BY</Text>
+              <Text style={styles.cellVal}>{record.check_out_at ? (record.worker_name || 'Worker') : '--'}</Text>
+            </View>
+            <View style={styles.cell}>
               <Text style={styles.cellTitle}>DURATION</Text>
               <Text style={styles.cellVal}>{record.duration_formatted || '--'}</Text>
             </View>
@@ -205,7 +209,11 @@ export default function VerificationDetail({ route, navigation }: any) {
                   <Text style={styles.cellVal}>{record.panchayat_visited || 'N/A'}</Text>
                 </View>
                 <View style={styles.cell}>
-                  <Text style={styles.cellTitle}>FIC VISITED</Text>
+                  <Text style={styles.cellTitle}>VILLAGE VISITED</Text>
+                  <Text style={styles.cellVal}>{record.village_visited || 'N/A'}</Text>
+                </View>
+                <View style={styles.cell}>
+                  <Text style={styles.cellTitle}>FIG VISITED</Text>
                   <Text style={styles.cellVal}>{record.fic_visited || 'N/A'}</Text>
                 </View>
               </View>

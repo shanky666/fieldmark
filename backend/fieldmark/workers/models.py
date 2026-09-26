@@ -80,6 +80,7 @@ class Worker(AbstractUser):
     contract_end_date = models.DateField(null=True, blank=True)
     profile_photo_url = models.CharField(max_length=500, null=True, blank=True)
     fcm_token = models.CharField(max_length=255, null=True, blank=True)
+    registered_device_id = models.CharField(max_length=255, null=True, blank=True)
     preferred_language = models.CharField(
         max_length=2, 
         choices=LanguageChoices.choices, 

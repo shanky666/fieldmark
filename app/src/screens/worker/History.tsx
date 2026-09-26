@@ -42,11 +42,11 @@ export default function History() {
     }
 
     try {
-      const header = 'Date,Check-In,Check-Out,Duration,Status,Panchayat,FIC,Members,Purpose\n';
+      const header = 'Date,Check-In,Check-Out,Duration,Status,Panchayat,Village,FIG,Members,Purpose\n';
       const rows = history.map(item => {
         const checkIn = item.marked_at ? new Date(item.marked_at).toLocaleTimeString() : '--';
         const checkOut = item.check_out_at ? new Date(item.check_out_at).toLocaleTimeString() : '--';
-        return `${item.date},${checkIn},${checkOut},${item.duration_formatted || '--'},${item.status},"${item.panchayat_visited || ''}","${item.fic_visited || ''}","${item.members_attended || ''}","${item.purpose_of_visit || ''}"`;
+        return `${item.date},${checkIn},${checkOut},${item.duration_formatted || '--'},${item.status},"${item.panchayat_visited || ''}","${item.village_visited || ''}","${item.fic_visited || ''}","${item.members_attended || ''}","${item.purpose_of_visit || ''}"`;
       }).join('\n');
 
       const csvData = header + rows;
@@ -176,7 +176,8 @@ export default function History() {
                       <View style={{ marginTop: 8, padding: 8, backgroundColor: '#E8F5E9', borderRadius: 8 }}>
                         <Text style={{ fontSize: 11, color: '#1F6B42', fontWeight: 'bold' }}>Field Visit Details:</Text>
                         <Text style={{ fontSize: 11, color: '#333' }}>Panchayat: {item.panchayat_visited}</Text>
-                        <Text style={{ fontSize: 11, color: '#333' }}>FIC: {item.fic_visited}</Text>
+                        <Text style={{ fontSize: 11, color: '#333' }}>Village: {item.village_visited || 'N/A'}</Text>
+                        <Text style={{ fontSize: 11, color: '#333' }}>FIG: {item.fic_visited}</Text>
                         <Text style={{ fontSize: 11, color: '#333' }}>Members: {item.members_attended}</Text>
                         <Text style={{ fontSize: 11, color: '#333' }}>Purpose: {item.purpose_of_visit}</Text>
                       </View>

@@ -62,6 +62,7 @@ class AttendanceRecord(models.Model):
     
     # Required Field Visit Questions
     panchayat_visited = models.CharField(max_length=255, null=True, blank=True)
+    village_visited = models.CharField(max_length=255, null=True, blank=True)
     fic_visited = models.CharField(max_length=255, null=True, blank=True)
     members_attended = models.IntegerField(null=True, blank=True)
     purpose_of_visit = models.TextField(null=True, blank=True)

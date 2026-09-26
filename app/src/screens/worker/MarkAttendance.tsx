@@ -18,6 +18,7 @@ import { apiClient } from '../../api/client';
 import { haversineDistance } from '../../utils/haversine';
 import CameraOverlay from '../../components/CameraOverlay';
 import * as FileSystem from 'expo-file-system';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { WorkerStackParamList } from '../../navigation/WorkerNavigator';
 
 type MarkAttendanceNavigationProp = StackNavigationProp<WorkerStackParamList, 'MarkAttendance'>;
@@ -162,6 +163,25 @@ export default function MarkAttendance({ navigation }: MarkAttendanceProps) {
   };
 
   const handleFinalSubmit = async () => {
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      if (compatible && enrolled) {
+        const authResult = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify your face to mark attendance',
+          cancelLabel: 'Cancel',
+          disableDeviceFallback: true,
+        });
+        if (!authResult.success) {
+          Alert.alert('Verification Failed', 'Face verification failed. Cannot submit attendance.');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Biometric check failed/cancelled", e);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const devId = await getUniqueDeviceId();

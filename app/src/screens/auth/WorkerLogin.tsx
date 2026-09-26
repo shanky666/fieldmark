@@ -14,13 +14,51 @@ interface Props {
   navigation: WorkerLoginNavProp;
 }
 
+import { secureStorage } from '../../utils/secureStorage';
+import * as LocalAuthentication from 'expo-local-authentication';
+
 export default function WorkerLogin({ navigation }: Props) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [hasBiometrics, setHasBiometrics] = useState(false);
 
   const { loginWorker, isLoading } = useAuthStore();
+
+  React.useEffect(() => {
+    (async () => {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      const savedId = await secureStorage.getItem('biometric_id');
+      const savedPass = await secureStorage.getItem('biometric_pass');
+      if (compatible && enrolled && savedId && savedPass) {
+        setHasBiometrics(true);
+      }
+    })();
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Login with Face ID / Biometrics',
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: true,
+      });
+
+      if (result.success) {
+        const savedId = await secureStorage.getItem('biometric_id');
+        const savedPass = await secureStorage.getItem('biometric_pass');
+        if (savedId && savedPass) {
+          await loginWorker(savedId, savedPass);
+        } else {
+          setErrorMsg('No saved biometrics found. Please login normally first.');
+        }
+      }
+    } catch (e: any) {
+      setErrorMsg('Biometric authentication failed.');
+    }
+  };
 
   const handleLogin = async () => {
     if (!identifier.trim()) {
@@ -61,17 +99,10 @@ export default function WorkerLogin({ navigation }: Props) {
             
             {/* Logo Area */}
             <View style={styles.logoContainer}>
-              <View style={styles.logoRow}>
-                <Text style={styles.logoAtia}>Atia</Text>
-                <Text style={styles.leafIcon}>🌿</Text> 
-              </View>
-              <View style={styles.logoDividerContainer}>
-                <View style={styles.logoDivider} />
-                <Text style={styles.logoSub}>
-                  FARMER PRODUCER{'\n'}COMPANY LIMITED
-                </Text>
-                <View style={styles.logoDivider} />
-              </View>
+              <Image 
+                source={require('../../../assets/images/atia_logo.png')} 
+                style={{ width: 220, height: 120, resizeMode: 'contain' }} 
+              />
             </View>
 
             {/* Title & Subtitle */}
@@ -132,6 +163,8 @@ export default function WorkerLogin({ navigation }: Props) {
                 )}
               </TouchableOpacity>
 
+              {/* Removed Biometric from Login per user request */}
+
               <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 }}>
                 <TouchableOpacity style={styles.forgotBtn}>
                   <Text style={styles.forgotText}>Forgot Password?</Text>
@@ -146,7 +179,10 @@ export default function WorkerLogin({ navigation }: Props) {
         <View style={styles.footerContainer}>
           <View style={styles.footerBgShape}>
             <View style={styles.sfacContainer}>
-              <Text style={styles.sfacLogo}>🌱 SFAC</Text>
+              <Image 
+                source={require('../../../assets/images/sfac_logo.png')} 
+                style={{ width: 120, height: 60, resizeMode: 'contain' }} 
+              />
               <View style={styles.sfacDivider} />
               <View>
                 <Text style={styles.sfacSupported}>Supported by</Text>

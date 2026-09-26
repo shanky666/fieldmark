@@ -124,6 +124,23 @@ export default function Verify({ navigation }: any) {
                             <Text style={styles.historyTime}>Out: {checkOut}</Text>
                             <Text style={styles.historyTime}>Hrs: {record.duration_formatted || '--'}</Text>
                           </View>
+                          
+                          {record.status === 'PENDING' && (
+                            <View style={{ flexDirection: 'row', marginTop: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 12 }}>
+                              <TouchableOpacity 
+                                style={{ flex: 1, backgroundColor: '#FFFFFF', borderColor: '#DC2626', borderWidth: 1, borderRadius: 8, padding: 8, alignItems: 'center', marginRight: 6 }}
+                                onPress={() => navigation.navigate('VerificationDetail', { recordId: record.id })}
+                              >
+                                <Text style={{ color: '#DC2626', fontWeight: 'bold', fontSize: 12 }}>Review to Reject</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity 
+                                style={{ flex: 1, backgroundColor: '#1F6B42', borderRadius: 8, padding: 8, alignItems: 'center', marginLeft: 6 }}
+                                onPress={() => navigation.navigate('VerificationDetail', { recordId: record.id })}
+                              >
+                                <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>Review to Approve</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
                         </TouchableOpacity>
                       );
                     })}

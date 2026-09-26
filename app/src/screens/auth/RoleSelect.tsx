@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, StatusBa
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { COLORS } from '../../constants/colors';
+import { useAuthStore } from '../../store/auth';
+import { useTranslation } from 'react-i18next';
 
 type RoleSelectNavProp = StackNavigationProp<AuthStackParamList, 'RoleSelect'>;
 
@@ -11,23 +13,38 @@ interface Props {
 }
 
 export default function RoleSelect({ navigation }: Props) {
+  const { language, setLanguage } = useAuthStore();
+  const { t } = useTranslation();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F3FAF5" />
+      
+      {/* Language Switcher */}
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingRight: 24, paddingTop: 10, gap: 10 }}>
+        <TouchableOpacity onPress={() => setLanguage('en')} style={[styles.langBtn, language === 'en' && styles.langBtnActive]}>
+          <Text style={[styles.langBtnText, language === 'en' && styles.langBtnTextActive]}>EN</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setLanguage('te')} style={[styles.langBtn, language === 'te' && styles.langBtnActive]}>
+          <Text style={[styles.langBtnText, language === 'te' && styles.langBtnTextActive]}>తెలుగు</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.content}>
         
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoIcon}>📍</Text>
-          </View>
-          <Text style={styles.title}>FieldMark</Text>
-          <Text style={styles.subtitle}>Geotagged Field Attendance System</Text>
+          <Image 
+            source={require('../../../assets/images/atia_logo.png')} 
+            style={{ width: 140, height: 100, resizeMode: 'contain', marginBottom: 8 }} 
+          />
+          <Text style={styles.title}>{t('common.appName') || 'FieldMark'}</Text>
+          <Text style={styles.subtitle}>{t('auth.phoneEntrySubtitle') || 'Geotagged Field Attendance System'}</Text>
         </View>
 
         {/* Portal Options */}
         <View style={styles.cardContainer}>
-          <Text style={styles.sectionLabel}>SELECT YOUR PORTAL</Text>
+          <Text style={styles.sectionLabel}>{t('auth.selectPortal') || 'SELECT YOUR PORTAL'}</Text>
 
           <TouchableOpacity 
             style={[styles.portalCard, { borderColor: '#2F8F5B' }]} 
@@ -38,8 +55,8 @@ export default function RoleSelect({ navigation }: Props) {
               <Text style={styles.portalIcon}>👷</Text>
             </View>
             <View style={styles.portalInfo}>
-              <Text style={styles.portalTitle}>Employee Portal</Text>
-              <Text style={styles.portalSub}>Mark attendance, geotag entry & request leaves</Text>
+              <Text style={styles.portalTitle}>{t('auth.employeePortalTitle') || 'Employee Portal'}</Text>
+              <Text style={styles.portalSub}>{t('auth.employeePortalSub') || 'Mark attendance, geotag entry & request leaves'}</Text>
             </View>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
@@ -55,8 +72,8 @@ export default function RoleSelect({ navigation }: Props) {
               <Text style={styles.portalIcon}>🗂</Text>
             </View>
             <View style={styles.portalInfo}>
-              <Text style={styles.portalTitle}>Admin Portal</Text>
-              <Text style={styles.portalSub}>Verifications, employee CRUD & reports</Text>
+              <Text style={styles.portalTitle}>{t('auth.adminPortalTitle') || 'Admin Portal'}</Text>
+              <Text style={styles.portalSub}>{t('auth.adminPortalSub') || 'Verifications, employee CRUD & reports'}</Text>
             </View>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
@@ -64,7 +81,7 @@ export default function RoleSelect({ navigation }: Props) {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Protected by Firebase Auth · GPS Verification Engine v2.4</Text>
+          <Text style={styles.footerText}>{t('auth.footerText') || 'Protected by Firebase Auth · GPS Verification Engine v2.4'}</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -80,7 +97,27 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
     justifyContent: 'space-between',
-    paddingVertical: 32,
+    paddingBottom: 32,
+  },
+  langBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#9BAFA2',
+    backgroundColor: '#FFFFFF',
+  },
+  langBtnActive: {
+    borderColor: '#2F8F5B',
+    backgroundColor: '#2F8F5B',
+  },
+  langBtnText: {
+    fontSize: 12,
+    color: '#9BAFA2',
+    fontWeight: '700',
+  },
+  langBtnTextActive: {
+    color: '#FFFFFF',
   },
   header: {
     alignItems: 'center',

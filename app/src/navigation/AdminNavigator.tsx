@@ -18,9 +18,6 @@ import Settings from '../screens/admin/Settings';
 import LeaveReview from '../screens/admin/LeaveReview';
 import AdminGrievances from '../screens/admin/Grievances';
 import AdminGrievanceDetail from '../screens/admin/AdminGrievanceDetail';
-
-import Salary from '../screens/admin/Salary';
-
 export type AdminStackParamList = {
   AdminTabs: undefined;
   VerificationDetail: { recordId: number };
@@ -85,14 +82,7 @@ function AdminTabNavigator() {
           tabBarIcon: ({ focused }) => <TabBarIcon label="📅" focused={focused} />
         }}
       />
-      <Tab.Screen 
-        name="SalaryTab" 
-        component={Salary} 
-        options={{
-          tabBarLabel: "Salary",
-          tabBarIcon: ({ focused }) => <TabBarIcon label="💰" focused={focused} />
-        }}
-      />
+
       <Tab.Screen 
         name="ReportsTab" 
         component={Reports} 

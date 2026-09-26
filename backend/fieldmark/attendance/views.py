@@ -308,6 +308,7 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
             record.work_details = work_details
 
         record.panchayat_visited = request.data.get('panchayat_visited', record.panchayat_visited)
+        record.village_visited = request.data.get('village_visited', record.village_visited)
         record.fic_visited = request.data.get('fic_visited', record.fic_visited)
         
         # members_attended
@@ -322,14 +323,11 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
 
         record.check_out_at = timezone.now()
         
-        # 8 Hour strict rule for salary
-        duration = (record.check_out_at - record.marked_at).total_seconds()
-        if duration >= (8 * 3600) - 300: # allow 5 mins grace for clock drift
-            record.status = 'APPROVED'
-        else:
-            record.status = 'ABSENT'
+        # Instead of auto-approving based on 8-hour rule, we keep it PENDING
+        # so the Admin has the option to manually accept or reject it in the verification portal.
+        record.status = 'PENDING'
             
-        record.save(update_fields=['check_out_at', 'work_details', 'panchayat_visited', 'fic_visited', 'members_attended', 'purpose_of_visit', 'status'])
+        record.save(update_fields=['check_out_at', 'work_details', 'panchayat_visited', 'village_visited', 'fic_visited', 'members_attended', 'purpose_of_visit', 'status'])
 
         return Response(
             AttendanceRecordSerializer(record).data,

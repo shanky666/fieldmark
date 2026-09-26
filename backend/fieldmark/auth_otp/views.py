@@ -194,6 +194,17 @@ class UserLoginView(APIView):
         if not valid_password:
             return Response({'error': 'invalid_password', 'message': 'Incorrect password. Please try again.'}, status=status.HTTP_401_UNAUTHORIZED)
 
+        device_id = request.data.get('device_id')
+        if device_id and not worker.is_superuser:
+            if not worker.registered_device_id:
+                worker.registered_device_id = device_id
+                worker.save(update_fields=['registered_device_id'])
+            elif worker.registered_device_id != device_id:
+                return Response({
+                    'error': 'device_mismatch', 
+                    'message': 'Your account is bound to another device. Please contact Admin to reset your device access.'
+                }, status=status.HTTP_403_FORBIDDEN)
+
         tokens = get_tokens_for_user(worker)
         tokens['user'] = {
             'id': worker.id,

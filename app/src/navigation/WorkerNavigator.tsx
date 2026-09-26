@@ -17,8 +17,6 @@ import GrievanceInbox from '../screens/worker/GrievanceInbox';
 import NewGrievance from '../screens/worker/NewGrievance';
 import GrievanceThread from '../screens/worker/GrievanceThread';
 import Profile from '../screens/worker/Profile';
-import Salary from '../screens/worker/Salary';
-
 export type WorkerStackParamList = {
   WorkerTabs: undefined;
   MarkAttendance: undefined;
@@ -76,14 +74,7 @@ function WorkerTabNavigator() {
           tabBarIcon: ({ focused }) => <TabBarIcon label="📊" focused={focused} />
         }}
       />
-      <Tab.Screen 
-        name="SalaryTab" 
-        component={Salary} 
-        options={{
-          tabBarLabel: 'Salary',
-          tabBarIcon: ({ focused }) => <TabBarIcon label="💰" focused={focused} />
-        }}
-      />
+
       <Tab.Screen 
         name="MessagesTab" 
         component={GrievanceInbox} 

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Ale
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
+import * as LocalAuthentication from 'expo-local-authentication';
 
 export default function Home({ navigation }: any) {
   const { userProfile } = useAuthStore();
@@ -16,6 +17,7 @@ export default function Home({ navigation }: any) {
 
   const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
   const [panchayatVisited, setPanchayatVisited] = useState('');
+  const [villageVisited, setVillageVisited] = useState('');
   const [ficVisited, setFicVisited] = useState('');
   const [membersAttended, setMembersAttended] = useState('');
   const [purposeOfVisit, setPurposeOfVisit] = useState('');
@@ -69,14 +71,34 @@ export default function Home({ navigation }: any) {
   };
 
   const performCheckout = async () => {
-    if (!panchayatVisited.trim() || !ficVisited.trim() || !membersAttended.trim() || !purposeOfVisit.trim()) {
+    if (!panchayatVisited.trim() || !villageVisited.trim() || !ficVisited.trim() || !membersAttended.trim() || !purposeOfVisit.trim()) {
       Alert.alert("Required Fields", "Please fill in all the required field visit details.");
+      return;
+    }
+
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      if (compatible && enrolled) {
+        const authResult = await LocalAuthentication.authenticateAsync({
+          promptMessage: 'Verify your face to check out',
+          cancelLabel: 'Cancel',
+          disableDeviceFallback: true,
+        });
+        if (!authResult.success) {
+          Alert.alert('Verification Failed', 'Face verification failed. Cannot submit check-out.');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Biometric check failed/cancelled", e);
       return;
     }
 
     try {
       const res = await apiClient.post('/api/attendance/checkout/', {
         panchayat_visited: panchayatVisited.trim(),
+        village_visited: villageVisited.trim(),
         fic_visited: ficVisited.trim(),
         members_attended: parseInt(membersAttended.trim()) || 0,
         purpose_of_visit: purposeOfVisit.trim(),
@@ -104,14 +126,20 @@ export default function Home({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.content}>
         
         <View style={styles.header}>
-          <View style={{ alignItems: 'center', flex: 1 }}>
-            <Text style={styles.logoText}>ATIA FIELD STAFF</Text>
-            <Text style={styles.dateText}>{todayStr}</Text>
-            <Text style={styles.empName}>{userProfile?.name}</Text>
-            <Text style={styles.empId}>ID: {userProfile?.employee_id}</Text>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ alignItems: 'center', flex: 1 }}>
+                <Text style={styles.logoText}>ATIA FIELD STAFF</Text>
+                <Text style={styles.dateText}>{todayStr}</Text>
+                <Text style={styles.empName}>{userProfile?.name}</Text>
+                <Text style={styles.empId}>ID: {userProfile?.employee_id}</Text>
+              </View>
+              <TouchableOpacity style={styles.bellBtn} onPress={() => Alert.alert('Notifications', 'No new notifications at this time.')}>
+                <Text style={{ fontSize: 24 }}>🔔</Text>
+                <View style={styles.notifDot} />
+              </TouchableOpacity>
+            </View>
           </View>
-          
-
         </View>
 
         <View style={styles.summaryCard}>
@@ -136,6 +164,13 @@ export default function Home({ navigation }: any) {
             <View style={styles.col}>
               <Text style={styles.label}>Required</Text>
               <Text style={styles.val}>8 Hours</Text>
+            </View>
+          </View>
+
+          <View style={[styles.row, { marginTop: 16 }]}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Total Working Days</Text>
+              <Text style={styles.val}>25 Days</Text>
             </View>
           </View>
           
@@ -175,9 +210,6 @@ export default function Home({ navigation }: any) {
           <TouchableOpacity style={styles.navBtn} onPress={() => navigation.navigate('LeaveTab' as any)}>
             <Text style={styles.navBtnText}>LEAVE</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navBtn} onPress={() => navigation.navigate('SalaryTab' as any)}>
-            <Text style={styles.navBtnText}>SALARY / SUMMARY</Text>
-          </TouchableOpacity>
         </View>
 
       </ScrollView>
@@ -187,13 +219,16 @@ export default function Home({ navigation }: any) {
           <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
             <View style={styles.modalSheet}>
               <Text style={styles.modalTitle}>Field Visit Details</Text>
-              <Text style={styles.modalSub}>Required before check-out.</Text>
+              <Text style={styles.modalSub}>Required before check-out for {userProfile?.name}.</Text>
               
               <Text style={styles.inputLabel}>Panchayat Visited *</Text>
               <TextInput style={styles.textInput} placeholder="Enter Panchayat name" value={panchayatVisited} onChangeText={setPanchayatVisited} />
               
-              <Text style={styles.inputLabel}>FIC Visited *</Text>
-              <TextInput style={styles.textInput} placeholder="Enter FIC name" value={ficVisited} onChangeText={setFicVisited} />
+              <Text style={styles.inputLabel}>Village Visited *</Text>
+              <TextInput style={styles.textInput} placeholder="Enter Village name" value={villageVisited} onChangeText={setVillageVisited} />
+
+              <Text style={styles.inputLabel}>FIG Visited *</Text>
+              <TextInput style={styles.textInput} placeholder="Enter FIG name" value={ficVisited} onChangeText={setFicVisited} />
               
               <Text style={styles.inputLabel}>Members Attended *</Text>
               <TextInput style={styles.textInput} placeholder="Number of members" keyboardType="number-pad" value={membersAttended} onChangeText={setMembersAttended} />

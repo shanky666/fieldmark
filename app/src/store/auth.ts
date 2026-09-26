@@ -3,6 +3,7 @@ import { secureStorage } from '../utils/secureStorage';
 import i18n from 'i18next';
 import { firebaseAuth } from '../config/firebase';
 import { apiClient, registerAuthFailureHandler } from '../api/client';
+import { getUniqueDeviceId } from '../utils/deviceId';
 
 export type UserRole = 'WORKER' | 'SUPERVISOR' | 'ADMIN' | null;
 
@@ -165,6 +166,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     );
 
     try {
+      const device_id = await getUniqueDeviceId();
+
       // ----------------------------------------------------
       // API LOGIN
       // ----------------------------------------------------
@@ -174,6 +177,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         {
           identifier,
           password,
+          device_id
         }
       );
 
@@ -244,6 +248,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         'user_role',
         role || 'WORKER'
       );
+
+      // Save for biometrics
+      await secureStorage.setItem('biometric_id', identifier);
+      await secureStorage.setItem('biometric_pass', password);
 
       console.log(
         '[LOGIN] user_role saved:',
@@ -385,6 +393,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
 
     try {
+      const device_id = await getUniqueDeviceId();
       console.log(
         '[SUPERVISOR LOGIN] START:',
         identifier
@@ -395,6 +404,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         {
           identifier,
           password,
+          device_id
         }
       );
 

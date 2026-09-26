@@ -72,9 +72,15 @@ export default function Dashboard({ navigation }: any) {
           <Text style={styles.greeting}>Welcome back,</Text>
           <Text style={styles.pageTitle}>Administrator</Text>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity style={styles.bellBtn} onPress={() => Alert.alert('Notifications', 'No new notifications at this time.')}>
+            <Text style={{ fontSize: 24 }}>🔔</Text>
+            <View style={styles.notifDot} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -165,6 +171,20 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
+    marginLeft: 12,
+  },
+  bellBtn: {
+    padding: 4,
+    position: 'relative',
+  },
+  notifDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#EF4444',
   },
   logoutText: {
     color: '#64748B',
