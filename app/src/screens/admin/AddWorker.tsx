@@ -23,14 +23,10 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
   const [accountRole, setAccountRole] = useState<'WORKER' | 'SUPERVISOR'>(initialRole);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
-  const [workerType, setWorkerType] = useState<'PERMANENT' | 'CONTRACTOR' | 'SEASONAL'>('PERMANENT');
   
   const [zones, setZones] = useState<any[]>([]);
   const [selectedZone, setSelectedZone] = useState<number | null>(null);
-  const [contractStart, setContractStart] = useState('');
-  const [contractEnd, setContractEnd] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -59,34 +55,17 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
     }
     const fullPhone = phone.startsWith('+91') ? phone : `+91${phone}`;
 
-    // Date formats validation
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (contractStart && !dateRegex.test(contractStart)) {
-      Alert.alert("Invalid Date", "Contract start must match YYYY-MM-DD format.");
-      return;
-    }
-    if (contractEnd && !dateRegex.test(contractEnd)) {
-      Alert.alert("Invalid Date", "Contract end must match YYYY-MM-DD format.");
-      return;
-    }
-
     setSubmitting(true);
     try {
       const payload: any = {
         name: name.trim(),
         phone: fullPhone,
-        worker_type: workerType,
+        worker_type: 'PERMANENT',
         password,
-        contract_start_date: contractStart.trim() || null,
-        contract_end_date: contractEnd.trim() || null,
         is_staff: accountRole === 'SUPERVISOR',
         role: accountRole,
         assigned_zone_id: selectedZone
       };
-
-      if (employeeId.trim()) {
-        payload.employee_id = employeeId.trim();
-      }
 
       await apiClient.post('/api/workers/list/', payload);
 
@@ -165,36 +144,10 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
             secureTextEntry
           />
 
-          {/* Employee ID */}
-          <Text style={styles.label}>Employee ID (Optional, Auto-generated)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. FM-1049"
-            placeholderTextColor={COLORS.lightText}
-            value={employeeId}
-            onChangeText={setEmployeeId}
-          />
-
-          {/* Worker Type */}
-          <Text style={styles.label}>{t('admin.workerType')}</Text>
-          <View style={styles.typeRow}>
-            {(['PERMANENT', 'CONTRACTOR', 'SEASONAL'] as const).map((type) => (
-              <TouchableOpacity
-                key={type}
-                style={[styles.pill, workerType === type && styles.activePill]}
-                onPress={() => setWorkerType(type)}
-              >
-                <Text style={[styles.pillLabel, workerType === type && styles.activePillLabel]}>
-                  {type}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
           {/* Assigned Zone */}
           {zones.length > 0 && (
-            <>
-              <Text style={styles.label}>Assign to Zone</Text>
+            <View style={{ marginTop: 8 }}>
+              <Text style={styles.label}>Assign to Zone (Optional)</Text>
               <View style={styles.typeRow}>
                 {zones.map((z: any) => (
                   <TouchableOpacity
@@ -208,27 +161,8 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
                   </TouchableOpacity>
                 ))}
               </View>
-            </>
+            </View>
           )}
-          {/* Contract Start Date */}
-          <Text style={styles.label}>{t('admin.contractStart')} (Optional)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={COLORS.lightText}
-            value={contractStart}
-            onChangeText={setContractStart}
-          />
-
-          {/* Contract End Date */}
-          <Text style={styles.label}>{t('admin.contractEnd')} (Optional)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={COLORS.lightText}
-            value={contractEnd}
-            onChangeText={setContractEnd}
-          />
 
           <TouchableOpacity
             style={[styles.btn, submitting && styles.btnDisabled]}

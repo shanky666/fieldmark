@@ -35,6 +35,13 @@ class AttendanceCSVReportView(APIView):
         if worker_id:
             queryset = queryset.filter(worker_id=worker_id)
             
+        search_query = request.query_params.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(worker__name__icontains=search_query) | 
+                Q(worker__employee_id__icontains=search_query)
+            )
+            
         if zone_id:
             if zone_id.isdigit():
                 queryset = queryset.filter(worker__assigned_zone_id=zone_id)

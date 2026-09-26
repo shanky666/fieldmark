@@ -30,11 +30,17 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
   const [newPassword, setNewPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
 
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+
   const fetchWorkerData = async () => {
     try {
       // 1. Fetch worker profile
       const workerRes = await apiClient.get(`/api/workers/list/${workerId}/`);
       setWorker(workerRes.data);
+      setEditName(workerRes.data.name);
+      setEditPhone(workerRes.data.phone);
 
       // 3. Fetch attendance for calendar
       const attRes = await apiClient.get(`/api/attendance/?worker=${workerId}`);
@@ -58,6 +64,27 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
   useEffect(() => {
     fetchWorkerData();
   }, [workerId]);
+
+  const handleUpdateProfile = async () => {
+    if (!editName.trim() || !editPhone.trim()) {
+      Alert.alert(t('common.error'), "Name and Phone cannot be empty.");
+      return;
+    }
+    setUpdating(true);
+    try {
+      await apiClient.patch(`/api/workers/list/${workerId}/`, {
+        name: editName.trim(),
+        phone: editPhone.trim()
+      });
+      Alert.alert(t('common.success'), "Profile updated successfully.");
+      setIsEditingProfile(false);
+      fetchWorkerData();
+    } catch (e) {
+      Alert.alert(t('common.error'), "Failed to update profile.");
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   const handleReassignZone = async (zoneId: number, zoneName: string) => {
     Alert.alert(
@@ -148,19 +175,54 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
         {/* Profile Info */}
         <View style={styles.card}>
           <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-            <View>
-              <Text style={styles.name}>{worker.name}</Text>
-              <Text style={styles.employeeId}>Employee ID: {worker.employee_id}</Text>
-              <Text style={styles.phone}>{worker.phone}</Text>
-              <View style={styles.typeBadge}>
-                <Text style={styles.typeBadgeText}>{worker.worker_type}</Text>
-              </View>
-              {!worker.is_active && (
-                <View style={[styles.typeBadge, { backgroundColor: '#fee2e2', marginTop: 4 }]}>
-                   <Text style={[styles.typeBadgeText, { color: '#ef4444' }]}>INACTIVE</Text>
+            {isEditingProfile ? (
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <TextInput
+                  style={{ borderBottomWidth: 1, borderColor: '#CBD5E1', fontSize: 20, fontWeight: '700', color: '#0F172A', marginBottom: 8, paddingVertical: 4 }}
+                  value={editName}
+                  onChangeText={setEditName}
+                  placeholder="Full Name"
+                />
+                <TextInput
+                  style={{ borderBottomWidth: 1, borderColor: '#CBD5E1', fontSize: 16, color: '#475569', marginBottom: 8, paddingVertical: 4 }}
+                  value={editPhone}
+                  onChangeText={setEditPhone}
+                  placeholder="Phone Number"
+                  keyboardType="phone-pad"
+                />
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+                  <TouchableOpacity onPress={() => setIsEditingProfile(false)} style={{ padding: 6, backgroundColor: '#E2E8F0', borderRadius: 4 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600' }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleUpdateProfile} style={{ padding: 6, backgroundColor: COLORS.primary, borderRadius: 4 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: '#fff' }}>Save</Text>
+                  </TouchableOpacity>
                 </View>
-              )}
-            </View>
+              </View>
+            ) : (
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.name}>{worker.name}</Text>
+                  <TouchableOpacity onPress={() => setIsEditingProfile(true)}>
+                    <Text style={{ color: COLORS.primary, fontSize: 12, fontWeight: '700' }}>[Edit]</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.employeeId}>Employee ID: {worker.employee_id}</Text>
+                <Text style={styles.phone}>{worker.phone}</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                  <View style={styles.typeBadge}>
+                    <Text style={styles.typeBadgeText}>{worker.worker_type}</Text>
+                  </View>
+                  {!worker.is_active && (
+                    <View style={[styles.typeBadge, { backgroundColor: '#fee2e2' }]}>
+                       <Text style={[styles.typeBadgeText, { color: '#ef4444' }]}>INACTIVE</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+            
+            {!isEditingProfile && (
             <TouchableOpacity 
               style={[styles.statusBtn, worker.is_active ? styles.deactivateBtn : styles.activateBtn]}
               onPress={() => {
@@ -195,6 +257,7 @@ export default function WorkerDetail({ route, navigation }: WorkerDetailProps) {
             >
               <Text style={styles.statusBtnText}>{worker.is_active ? 'Deactivate' : 'Activate'}</Text>
             </TouchableOpacity>
+            )}
           </View>
         </View>
 

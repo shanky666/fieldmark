@@ -126,6 +126,13 @@ export default function Verify({ navigation }: any) {
                             <Text style={styles.historyTime}>Out: {checkOut}</Text>
                             <Text style={styles.historyTime}>Hrs: {record.duration_formatted || '--'}</Text>
                           </View>
+
+                          <View style={{ marginTop: 8 }}>
+                            <Text style={{ fontSize: 12, color: '#64748B' }}>
+                              📍 {record.village_visited || 'Location pending'}
+                              {record.gps_match === 'MATCHED' ? ' (In Zone)' : ' (Outside Zone)'}
+                            </Text>
+                          </View>
                           
                           {record.status === 'PENDING' && (
                             <View style={{ flexDirection: 'row', marginTop: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 12 }}>

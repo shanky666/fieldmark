@@ -9,6 +9,7 @@ export default function Reports() {
   const [csvRole, setCsvRole] = useState<'All' | 'Employee' | 'Supervisor'>('All');
   const [csvStartDate, setCsvStartDate] = useState('');
   const [csvEndDate, setCsvEndDate] = useState('');
+  const [csvSearch, setCsvSearch] = useState('');
   const [csvLoading, setCsvLoading] = useState(false);
 
   const handleDownloadCSV = async () => {
@@ -17,6 +18,7 @@ export default function Reports() {
       let query = `?role=${csvRole}`;
       if (csvStartDate.trim()) query += `&start_date=${encodeURIComponent(csvStartDate.trim())}`;
       if (csvEndDate.trim()) query += `&end_date=${encodeURIComponent(csvEndDate.trim())}`;
+      if (csvSearch.trim()) query += `&search=${encodeURIComponent(csvSearch.trim())}`;
 
       const baseUrl = (apiClient.defaults.baseURL || 'http://10.0.2.2:8000').replace(/\/+$/, '');
       const fullUrl = `${baseUrl}/api/attendance/csv-report/${query}`;
@@ -74,6 +76,15 @@ export default function Reports() {
             placeholderTextColor="#94A3B8"
             value={csvEndDate}
             onChangeText={setCsvEndDate}
+          />
+          
+          <Text style={styles.label}>Employee Name or ID - Optional</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Ramesh or FM-1002"
+            placeholderTextColor="#94A3B8"
+            value={csvSearch}
+            onChangeText={setCsvSearch}
           />
 
           <TouchableOpacity style={styles.btn} onPress={handleDownloadCSV} disabled={csvLoading}>

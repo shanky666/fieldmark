@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { apiClient } from '../../api/client';
 import { COLORS } from '../../constants/colors';
 
@@ -49,6 +49,14 @@ export default function Workers({ navigation }: any) {
     );
   };
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredWorkers = workersList.filter((w: any) => 
+    w.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    w.phone?.includes(searchQuery) || 
+    w.employee_id?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -58,13 +66,23 @@ export default function Workers({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
+      <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+        <TextInput
+          style={{ backgroundColor: '#FFFFFF', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', color: '#0F172A' }}
+          placeholder="Search by name, phone, or ID..."
+          placeholderTextColor="#94A3B8"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {loading ? (
           <ActivityIndicator color={COLORS.primary} size="large" style={{ marginTop: 40 }} />
-        ) : workersList.length === 0 ? (
+        ) : filteredWorkers.length === 0 ? (
           <Text style={styles.emptyText}>No employees found.</Text>
         ) : (
-          workersList.map((worker) => {
+          filteredWorkers.map((worker) => {
             const displayName = worker.name || 'Worker';
             const initials = displayName.substring(0, 2).toUpperCase();
             const isActive = worker.is_active !== false;

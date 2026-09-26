@@ -310,32 +310,23 @@ export default function Settings() {
           </View>
         </View>
 
-        {/* Zones & Shifts Management */}
+        {/* Zones Management */}
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Zones & Shifts management</Text>
+          <Text style={styles.sectionTitle}>Zones management</Text>
         </View>
         <View style={styles.groupCard}>
-          <TouchableOpacity style={styles.itemRow} onPress={() => setAddZoneVisible(true)}>
+          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => setAddZoneVisible(true)}>
             <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>+ Add new zone</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => setAddShiftVisible(true)}>
-            <Text style={[styles.itemText, { color: '#1A6DB5', fontWeight: '700' }]}>+ Add new shift</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Staff & Admin Management */}
+        {/* Staff Management */}
         <View style={styles.sectionHead}>
-          <Text style={styles.sectionTitle}>Staff & Admin management</Text>
+          <Text style={styles.sectionTitle}>Staff management</Text>
         </View>
         <View style={styles.groupCard}>
-          <TouchableOpacity style={styles.itemRow} onPress={() => navigation.navigate('AddSupervisor')}>
-            <Text style={[styles.itemText, { color: '#B9791C', fontWeight: '700' }]}>+ Add new supervisor</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.itemRow} onPress={() => navigation.navigate('AddWorker', { role: 'WORKER' })}>
+          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => navigation.navigate('AddWorker', { role: 'WORKER' })}>
             <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>+ Add new employee</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => setAddAdminVisible(true)}>
-            <Text style={[styles.itemText, { color: '#1A6DB5', fontWeight: '700' }]}>+ Add new admin</Text>
           </TouchableOpacity>
         </View>
 
