@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { apiClient } from '../../api/client';
 import { COLORS } from '../../constants/colors';
 
@@ -45,6 +45,32 @@ export default function Verify({ navigation }: any) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQuickAction = (recordId: number, action: 'approve' | 'reject') => {
+    Alert.alert(
+      action === 'approve' ? 'Approve Attendance' : 'Reject Attendance',
+      `Are you sure you want to ${action} this record?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: action === 'approve' ? 'Approve' : 'Reject', 
+          style: action === 'approve' ? 'default' : 'destructive',
+          onPress: async () => {
+            try {
+              await apiClient.patch(`/api/attendance/${recordId}/verify/`, {
+                action: action,
+                rejection_note: action === 'reject' ? 'Rejected by Admin' : ''
+              });
+              Alert.alert('Success', `Attendance ${action}d successfully.`);
+              fetchRecords();
+            } catch (e: any) {
+              Alert.alert('Error', e.response?.data?.message || `Failed to ${action} attendance.`);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const getStatusStyle = (status: string) => {
@@ -138,15 +164,15 @@ export default function Verify({ navigation }: any) {
                             <View style={{ flexDirection: 'row', marginTop: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 12 }}>
                               <TouchableOpacity 
                                 style={{ flex: 1, backgroundColor: '#FFFFFF', borderColor: '#DC2626', borderWidth: 1, borderRadius: 8, padding: 8, alignItems: 'center', marginRight: 6 }}
-                                onPress={() => navigation.navigate('VerificationDetail', { recordId: record.id })}
+                                onPress={() => handleQuickAction(record.id, 'reject')}
                               >
-                                <Text style={{ color: '#DC2626', fontWeight: 'bold', fontSize: 12 }}>Review to Reject</Text>
+                                <Text style={{ color: '#DC2626', fontWeight: 'bold', fontSize: 12 }}>Reject</Text>
                               </TouchableOpacity>
                               <TouchableOpacity 
                                 style={{ flex: 1, backgroundColor: '#1F6B42', borderRadius: 8, padding: 8, alignItems: 'center', marginLeft: 6 }}
-                                onPress={() => navigation.navigate('VerificationDetail', { recordId: record.id })}
+                                onPress={() => handleQuickAction(record.id, 'approve')}
                               >
-                                <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>Review to Approve</Text>
+                                <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 12 }}>Approve</Text>
                               </TouchableOpacity>
                             </View>
                           )}

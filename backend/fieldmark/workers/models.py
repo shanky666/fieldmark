@@ -81,6 +81,7 @@ class Worker(AbstractUser):
     profile_photo_url = models.CharField(max_length=500, null=True, blank=True)
     fcm_token = models.CharField(max_length=255, null=True, blank=True)
     registered_device_id = models.CharField(max_length=255, null=True, blank=True)
+    reference_face_url = models.CharField(max_length=500, null=True, blank=True, help_text="Path to first check-in photo used as face reference")
     preferred_language = models.CharField(
         max_length=2, 
         choices=LanguageChoices.choices, 

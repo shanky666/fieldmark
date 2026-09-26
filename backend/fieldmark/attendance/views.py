@@ -121,6 +121,34 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
             record.status = 'PRESENT'
             record.save(update_fields=['gps_match', 'anomaly_flags', 'status'])
         
+        # Face verification: compare check-in photo against stored reference face
+        worker = self.request.user
+        photo_data = record.photo_url
+        if photo_data and len(str(photo_data)) > 100:  # Has a real photo (base64)
+            if not worker.reference_face_url:
+                # FIRST TIME: Store this photo as the reference face
+                worker.reference_face_url = str(photo_data)
+                worker.save(update_fields=['reference_face_url'])
+                print(f"[FaceID] Reference face saved for worker {worker.name} (ID: {worker.id})")
+            else:
+                # SUBSEQUENT: Compare new photo against stored reference
+                try:
+                    from .face_verify import verify_face
+                    result = verify_face(worker.reference_face_url, str(photo_data))
+                    if not result['verified']:
+                        record.delete()
+                        from rest_framework.exceptions import ValidationError
+                        raise ValidationError({
+                            'message': f"Face verification failed. The photo does not match the registered employee's face. Please ensure the correct employee is taking the photo."
+                        })
+                    print(f"[FaceID] Face matched for {worker.name}: distance={result['distance']}")
+                except ImportError as e:
+                    print(f"[FaceID] DeepFace not available, skipping: {e}")
+                except Exception as e:
+                    if 'ValidationError' in type(e).__name__:
+                        raise  # Re-raise validation errors
+                    print(f"[FaceID] Verification error (allowing through): {e}")
+        
         # Trigger Celery checks asynchronously if broker is available
         try:
             run_attendance_async_checks.delay(record.id)
