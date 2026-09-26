@@ -132,13 +132,9 @@ export default function WorkerLogin({ navigation }: Props) {
                 )}
               </TouchableOpacity>
 
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 }}>
                 <TouchableOpacity style={styles.forgotBtn}>
                   <Text style={styles.forgotText}>Forgot Password?</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                  <Text style={[styles.forgotText, { color: '#2F8F5B', fontWeight: 'bold' }]}>Create Employee</Text>
                 </TouchableOpacity>
               </View>
               

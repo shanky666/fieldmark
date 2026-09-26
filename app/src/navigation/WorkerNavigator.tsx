@@ -85,6 +85,14 @@ function WorkerTabNavigator() {
         }}
       />
       <Tab.Screen 
+        name="MessagesTab" 
+        component={GrievanceInbox} 
+        options={{
+          tabBarLabel: 'Grievance',
+          tabBarIcon: ({ focused }) => <TabBarIcon label="💬" focused={focused} />
+        }}
+      />
+      <Tab.Screen 
         name="ProfileTab" 
         component={Profile} 
         options={{

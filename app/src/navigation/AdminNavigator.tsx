@@ -101,6 +101,22 @@ function AdminTabNavigator() {
           tabBarIcon: ({ focused }) => <TabBarIcon label="📈" focused={focused} />
         }}
       />
+      <Tab.Screen 
+        name="GrievancesTab" 
+        component={AdminGrievances} 
+        options={{
+          tabBarLabel: "Grievances",
+          tabBarIcon: ({ focused }) => <TabBarIcon label="💬" focused={focused} />
+        }}
+      />
+      <Tab.Screen 
+        name="SettingsTab" 
+        component={Settings} 
+        options={{
+          tabBarLabel: "Zones",
+          tabBarIcon: ({ focused }) => <TabBarIcon label="⚙️" focused={focused} />
+        }}
+      />
     </Tab.Navigator>
   );
 }

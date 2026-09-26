@@ -28,9 +28,23 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
   const [workerType, setWorkerType] = useState<'PERMANENT' | 'CONTRACTOR' | 'SEASONAL'>('PERMANENT');
   
   const [zones, setZones] = useState<any[]>([]);
+  const [selectedZone, setSelectedZone] = useState<number | null>(null);
   const [contractStart, setContractStart] = useState('');
   const [contractEnd, setContractEnd] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchZones();
+  }, []);
+
+  const fetchZones = async () => {
+    try {
+      const res = await apiClient.get('/api/workers/zones/');
+      setZones(res.data.results || res.data || []);
+    } catch (e) {
+      console.warn("Failed to load zones", e);
+    }
+  };
 
   const handleRegister = async () => {
     if (!name || !phone || !password) {
@@ -66,7 +80,8 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
         contract_start_date: contractStart.trim() || null,
         contract_end_date: contractEnd.trim() || null,
         is_staff: accountRole === 'SUPERVISOR',
-        role: accountRole
+        role: accountRole,
+        assigned_zone_id: selectedZone
       };
 
       if (employeeId.trim()) {
@@ -109,30 +124,7 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Role Selector Segment */}
-        <View style={styles.roleSegmentCard}>
-          <Text style={styles.roleSegmentLabel}>ACCOUNT ROLE</Text>
-          <View style={styles.roleSegmentRow}>
-            <TouchableOpacity 
-              style={[styles.roleBtn, accountRole === 'WORKER' && styles.roleBtnActive]}
-              onPress={() => setAccountRole('WORKER')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.roleBtnText, accountRole === 'WORKER' && styles.roleBtnTextActive]}>
-                👷 Employee
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.roleBtn, accountRole === 'SUPERVISOR' && styles.roleBtnActiveSupervisor]}
-              onPress={() => setAccountRole('SUPERVISOR')}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.roleBtnText, accountRole === 'SUPERVISOR' && styles.roleBtnTextActive]}>
-                👨‍💼 Supervisor
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+
 
         <View style={styles.card}>
           {/* Name */}
@@ -199,8 +191,25 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
             ))}
           </View>
 
-
-
+          {/* Assigned Zone */}
+          {zones.length > 0 && (
+            <>
+              <Text style={styles.label}>Assign to Zone</Text>
+              <View style={styles.typeRow}>
+                {zones.map((z: any) => (
+                  <TouchableOpacity
+                    key={z.id}
+                    style={[styles.pill, selectedZone === z.id && styles.activePill]}
+                    onPress={() => setSelectedZone(z.id)}
+                  >
+                    <Text style={[styles.pillLabel, selectedZone === z.id && styles.activePillLabel]}>
+                      {z.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          )}
           {/* Contract Start Date */}
           <Text style={styles.label}>{t('admin.contractStart')} (Optional)</Text>
           <TextInput

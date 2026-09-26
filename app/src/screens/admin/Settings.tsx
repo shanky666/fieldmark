@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Switch, TouchableOpac
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
+import * as Location from 'expo-location';
 
 export default function Settings() {
   const navigation = useNavigation<any>();
@@ -32,6 +33,10 @@ export default function Settings() {
   // Zone Modal State
   const [addZoneVisible, setAddZoneVisible] = useState(false);
   const [zoneName, setZoneName] = useState('');
+  const [zoneAddress, setZoneAddress] = useState('');
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [zoneLat, setZoneLat] = useState('');
+  const [zoneLng, setZoneLng] = useState('');
   const [zoneRadius, setZoneRadius] = useState('500');
   const [zoneColor, setZoneColor] = useState('#3a7c3a');
   const [selectedShiftId, setSelectedShiftId] = useState<number | null>(null);
@@ -112,9 +117,31 @@ export default function Settings() {
     ]);
   };
 
+  const handleGeocode = async () => {
+    if (!zoneAddress.trim()) {
+      Alert.alert('Required', 'Please enter an address to search.');
+      return;
+    }
+    setIsGeocoding(true);
+    try {
+      const results = await Location.geocodeAsync(zoneAddress.trim());
+      if (results && results.length > 0) {
+        setZoneLat(results[0].latitude.toString());
+        setZoneLng(results[0].longitude.toString());
+        Alert.alert('Location Found', 'Coordinates updated successfully.');
+      } else {
+        Alert.alert('Not Found', 'Could not find coordinates for this address.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Failed to fetch location. Please try again.');
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
   const handleAddZone = async () => {
-    if (!zoneName.trim()) {
-      Alert.alert('Required', 'Please enter a zone name.');
+    if (!zoneName.trim() || !zoneLat.trim() || !zoneLng.trim()) {
+      Alert.alert('Required', 'Please enter zone name, latitude, and longitude.');
       return;
     }
 
@@ -132,14 +159,16 @@ export default function Settings() {
     try {
       const res = await apiClient.post('/api/workers/zones/', {
         name: zoneName.trim(),
-        center_lat: 12.9716,
-        center_lng: 77.5946,
+        center_lat: parseFloat(zoneLat),
+        center_lng: parseFloat(zoneLng),
         radius_meters: parseFloat(zoneRadius) || 500.0,
         shift: targetShiftId,
         color_hex: zoneColor.trim() || '#3a7c3a'
       });
       setAddZoneVisible(false);
       setZoneName('');
+      setZoneLat('');
+      setZoneLng('');
       setZones(prev => [...prev, res.data]);
       Alert.alert('Success', `Zone "${res.data.name}" added successfully.`);
     } catch (e: any) {
@@ -352,6 +381,38 @@ export default function Settings() {
             <View style={styles.field}>
               <Text style={styles.label}>ZONE NAME</Text>
               <TextInput style={styles.input} placeholder="e.g. Zone A (Facade)" placeholderTextColor="#9BAFA2" value={zoneName} onChangeText={setZoneName} />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>SEARCH LOCATION</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TextInput 
+                  style={[styles.input, { flex: 1 }]} 
+                  placeholder="e.g. MG Road, Bangalore" 
+                  placeholderTextColor="#9BAFA2" 
+                  value={zoneAddress} 
+                  onChangeText={setZoneAddress} 
+                />
+                <TouchableOpacity 
+                  style={[styles.btnPrimary, { paddingHorizontal: 16, height: 48, justifyContent: 'center', borderRadius: 12 }]} 
+                  onPress={handleGeocode}
+                  disabled={isGeocoding}
+                >
+                  <Text style={styles.btnPrimaryText}>{isGeocoding ? '...' : 'Fetch'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={[styles.field, { flex: 1 }]}>
+                <Text style={styles.label}>LATITUDE</Text>
+                <TextInput style={styles.input} placeholder="12.9716" placeholderTextColor="#9BAFA2" keyboardType="numeric" value={zoneLat} onChangeText={setZoneLat} />
+              </View>
+
+              <View style={[styles.field, { flex: 1 }]}>
+                <Text style={styles.label}>LONGITUDE</Text>
+                <TextInput style={styles.input} placeholder="77.5946" placeholderTextColor="#9BAFA2" keyboardType="numeric" value={zoneLng} onChangeText={setZoneLng} />
+              </View>
             </View>
 
             <View style={styles.field}>

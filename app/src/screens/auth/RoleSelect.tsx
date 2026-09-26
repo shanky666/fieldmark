@@ -44,20 +44,7 @@ export default function RoleSelect({ navigation }: Props) {
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.portalCard, { borderColor: '#B9791C' }]} 
-            onPress={() => navigation.navigate('SupervisorLogin')}
-            activeOpacity={0.8}
-          >
-            <View style={[styles.iconCircle, { backgroundColor: '#FBEDD3' }]}>
-              <Text style={styles.portalIcon}>📋</Text>
-            </View>
-            <View style={styles.portalInfo}>
-              <Text style={styles.portalTitle}>Supervisor Portal</Text>
-              <Text style={styles.portalSub}>Field rounds, team headcount & daily logs</Text>
-            </View>
-            <Text style={styles.arrow}>›</Text>
-          </TouchableOpacity>
+
 
           <TouchableOpacity 
             style={[styles.portalCard, { borderColor: '#6E56A6' }]} 
