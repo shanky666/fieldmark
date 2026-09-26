@@ -106,6 +106,17 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
         if not kwargs:
             kwargs = {'worker': self.request.user}
         record = serializer.save(**kwargs)
+        
+        # Check zone matching synchronously
+        from .anomaly_checks import check_sync_gps_zone
+        match_status, new_flags = check_sync_gps_zone(record)
+        record.gps_match = match_status
+        if new_flags:
+            record.anomaly_flags = list(set(record.anomaly_flags + new_flags))
+        if match_status == 'MISMATCH':
+            record.status = 'ABSENT'
+        record.save(update_fields=['gps_match', 'anomaly_flags', 'status'])
+        
         # Trigger Celery checks asynchronously if broker is available
         try:
             run_attendance_async_checks.delay(record.id)
