@@ -24,7 +24,7 @@ export default function WorkerLogin({ navigation }: Props) {
   const [errorMsg, setErrorMsg] = useState('');
   const [hasBiometrics, setHasBiometrics] = useState(false);
 
-  const { loginWorker, isLoading } = useAuthStore();
+  const { loginWorker, isLoading, language, setLanguage } = useAuthStore();
 
   React.useEffect(() => {
     (async () => {
@@ -97,6 +97,16 @@ export default function WorkerLogin({ navigation }: Props) {
 
           <View style={styles.content}>
             
+            {/* Language Switcher */}
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', width: '100%', marginBottom: 10, gap: 10 }}>
+              <TouchableOpacity onPress={() => setLanguage('en')} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: language === 'en' ? '#1F6B42' : '#E2E8F0' }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: language === 'en' ? '#fff' : '#475569' }}>EN</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setLanguage('te')} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: language === 'te' ? '#1F6B42' : '#E2E8F0' }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: language === 'te' ? '#fff' : '#475569' }}>తెలుగు</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* Logo Area */}
             <View style={styles.logoContainer}>
               <Image 

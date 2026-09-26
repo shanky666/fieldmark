@@ -23,6 +23,7 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
   const [accountRole, setAccountRole] = useState<'WORKER' | 'SUPERVISOR'>(initialRole);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
   
   const [zones, setZones] = useState<any[]>([]);
@@ -66,6 +67,9 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
         role: accountRole,
         assigned_zone_id: selectedZone
       };
+      if (employeeId.trim()) {
+        payload.employee_id = employeeId.trim();
+      }
 
       await apiClient.post('/api/workers/list/', payload);
 
@@ -114,6 +118,16 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
             placeholderTextColor={COLORS.lightText}
             value={name}
             onChangeText={setName}
+          />
+
+          {/* Employee ID */}
+          <Text style={styles.label}>Employee ID (Optional)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Custom ID (Leave blank to auto-generate)"
+            placeholderTextColor={COLORS.lightText}
+            value={employeeId}
+            onChangeText={setEmployeeId}
           />
 
           {/* Phone */}

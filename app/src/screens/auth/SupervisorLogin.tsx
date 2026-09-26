@@ -18,7 +18,7 @@ export default function SupervisorLogin({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const { loginSupervisor, isLoading } = useAuthStore();
+  const { loginSupervisor, isLoading, language, setLanguage } = useAuthStore();
 
   const handleLogin = async () => {
     if (!identifier.trim()) {
@@ -54,6 +54,15 @@ export default function SupervisorLogin({ navigation }: Props) {
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.backArrow}>← Back</Text>
           </TouchableOpacity>
+
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', width: '100%', marginBottom: 10, gap: 10 }}>
+            <TouchableOpacity onPress={() => setLanguage('en')} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: language === 'en' ? '#1F6B42' : '#E2E8F0' }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: language === 'en' ? '#fff' : '#475569' }}>EN</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setLanguage('te')} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: language === 'te' ? '#1F6B42' : '#E2E8F0' }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: language === 'te' ? '#fff' : '#475569' }}>తెలుగు</Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.header}>
             <View style={styles.badgeIcon}>

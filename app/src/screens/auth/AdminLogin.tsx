@@ -13,7 +13,7 @@ interface Props {
 export default function AdminLogin({ navigation }: Props) {
   const [identifier, setIdentifier] = useState('ADM001');
   const [password, setPassword] = useState('AdminPass123!');
-  const { loginAdmin, isLoading } = useAuthStore();
+  const { loginAdmin, isLoading, language, setLanguage } = useAuthStore();
 
   const handleLogin = async () => {
     if (!identifier.trim() || !password.trim()) {
@@ -39,6 +39,15 @@ export default function AdminLogin({ navigation }: Props) {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Text style={styles.backArrow}>← Back</Text>
         </TouchableOpacity>
+
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingRight: 4, gap: 10, marginBottom: 8 }}>
+          <TouchableOpacity onPress={() => setLanguage('en')} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: language === 'en' ? '#1F6B42' : '#E2E8F0' }}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: language === 'en' ? '#fff' : '#475569' }}>EN</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setLanguage('te')} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: language === 'te' ? '#1F6B42' : '#E2E8F0' }}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: language === 'te' ? '#fff' : '#475569' }}>తెలుగు</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.header}>
           <Image 
