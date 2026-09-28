@@ -74,9 +74,16 @@ export default function WorkerLogin({ navigation }: Props) {
     try {
       await loginWorker(identifier.trim(), password.trim());
     } catch (e: any) {
-      // Regardless of the backend message format, display the exact explicit message the user wants
-      let msg = language === 'te' ? 'చెల్లని పాస్‌వర్డ్ లేదా ID' : 'Invalid Password or ID';
-      setErrorMsg(msg);
+      if (e?.response?.status === 403 && e?.response?.data?.error === 'device_mismatch') {
+        let msg = language === 'te' 
+          ? 'మీ ఖాతా మరొక పరికరానికి బంధించబడింది. మీరు ఒక పరికరంలో మాత్రమే లాగిన్ అవ్వగలరు.' 
+          : 'Your account is bound to another device. You can only log in on one device.';
+        setErrorMsg(msg);
+      } else {
+        // Regardless of the backend message format, display the exact explicit message the user wants
+        let msg = language === 'te' ? 'చెల్లని పాస్‌వర్డ్ లేదా ID' : 'Invalid Password or ID';
+        setErrorMsg(msg);
+      }
     }
   };
 

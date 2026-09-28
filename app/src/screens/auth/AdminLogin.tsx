@@ -26,8 +26,15 @@ export default function AdminLogin({ navigation }: Props) {
     try {
       await loginAdmin(identifier.trim(), password.trim());
     } catch (e: any) {
-      let msg = language === 'te' ? 'చెల్లని పాస్‌వర్డ్ లేదా ID' : 'Invalid Password or ID';
-      Alert.alert(language === 'te' ? 'లాగిన్ విఫలమైంది' : 'Login Failed', msg);
+      if (e?.response?.status === 403 && e?.response?.data?.error === 'device_mismatch') {
+        let msg = language === 'te' 
+          ? 'మీ ఖాతా మరొక పరికరానికి బంధించబడింది. మీరు ఒక పరికరంలో మాత్రమే లాగిన్ అవ్వగలరు.' 
+          : 'Your account is bound to another device. You can only log in on one device.';
+        Alert.alert(language === 'te' ? 'లాగిన్ విఫలమైంది' : 'Login Failed', msg);
+      } else {
+        let msg = language === 'te' ? 'చెల్లని పాస్‌వర్డ్ లేదా ID' : 'Invalid Password or ID';
+        Alert.alert(language === 'te' ? 'లాగిన్ విఫలమైంది' : 'Login Failed', msg);
+      }
     }
   };
 
