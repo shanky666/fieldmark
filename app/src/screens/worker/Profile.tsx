@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
 import { CONFIG } from '../../constants/config';
 import { useTranslation } from 'react-i18next';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function Profile() {
   const { userProfile, logout, fetchUserProfile, language, setLanguage } = useAuthStore();
@@ -135,7 +136,7 @@ export default function Profile() {
               <Text style={styles.avatarText}>{nameInitial}</Text>
             )}
             <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#1F6B42', borderRadius: 12, padding: 4 }}>
-              <Text style={{ fontSize: 10 }}>📷</Text>
+              <MaterialCommunityIcons name="camera" size={14} color="#FFF" />
             </View>
           </TouchableOpacity>
           <Text style={styles.name}>{userProfile?.name || 'Employee Profile'}</Text>
@@ -188,7 +189,7 @@ export default function Profile() {
           {/* Language Switcher */}
           <View style={[styles.settingsItem, { justifyContent: 'space-between' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={styles.settingsIcon}>🌐</Text>
+              <MaterialCommunityIcons name="translate" size={24} color="#666" style={{ marginRight: 10 }} />
               <Text style={styles.settingsLabel}>Language / భాష</Text>
             </View>
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -202,13 +203,13 @@ export default function Profile() {
           </View>
 
           <TouchableOpacity style={styles.settingsItem} onPress={fetchMyPhotos}>
-            <Text style={styles.settingsIcon}>📸</Text>
+            <MaterialCommunityIcons name="image-multiple-outline" size={24} color="#666" style={{ marginRight: 10 }} />
             <Text style={styles.settingsLabel}>My verified photos</Text>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.settingsItem, { borderBottomWidth: 0 }]} onPress={handleSignOut}>
-            <Text style={styles.settingsIcon}>🚪</Text>
+            <MaterialCommunityIcons name="logout" size={24} color="#C24936" style={{ marginRight: 10 }} />
             <Text style={[styles.settingsLabel, { color: '#C24936' }]}>Sign out</Text>
             <Text style={styles.arrow}>›</Text>
           </TouchableOpacity>
@@ -220,7 +221,10 @@ export default function Profile() {
       <Modal visible={locationModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>📍 Work Location & Zone</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <MaterialCommunityIcons name="map-marker-radius" size={24} color="#1C7541" style={{ marginRight: 8 }} />
+              <Text style={styles.modalTitle}>Work Location & Zone</Text>
+            </View>
             <Text style={styles.modalDesc}>Your geotagged attendance boundary</Text>
 
             <View style={styles.infoCard}>
@@ -247,7 +251,10 @@ export default function Profile() {
       <Modal visible={shiftModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>📅 Shift Schedule</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <MaterialCommunityIcons name="clock-outline" size={24} color="#1C7541" style={{ marginRight: 8 }} />
+              <Text style={styles.modalTitle}>Shift Schedule</Text>
+            </View>
             <Text style={styles.modalDesc}>Your official work hours & check-in windows</Text>
 
             <View style={styles.infoCard}>
@@ -272,7 +279,10 @@ export default function Profile() {
       <Modal visible={photosModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>📸 Verified Attendance Photos</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <MaterialCommunityIcons name="image-multiple-outline" size={24} color="#1C7541" style={{ marginRight: 8 }} />
+              <Text style={styles.modalTitle}>Verified Attendance Photos</Text>
+            </View>
             <Text style={styles.modalDesc}>Geotagged photos stored & automatically purged weekly</Text>
 
             {loadingPhotos ? (

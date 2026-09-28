@@ -5,6 +5,8 @@ import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
 import * as LocalAuthentication from 'expo-local-authentication';
 
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 export default function Home({ navigation }: any) {
   const { userProfile } = useAuthStore();
   const [checkInTime, setCheckInTime] = useState<string | null>(null);
@@ -126,18 +128,23 @@ export default function Home({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.content}>
         
         <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <View style={{ alignItems: 'center', flex: 1 }}>
-                <Text style={styles.logoText}>ATIA FIELD STAFF</Text>
-                <Text style={styles.dateText}>{todayStr}</Text>
-                <Text style={styles.empName}>{userProfile?.name}</Text>
-                <Text style={styles.empId}>ID: {userProfile?.employee_id}</Text>
-              </View>
-              <TouchableOpacity style={styles.bellBtn} onPress={() => Alert.alert('Notifications', 'No new notifications at this time.')}>
-                <Text style={{ fontSize: 24 }}>🔔</Text>
-                <View style={styles.notifDot} />
-              </TouchableOpacity>
+          <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View>
+              <Text style={styles.logoText}>ATIA FIELD STAFF</Text>
+              <Text style={styles.dateText}>{todayStr}</Text>
+            </View>
+            <TouchableOpacity style={styles.bellBtn} onPress={() => Alert.alert('Notifications', 'No new notifications at this time.')}>
+              <MaterialCommunityIcons name="bell-outline" size={24} color="#1C7541" />
+              <View style={styles.notifDot} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.userCard}>
+            <View style={styles.avatar}>
+              <MaterialCommunityIcons name="account" size={30} color="#1C7541" />
+            </View>
+            <View>
+              <Text style={styles.empName}>{userProfile?.name || 'Loading...'}</Text>
+              <Text style={styles.empId}>Employee ID: {userProfile?.employee_id || '--'}</Text>
             </View>
           </View>
         </View>
@@ -258,13 +265,31 @@ export default function Home({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F8F5' },
   content: { padding: 20, paddingBottom: 40 },
-  header: { marginBottom: 20, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  bellBtn: { padding: 8, position: 'absolute', right: 0, top: 0 },
+  header: { marginBottom: 20 },
+  bellBtn: { padding: 8, position: 'relative' },
   notifDot: { position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderRadius: 5, backgroundColor: '#E87722' },
   logoText: { fontSize: 18, fontWeight: '900', color: '#1F6B42', marginBottom: 4 },
-  dateText: { fontSize: 14, color: '#666', marginBottom: 8 },
-  empName: { fontSize: 22, fontWeight: '700', color: '#333' },
-  empId: { fontSize: 14, color: '#666', marginTop: 2 },
+  dateText: { fontSize: 13, color: '#666', marginBottom: 12 },
+  userCard: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#FFF', 
+    padding: 16, 
+    borderRadius: 16, 
+    elevation: 2, 
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4,
+  },
+  avatar: { 
+    width: 50, 
+    height: 50, 
+    borderRadius: 25, 
+    backgroundColor: '#E8F5E9', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginRight: 16 
+  },
+  empName: { fontSize: 18, fontWeight: '700', color: '#333' },
+  empId: { fontSize: 13, color: '#666', marginTop: 2, fontWeight: '500' },
   
   summaryCard: {
     backgroundColor: '#FFF',

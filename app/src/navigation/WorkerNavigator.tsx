@@ -30,67 +30,46 @@ export type WorkerStackParamList = {
 const Stack = createStackNavigator<WorkerStackParamList>();
 const Tab = createBottomTabNavigator();
 
-function TabBarIcon({ label, focused }: { label: string; focused: boolean }) {
-  const color = focused ? COLORS.primary : COLORS.lightText;
-  return (
-    <Text style={{ color, fontSize: 18, fontWeight: focused ? 'bold' : 'normal' }}>
-      {label}
-    </Text>
-  );
-}
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 function WorkerTabNavigator() {
   const { t } = useTranslation();
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.lightText,
-        tabBarStyle: { height: 60, paddingBottom: 8, backgroundColor: COLORS.white }
-      }}
+        tabBarActiveTintColor: '#1C7541',
+        tabBarInactiveTintColor: '#A0B0A7',
+        tabBarStyle: { 
+          height: 65, 
+          paddingBottom: 10, 
+          paddingTop: 10,
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E2EBE5',
+          elevation: 10,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: any = 'home';
+          if (route.name === 'HomeTab') iconName = focused ? 'home' : 'home-outline';
+          else if (route.name === 'LeaveTab') iconName = focused ? 'calendar-plus' : 'calendar-blank-outline';
+          else if (route.name === 'HistoryTab') iconName = focused ? 'clock-time-four' : 'clock-time-four-outline';
+          else if (route.name === 'MessagesTab') iconName = focused ? 'message-text' : 'message-text-outline';
+          else if (route.name === 'ProfileTab') iconName = focused ? 'account' : 'account-outline';
+          
+          return <MaterialCommunityIcons name={iconName} size={26} color={color} />;
+        },
+      })}
     >
-      <Tab.Screen 
-        name="HomeTab" 
-        component={Home} 
-        options={{
-          tabBarLabel: t('worker.home'),
-          tabBarIcon: ({ focused }) => <TabBarIcon label="🏠" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
-        name="LeaveTab" 
-        component={Leave} 
-        options={{
-          tabBarLabel: t('worker.leave'),
-          tabBarIcon: ({ focused }) => <TabBarIcon label="📅" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
-        name="HistoryTab" 
-        component={History} 
-        options={{
-          tabBarLabel: t('worker.history'),
-          tabBarIcon: ({ focused }) => <TabBarIcon label="📊" focused={focused} />
-        }}
-      />
-
-      <Tab.Screen 
-        name="MessagesTab" 
-        component={GrievanceInbox} 
-        options={{
-          tabBarLabel: 'Grievance',
-          tabBarIcon: ({ focused }) => <TabBarIcon label="💬" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
-        name="ProfileTab" 
-        component={Profile} 
-        options={{
-          tabBarLabel: t('worker.profile'),
-          tabBarIcon: ({ focused }) => <TabBarIcon label="👤" focused={focused} />
-        }}
-      />
+      <Tab.Screen name="HomeTab" component={Home} options={{ tabBarLabel: t('worker.home') || 'Home' }} />
+      <Tab.Screen name="LeaveTab" component={Leave} options={{ tabBarLabel: t('worker.leave') || 'Leave' }} />
+      <Tab.Screen name="HistoryTab" component={History} options={{ tabBarLabel: t('worker.history') || 'History' }} />
+      <Tab.Screen name="MessagesTab" component={GrievanceInbox} options={{ tabBarLabel: 'Grievance' }} />
+      <Tab.Screen name="ProfileTab" component={Profile} options={{ tabBarLabel: t('worker.profile') || 'Profile' }} />
     </Tab.Navigator>
   );
 }
