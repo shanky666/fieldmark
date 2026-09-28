@@ -22,11 +22,11 @@ export default function SupervisorLogin({ navigation }: Props) {
 
   const handleLogin = async () => {
     if (!identifier.trim()) {
-      setErrorMsg('Please enter your Supervisor ID or Phone number.');
+      setErrorMsg(language === 'te' ? 'దయచేసి మీ సూపర్‌వైజర్ ID లేదా మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please enter your Supervisor ID or Phone number.');
       return;
     }
     if (!password.trim()) {
-      setErrorMsg('Please enter your password.');
+      setErrorMsg(language === 'te' ? 'దయచేసి మీ పాస్‌వర్డ్ నమోదు చేయండి.' : 'Please enter your password.');
       return;
     }
 
@@ -34,11 +34,7 @@ export default function SupervisorLogin({ navigation }: Props) {
     try {
       await loginSupervisor(identifier.trim(), password.trim());
     } catch (e: any) {
-      let msg = 'Invalid credentials. Please check your details and try again.';
-      if (e?.response?.data) {
-        const d = e.response.data;
-        msg = d.message || d.detail || (d.non_field_errors && d.non_field_errors[0]) || d.error || msg;
-      }
+      let msg = language === 'te' ? 'చెల్లని పాస్‌వర్డ్ లేదా ID' : 'Invalid Password or ID';
       setErrorMsg(msg);
     }
   };
@@ -52,7 +48,7 @@ export default function SupervisorLogin({ navigation }: Props) {
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.backArrow}>← Back</Text>
+            <Text style={styles.backArrow}>{language === 'te' ? '← వెనుకకు' : '← Back'}</Text>
           </TouchableOpacity>
 
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', width: '100%', marginBottom: 10, gap: 10 }}>
@@ -68,16 +64,16 @@ export default function SupervisorLogin({ navigation }: Props) {
             <View style={styles.badgeIcon}>
               <Text style={styles.emoji}>📋</Text>
             </View>
-            <Text style={styles.title}>Supervisor Login</Text>
+            <Text style={styles.title}>{language === 'te' ? 'సూపర్‌వైజర్ లాగిన్' : 'Supervisor Login'}</Text>
             <Text style={styles.subtitle}>
-              Enter your assigned Supervisor ID / Phone and Password
+              {language === 'te' ? 'మీ సూపర్‌వైజర్ ID / మొబైల్ మరియు పాస్‌వర్డ్ నమోదు చేయండి' : 'Enter your assigned Supervisor ID / Phone and Password'}
             </Text>
           </View>
 
           <View style={styles.form}>
 
             <View style={styles.field}>
-              <Text style={styles.label}>SUPERVISOR ID OR PHONE</Text>
+              <Text style={styles.label}>{language === 'te' ? 'సూపర్‌వైజర్ ID / మొబైల్' : 'SUPERVISOR ID OR PHONE'}</Text>
               <TextInput
                 style={styles.input}
                 placeholder="e.g. SUP-001 or 9876543210"
@@ -89,10 +85,10 @@ export default function SupervisorLogin({ navigation }: Props) {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>PASSWORD</Text>
+              <Text style={styles.label}>{language === 'te' ? 'పాస్‌వర్డ్' : 'PASSWORD'}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Enter password"
+                placeholder={language === 'te' ? 'పాస్‌వర్డ్ నమోదు చేయండి' : 'Enter password'}
                 placeholderTextColor="#9BAFA2"
                 value={password}
                 onChangeText={txt => { setPassword(txt); setErrorMsg(''); }}
@@ -114,7 +110,7 @@ export default function SupervisorLogin({ navigation }: Props) {
             >
               {isLoading
                 ? <ActivityIndicator color="#FFF" />
-                : <Text style={styles.submitBtnText}>Sign In as Supervisor</Text>}
+                : <Text style={styles.submitBtnText}>{language === 'te' ? 'లాగిన్' : 'Sign In as Supervisor'}</Text>}
             </TouchableOpacity>
 
           </View>

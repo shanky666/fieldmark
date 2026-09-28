@@ -17,18 +17,17 @@ export default function AdminLogin({ navigation }: Props) {
 
   const handleLogin = async () => {
     if (!identifier.trim() || !password.trim()) {
-      Alert.alert('Required', 'Please enter Administrator ID/Phone/Email and password');
+      Alert.alert(
+        language === 'te' ? 'అవసరం' : 'Required',
+        language === 'te' ? 'దయచేసి ID మరియు పాస్‌వర్డ్ నమోదు చేయండి' : 'Please enter Administrator ID/Phone/Email and password'
+      );
       return;
     }
     try {
       await loginAdmin(identifier.trim(), password.trim());
     } catch (e: any) {
-      let msg = 'Invalid credentials. Please check your details and try again.';
-      if (e?.response?.data) {
-        const d = e.response.data;
-        msg = d.message || d.detail || (d.non_field_errors && d.non_field_errors[0]) || d.error || msg;
-      }
-      Alert.alert('Login Failed', msg);
+      let msg = language === 'te' ? 'చెల్లని పాస్‌వర్డ్ లేదా ID' : 'Invalid Password or ID';
+      Alert.alert(language === 'te' ? 'లాగిన్ విఫలమైంది' : 'Login Failed', msg);
     }
   };
 
@@ -37,7 +36,7 @@ export default function AdminLogin({ navigation }: Props) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.content}>
         
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.backArrow}>← Back</Text>
+          <Text style={styles.backArrow}>{language === 'te' ? '← వెనుకకు' : '← Back'}</Text>
         </TouchableOpacity>
 
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingRight: 4, gap: 10, marginBottom: 8 }}>
@@ -54,13 +53,13 @@ export default function AdminLogin({ navigation }: Props) {
             source={require('../../../assets/images/atia_logo.png')} 
             style={{ width: 140, height: 100, resizeMode: 'contain', marginBottom: 8 }} 
           />
-          <Text style={styles.title}>Admin Portal</Text>
-          <Text style={styles.subtitle}>Administrator Login for Management & Reports</Text>
+          <Text style={styles.title}>{language === 'te' ? 'అడ్మిన్ లాగిన్' : 'Admin Portal'}</Text>
+          <Text style={styles.subtitle}>{language === 'te' ? 'మేనేజ్‌మెంట్ లాగిన్' : 'Administrator Login for Management & Reports'}</Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.field}>
-            <Text style={styles.label}>Admin ID / Phone / Email</Text>
+            <Text style={styles.label}>{language === 'te' ? 'అడ్మిన్ ID / మొబైల్ / ఈమెయిల్' : 'Admin ID / Phone / Email'}</Text>
             <TextInput
               style={styles.input}
               placeholder="e.g. ADM001 or admin@fieldmark.org"
@@ -72,7 +71,7 @@ export default function AdminLogin({ navigation }: Props) {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>{language === 'te' ? 'పాస్‌వర్డ్' : 'Password'}</Text>
             <TextInput
               style={styles.input}
               placeholder="••••••••••••"
@@ -87,7 +86,7 @@ export default function AdminLogin({ navigation }: Props) {
             {isLoading ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.submitBtnText}>Sign In as Admin</Text>
+              <Text style={styles.submitBtnText}>{language === 'te' ? 'లాగిన్' : 'Sign In as Admin'}</Text>
             )}
           </TouchableOpacity>
         </View>

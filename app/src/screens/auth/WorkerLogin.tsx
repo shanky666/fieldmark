@@ -62,11 +62,11 @@ export default function WorkerLogin({ navigation }: Props) {
 
   const handleLogin = async () => {
     if (!identifier.trim()) {
-      setErrorMsg('Please enter your Employee ID or Phone number.');
+      setErrorMsg(language === 'te' ? 'దయచేసి మీ ID లేదా మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please enter your Employee ID or Phone number.');
       return;
     }
     if (!password.trim()) {
-      setErrorMsg('Please enter your password.');
+      setErrorMsg(language === 'te' ? 'దయచేసి మీ పాస్‌వర్డ్ నమోదు చేయండి.' : 'Please enter your password.');
       return;
     }
 
@@ -74,11 +74,8 @@ export default function WorkerLogin({ navigation }: Props) {
     try {
       await loginWorker(identifier.trim(), password.trim());
     } catch (e: any) {
-      let msg = 'Invalid credentials. Please check your details and try again.';
-      if (e?.response?.data) {
-        const d = e.response.data;
-        msg = d.message || d.detail || (d.non_field_errors && d.non_field_errors[0]) || d.error || msg;
-      }
+      // Regardless of the backend message format, display the exact explicit message the user wants
+      let msg = language === 'te' ? 'చెల్లని పాస్‌వర్డ్ లేదా ID' : 'Invalid Password or ID';
       setErrorMsg(msg);
     }
   };
@@ -117,8 +114,8 @@ export default function WorkerLogin({ navigation }: Props) {
 
             {/* Title & Subtitle */}
             <View style={styles.headerTextContainer}>
-              <Text style={styles.title}>Field Staff Attendance App</Text>
-              <Text style={styles.subtitle}>Track   •   Monitor   •   Empower</Text>
+              <Text style={styles.title}>{language === 'te' ? 'ఉద్యోగి లాగిన్' : 'Field Staff Attendance App'}</Text>
+              <Text style={styles.subtitle}>{language === 'te' ? 'అటెండెన్స్ యాప్' : 'Track   •   Monitor   •   Empower'}</Text>
             </View>
 
             {/* Login Form */}
@@ -127,7 +124,7 @@ export default function WorkerLogin({ navigation }: Props) {
                 <Text style={styles.inputIcon}>👤</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Employee ID / Mobile Number"
+                  placeholder={language === 'te' ? "ఉద్యోగి ID" : "Employee ID / Mobile Number"}
                   placeholderTextColor="#8F9B94"
                   value={identifier}
                   onChangeText={txt => { setIdentifier(txt); setErrorMsg(''); }}
@@ -139,7 +136,7 @@ export default function WorkerLogin({ navigation }: Props) {
                 <Text style={styles.inputIcon}>🔒</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Password"
+                  placeholder={language === 'te' ? "పాస్‌వర్డ్" : "Password"}
                   placeholderTextColor="#8F9B94"
                   value={password}
                   onChangeText={txt => { setPassword(txt); setErrorMsg(''); }}
@@ -167,7 +164,7 @@ export default function WorkerLogin({ navigation }: Props) {
                   <ActivityIndicator color="#FFF" />
                 ) : (
                   <View style={styles.submitBtnContent}>
-                    <Text style={styles.submitBtnText}>Login</Text>
+                    <Text style={styles.submitBtnText}>{language === 'te' ? 'లాగిన్' : 'Login'}</Text>
                     <Text style={styles.submitBtnArrow}>→</Text>
                   </View>
                 )}
@@ -177,7 +174,7 @@ export default function WorkerLogin({ navigation }: Props) {
 
               <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 }}>
                 <TouchableOpacity style={styles.forgotBtn}>
-                  <Text style={styles.forgotText}>Forgot Password?</Text>
+                  <Text style={styles.forgotText}>{language === 'te' ? 'పాస్‌వర్డ్ మర్చిపోయారా?' : 'Forgot Password?'}</Text>
                 </TouchableOpacity>
               </View>
               
@@ -195,9 +192,9 @@ export default function WorkerLogin({ navigation }: Props) {
               />
               <View style={styles.sfacDivider} />
               <View>
-                <Text style={styles.sfacSupported}>Supported by</Text>
+                <Text style={styles.sfacSupported}>{language === 'te' ? 'మద్దతుతో' : 'Supported by'}</Text>
                 <Text style={styles.sfacTitle}>SFAC</Text>
-                <Text style={styles.sfacScheme}>under 10K FPO Scheme</Text>
+                <Text style={styles.sfacScheme}>{language === 'te' ? '10K FPO పథకం కింద' : 'under 10K FPO Scheme'}</Text>
               </View>
             </View>
           </View>

@@ -522,6 +522,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
 
     try {
+      const device_id = await getUniqueDeviceId();
       console.log(
         '[ADMIN LOGIN] START'
       );
@@ -531,6 +532,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         {
           phone,
           password: pass,
+          device_id
         }
       );
 
