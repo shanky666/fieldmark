@@ -4,6 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
 import * as Location from 'expo-location';
+import LanguagePicker from '../../components/LanguagePicker';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function Settings() {
   const navigation = useNavigation<any>();
@@ -253,9 +255,17 @@ export default function Settings() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.pageTitle}>Admin Settings</Text>
 
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>App Language</Text>
+        </View>
         <View style={styles.groupCard}>
-          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0 }]} onPress={() => setChangePasswordVisible(true)}>
-            <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>🔒 Change My Password</Text>
+          <LanguagePicker />
+        </View>
+
+        <View style={styles.groupCard}>
+          <TouchableOpacity style={[styles.itemRow, { borderBottomWidth: 0, justifyContent: 'flex-start', gap: 10 }]} onPress={() => setChangePasswordVisible(true)}>
+            <MaterialCommunityIcons name="lock-reset" size={20} color="#2F8F5B" />
+            <Text style={[styles.itemText, { color: '#2F8F5B', fontWeight: '700' }]}>Change My Password</Text>
           </TouchableOpacity>
         </View>
 

@@ -38,13 +38,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
     marginVertical: 10,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   pill: {
     paddingVertical: 8,
     paddingHorizontal: 12,
+    margin: 4,
     borderRadius: 20,
     backgroundColor: COLORS.white,
     borderWidth: 1,

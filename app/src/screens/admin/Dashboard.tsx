@@ -4,6 +4,8 @@ import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
 import { COLORS } from '../../constants/colors';
 
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 export default function Dashboard({ navigation }: any) {
   const { logout } = useAuthStore();
 
@@ -74,7 +76,7 @@ export default function Dashboard({ navigation }: any) {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity style={styles.bellBtn} onPress={() => Alert.alert('Notifications', 'No new notifications at this time.')}>
-            <Text style={{ fontSize: 24 }}>🔔</Text>
+            <MaterialCommunityIcons name="bell-outline" size={24} color="#64748B" />
             <View style={styles.notifDot} />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
@@ -95,7 +97,7 @@ export default function Dashboard({ navigation }: any) {
             {/* Total Employees */}
             <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('WorkersTab')}>
               <View style={[styles.iconContainer, { backgroundColor: '#EFF6FF' }]}>
-                <Text style={[styles.iconText, { color: '#3B82F6' }]}>👥</Text>
+                <MaterialCommunityIcons name="account-group" size={24} color="#3B82F6" />
               </View>
               <Text style={styles.cardValue}>{totalWorkers}</Text>
               <Text style={styles.cardLabel}>Total Employees</Text>
@@ -104,7 +106,7 @@ export default function Dashboard({ navigation }: any) {
             {/* Present Today */}
             <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('VerifyTab')}>
               <View style={[styles.iconContainer, { backgroundColor: '#ECFDF5' }]}>
-                <Text style={[styles.iconText, { color: '#10B981' }]}>✓</Text>
+                <MaterialCommunityIcons name="check-decagram" size={24} color="#10B981" />
               </View>
               <Text style={styles.cardValue}>{presentCount}</Text>
               <Text style={styles.cardLabel}>Present Today</Text>
@@ -113,19 +115,28 @@ export default function Dashboard({ navigation }: any) {
             {/* Absent Today */}
             <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('VerifyTab')}>
               <View style={[styles.iconContainer, { backgroundColor: '#FEF2F2' }]}>
-                <Text style={[styles.iconText, { color: '#EF4444' }]}>✕</Text>
+                <MaterialCommunityIcons name="close-octagon" size={24} color="#EF4444" />
               </View>
               <Text style={styles.cardValue}>{absentCount}</Text>
               <Text style={styles.cardLabel}>Absent Today</Text>
             </TouchableOpacity>
 
             {/* Pending Leaves */}
-            <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('LeaveReviewTab')}>
+            <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('LeaveReview')}>
               <View style={[styles.iconContainer, { backgroundColor: '#FFF7ED' }]}>
-                <Text style={[styles.iconText, { color: '#F97316' }]}>⏳</Text>
+                <MaterialCommunityIcons name="calendar-clock" size={24} color="#F97316" />
               </View>
               <Text style={styles.cardValue}>{pendingLeaveCount}</Text>
               <Text style={styles.cardLabel}>Pending Leaves</Text>
+            </TouchableOpacity>
+
+            {/* Grievances */}
+            <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('AdminGrievances')}>
+              <View style={[styles.iconContainer, { backgroundColor: '#F3E8FF' }]}>
+                <MaterialCommunityIcons name="message-alert" size={24} color="#A855F7" />
+              </View>
+              <Text style={styles.cardValue}>View</Text>
+              <Text style={styles.cardLabel}>Grievances</Text>
             </TouchableOpacity>
           </View>
         )}

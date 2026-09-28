@@ -24,89 +24,53 @@ export type AdminStackParamList = {
   WorkerDetail: { workerId: number };
   AddWorker: { role?: 'WORKER' | 'SUPERVISOR' } | undefined;
   AddSupervisor: { role?: 'WORKER' | 'SUPERVISOR' } | undefined;
+  LeaveReview: undefined;
+  AdminGrievances: undefined;
   AdminGrievanceDetail: { threadId: string; employeeName: string };
 };
 
 const Stack = createStackNavigator<AdminStackParamList>();
 const Tab = createBottomTabNavigator();
 
-function TabBarIcon({ label, focused }: { label: string; focused: boolean }) {
-  const color = focused ? COLORS.primary : COLORS.lightText;
-  return (
-    <Text style={{ color, fontSize: 18, fontWeight: focused ? 'bold' : 'normal' }}>
-      {label}
-    </Text>
-  );
-}
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 function AdminTabNavigator() {
-  const { t } = useTranslation();
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.lightText,
-        tabBarStyle: { height: 60, paddingBottom: 8, backgroundColor: COLORS.white }
-      }}
+        tabBarActiveTintColor: '#1C7541',
+        tabBarInactiveTintColor: '#A0B0A7',
+        tabBarStyle: { 
+          height: 65, 
+          paddingBottom: 10, 
+          paddingTop: 10,
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 1,
+          borderTopColor: '#E2EBE5',
+          elevation: 10,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName: any = 'home';
+          if (route.name === 'DashboardTab') iconName = focused ? 'view-dashboard' : 'view-dashboard-outline';
+          else if (route.name === 'WorkersTab') iconName = focused ? 'account-group' : 'account-group-outline';
+          else if (route.name === 'VerifyTab') iconName = focused ? 'clipboard-check' : 'clipboard-check-outline';
+          else if (route.name === 'ReportsTab') iconName = focused ? 'file-chart' : 'file-chart-outline';
+          else if (route.name === 'SettingsTab') iconName = focused ? 'cog' : 'cog-outline';
+          
+          return <MaterialCommunityIcons name={iconName} size={26} color={color} />;
+        },
+      })}
     >
-      <Tab.Screen 
-        name="DashboardTab" 
-        component={Dashboard} 
-        options={{
-          tabBarLabel: "Dashboard",
-          tabBarIcon: ({ focused }) => <TabBarIcon label="🏠" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
-        name="WorkersTab" 
-        component={Workers} 
-        options={{
-          tabBarLabel: "Employees",
-          tabBarIcon: ({ focused }) => <TabBarIcon label="👥" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
-        name="VerifyTab" 
-        component={Verify} 
-        options={{
-          tabBarLabel: "Attendance",
-          tabBarIcon: ({ focused }) => <TabBarIcon label="👁️" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
-        name="LeaveReviewTab" 
-        component={LeaveReview} 
-        options={{
-          tabBarLabel: "Leave Requests",
-          tabBarIcon: ({ focused }) => <TabBarIcon label="📅" focused={focused} />
-        }}
-      />
-
-      <Tab.Screen 
-        name="ReportsTab" 
-        component={Reports} 
-        options={{
-          tabBarLabel: "Reports",
-          tabBarIcon: ({ focused }) => <TabBarIcon label="📈" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
-        name="GrievancesTab" 
-        component={AdminGrievances} 
-        options={{
-          tabBarLabel: "Grievances",
-          tabBarIcon: ({ focused }) => <TabBarIcon label="💬" focused={focused} />
-        }}
-      />
-      <Tab.Screen 
-        name="SettingsTab" 
-        component={Settings} 
-        options={{
-          tabBarLabel: "Zones",
-          tabBarIcon: ({ focused }) => <TabBarIcon label="⚙️" focused={focused} />
-        }}
-      />
+      <Tab.Screen name="DashboardTab" component={Dashboard} options={{ tabBarLabel: "Home" }} />
+      <Tab.Screen name="WorkersTab" component={Workers} options={{ tabBarLabel: "Employees" }} />
+      <Tab.Screen name="VerifyTab" component={Verify} options={{ tabBarLabel: "Attendance" }} />
+      <Tab.Screen name="ReportsTab" component={Reports} options={{ tabBarLabel: "Reports" }} />
+      <Tab.Screen name="SettingsTab" component={Settings} options={{ tabBarLabel: "Settings" }} />
     </Tab.Navigator>
   );
 }
@@ -119,6 +83,8 @@ export default function AdminNavigator() {
       <Stack.Screen name="WorkerDetail" component={WorkerDetail} />
       <Stack.Screen name="AddWorker" component={AddWorker} />
       <Stack.Screen name="AddSupervisor" component={AddWorker} initialParams={{ role: 'SUPERVISOR' }} />
+      <Stack.Screen name="LeaveReview" component={LeaveReview} />
+      <Stack.Screen name="AdminGrievances" component={AdminGrievances} />
       <Stack.Screen name="AdminGrievanceDetail" component={AdminGrievanceDetail} />
     </Stack.Navigator>
   );

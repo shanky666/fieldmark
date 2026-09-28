@@ -1,6 +1,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 
+import IntroOnboarding from '../screens/auth/IntroOnboarding';
 import RoleSelect from '../screens/auth/RoleSelect';
 import WorkerLogin from '../screens/auth/WorkerLogin';
 import SupervisorLogin from '../screens/auth/SupervisorLogin';
@@ -8,6 +9,7 @@ import AdminLogin from '../screens/auth/AdminLogin';
 import Register from '../screens/auth/Register';
 
 export type AuthStackParamList = {
+  IntroOnboarding: undefined;
   RoleSelect: undefined;
   WorkerLogin: undefined;
   SupervisorLogin: undefined;
@@ -21,12 +23,13 @@ const Stack = createStackNavigator<AuthStackParamList>();
 export default function AuthNavigator() {
   return (
     <Stack.Navigator
-      initialRouteName="WorkerLogin"
+      initialRouteName="IntroOnboarding"
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: '#F3FAF5' }
       }}
     >
+      <Stack.Screen name="IntroOnboarding" component={IntroOnboarding} />
       <Stack.Screen name="RoleSelect" component={RoleSelect} />
       <Stack.Screen name="WorkerLogin" component={WorkerLogin} />
       <Stack.Screen name="SupervisorLogin" component={SupervisorLogin} />

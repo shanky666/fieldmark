@@ -1,28 +1,33 @@
-import React, { useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { useAuthStore } from '../store/auth';
-import { COLORS } from '../constants/colors';
 
 // Navigators
 import AuthNavigator from './AuthNavigator';
 import WorkerNavigator from './WorkerNavigator';
 import SupervisorNavigator from './SupervisorNavigator';
 import AdminNavigator from './AdminNavigator';
+import SplashScreen from '../screens/SplashScreen';
 
 export default function RootNavigator() {
   const { isAuthenticated, isLoading, role, loadSession } = useAuthStore();
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
+    // Start session load
     loadSession();
+    
+    // Ensure splash screen shows for at least 1.8 seconds to see animation
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 1800);
+    
+    return () => clearTimeout(timer);
   }, []);
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary || '#2F8F5B'} />
-      </View>
-    );
+  if (isLoading || showSplash) {
+    return <SplashScreen />;
   }
 
   return (
