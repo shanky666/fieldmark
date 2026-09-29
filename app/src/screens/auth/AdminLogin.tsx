@@ -11,8 +11,8 @@ interface Props {
 }
 
 export default function AdminLogin({ navigation }: Props) {
-  const [identifier, setIdentifier] = useState('ADM001');
-  const [password, setPassword] = useState('AdminPass123!');
+  const [identifier, setIdentifier] = useState('ATIAADM001');
+  const [password, setPassword] = useState('ATIA@098');
   const { loginAdmin, isLoading, language, setLanguage } = useAuthStore();
 
   const handleLogin = async () => {

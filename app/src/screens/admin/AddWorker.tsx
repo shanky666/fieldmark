@@ -58,6 +58,16 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
 
     setSubmitting(true);
     try {
+      // Employee ID formatting logic
+      let finalEmpId = employeeId.trim().toUpperCase();
+      if (finalEmpId) {
+        if (accountRole === 'SUPERVISOR' && !finalEmpId.startsWith('ATIASTAFF')) {
+          finalEmpId = `ATIASTAFF${finalEmpId.replace(/^ATIA(EMP|STAFF)?/, '')}`;
+        } else if (accountRole === 'WORKER' && !finalEmpId.startsWith('ATIAEMP')) {
+          finalEmpId = `ATIAEMP${finalEmpId.replace(/^ATIA(EMP|STAFF)?/, '')}`;
+        }
+      }
+
       const payload: any = {
         name: name.trim(),
         phone: fullPhone,
@@ -67,8 +77,8 @@ export default function AddWorker({ navigation, route }: AddWorkerProps) {
         role: accountRole,
         assigned_zone_id: selectedZone
       };
-      if (employeeId.trim()) {
-        payload.employee_id = employeeId.trim();
+      if (finalEmpId) {
+        payload.employee_id = finalEmpId;
       }
 
       await apiClient.post('/api/workers/list/', payload);

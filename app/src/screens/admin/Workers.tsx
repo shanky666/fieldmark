@@ -50,26 +50,48 @@ export default function Workers({ navigation }: any) {
   };
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'EMPLOYEE' | 'STAFF'>('EMPLOYEE');
 
-  const filteredWorkers = workersList.filter((w: any) => 
-    w.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    w.phone?.includes(searchQuery) || 
-    w.employee_id?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredWorkers = workersList.filter((w: any) => {
+    const matchesSearch = w.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          w.phone?.includes(searchQuery) || 
+                          w.employee_id?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesTab = activeTab === 'STAFF' ? w.is_staff : !w.is_staff;
+    return matchesSearch && matchesTab;
+  });
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>Employees</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => navigation.navigate('AddWorker', { role: 'WORKER' })}>
+        <Text style={styles.pageTitle}>Personnel</Text>
+        <TouchableOpacity 
+          style={styles.addBtn} 
+          onPress={() => navigation.navigate('AddWorker', { role: activeTab === 'STAFF' ? 'SUPERVISOR' : 'WORKER' })}
+        >
           <Text style={styles.addBtnText}>+ Add New</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
+      <View style={{ paddingHorizontal: 20, paddingBottom: 16 }}>
+        <View style={{ flexDirection: 'row', backgroundColor: '#E2E8F0', borderRadius: 8, padding: 4, marginBottom: 12 }}>
+          <TouchableOpacity 
+            style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6, backgroundColor: activeTab === 'EMPLOYEE' ? '#FFFFFF' : 'transparent' }}
+            onPress={() => setActiveTab('EMPLOYEE')}
+          >
+            <Text style={{ fontWeight: '600', color: activeTab === 'EMPLOYEE' ? COLORS.primary : '#64748B' }}>Employees</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 6, backgroundColor: activeTab === 'STAFF' ? '#FFFFFF' : 'transparent' }}
+            onPress={() => setActiveTab('STAFF')}
+          >
+            <Text style={{ fontWeight: '600', color: activeTab === 'STAFF' ? COLORS.primary : '#64748B' }}>Staff</Text>
+          </TouchableOpacity>
+        </View>
+
         <TextInput
           style={{ backgroundColor: '#FFFFFF', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', color: '#0F172A' }}
-          placeholder="Search by name, phone, or ID..."
+          placeholder={`Search ${activeTab === 'STAFF' ? 'staff' : 'employees'}...`}
           placeholderTextColor="#94A3B8"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -80,7 +102,7 @@ export default function Workers({ navigation }: any) {
         {loading ? (
           <ActivityIndicator color={COLORS.primary} size="large" style={{ marginTop: 40 }} />
         ) : filteredWorkers.length === 0 ? (
-          <Text style={styles.emptyText}>No employees found.</Text>
+          <Text style={styles.emptyText}>No personnel found.</Text>
         ) : (
           filteredWorkers.map((worker) => {
             const displayName = worker.name || 'Worker';

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, TouchableOpacity,
   SafeAreaView, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView,
-  ImageBackground, Image
+  ImageBackground, Image, Alert
 } from 'react-native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
@@ -62,11 +62,11 @@ export default function WorkerLogin({ navigation }: Props) {
 
   const handleLogin = async () => {
     if (!identifier.trim()) {
-      setErrorMsg(language === 'te' ? 'దయచేసి మీ ID లేదా మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please enter your Employee ID or Phone number.');
+      Alert.alert(language === 'te' ? 'లోపం' : 'Error', language === 'te' ? 'దయచేసి మీ ID లేదా మొబైల్ నంబర్ నమోదు చేయండి.' : 'Please enter your Employee ID or Phone number.');
       return;
     }
     if (!password.trim()) {
-      setErrorMsg(language === 'te' ? 'దయచేసి మీ పాస్‌వర్డ్ నమోదు చేయండి.' : 'Please enter your password.');
+      Alert.alert(language === 'te' ? 'లోపం' : 'Error', language === 'te' ? 'దయచేసి మీ పాస్‌వర్డ్ నమోదు చేయండి.' : 'Please enter your password.');
       return;
     }
 
@@ -78,11 +78,10 @@ export default function WorkerLogin({ navigation }: Props) {
         let msg = language === 'te' 
           ? 'మీ ఖాతా మరొక పరికరానికి బంధించబడింది. మీరు ఒక పరికరంలో మాత్రమే లాగిన్ అవ్వగలరు.' 
           : 'Your account is bound to another device. You can only log in on one device.';
-        setErrorMsg(msg);
+        Alert.alert(language === 'te' ? 'లాగిన్ విఫలమైంది' : 'Login Failed', msg);
       } else {
-        // Regardless of the backend message format, display the exact explicit message the user wants
         let msg = language === 'te' ? 'చెల్లని పాస్‌వర్డ్ లేదా ID' : 'Invalid Password or ID';
-        setErrorMsg(msg);
+        Alert.alert(language === 'te' ? 'లాగిన్ విఫలమైంది' : 'Login Failed', msg);
       }
     }
   };

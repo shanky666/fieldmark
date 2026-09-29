@@ -186,21 +186,7 @@ export default function Profile() {
         {/* Settings List */}
         <View style={styles.settingsList}>
 
-          {/* Language Switcher */}
-          <View style={[styles.settingsItem, { justifyContent: 'space-between' }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <MaterialCommunityIcons name="translate" size={24} color="#666" style={{ marginRight: 10 }} />
-              <Text style={styles.settingsLabel}>Language / భాష</Text>
-            </View>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity onPress={() => setLanguage('en')} style={[styles.langBtn, language === 'en' && styles.langBtnActive]}>
-                <Text style={[styles.langBtnText, language === 'en' && styles.langBtnTextActive]}>EN</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setLanguage('te')} style={[styles.langBtn, language === 'te' && styles.langBtnActive]}>
-                <Text style={[styles.langBtnText, language === 'te' && styles.langBtnTextActive]}>తెలుగు</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          {/* Removed Language Switcher per user request */}
 
           <TouchableOpacity style={styles.settingsItem} onPress={fetchMyPhotos}>
             <MaterialCommunityIcons name="image-multiple-outline" size={24} color="#666" style={{ marginRight: 10 }} />

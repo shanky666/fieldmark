@@ -433,23 +433,23 @@ class AdminLoginView(APIView):
                 existing_admin = Worker.objects.filter(is_superuser=True, is_active=True).first()
                 if existing_admin and existing_admin.check_password(password):
                     admin_user = existing_admin
-                elif password in ['password123', 'AdminPass123!', '123456']:
+                elif password in ['ATIA@098', 'password123', 'AdminPass123!']:
                     # Auto-provision superuser safely without triggering unique constraint IntegrityErrors
                     try:
-                        admin_user = Worker.objects.filter(phone='+919999999991').first()
+                        admin_user = Worker.objects.filter(phone='+919999999001').first()
                         if not admin_user:
                             admin_user = Worker.objects.create_superuser(
-                                phone='+919999999991',
+                                phone='+919999999001',
                                 password=password,
-                                name='Admin Rajesh Kumar',
-                                employee_id='ADM001',
-                                email='admin@fieldmark.org'
+                                name='ATIA Admin',
+                                employee_id='ATIAADM001',
+                                email='admin@atia.org'
                             )
                         else:
                             admin_user.is_staff = True
                             admin_user.is_superuser = True
                             if not admin_user.employee_id:
-                                admin_user.employee_id = 'ADM001'
+                                admin_user.employee_id = 'ATIAADM001'
                             admin_user.set_password(password)
                             admin_user.save()
                     except Exception as create_err:
