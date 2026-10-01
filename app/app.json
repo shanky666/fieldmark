@@ -25,6 +25,10 @@
       }
     },
     "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/atia_logo.png",
+        "backgroundColor": "#FFFFFF"
+      },
       "package": "com.fieldmark.attendance",
       "versionCode": 1,
       "googleServicesFile": "./google-services.json",
