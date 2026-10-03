@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.fieldmark.attendance",
+      "icon": "./assets/images/atia_logo.png",
       "infoPlist": {
         "NSCameraUsageDescription": "FieldMark needs camera to capture attendance photos",
         "NSLocationWhenInUseUsageDescription": "FieldMark needs your location to verify work zone geotag",

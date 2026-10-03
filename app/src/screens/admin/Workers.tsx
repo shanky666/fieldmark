@@ -27,21 +27,21 @@ export default function Workers({ navigation }: any) {
     }
   };
 
-  const handleToggleStatus = async (workerId: number, currentStatus: boolean, name: string) => {
+  const handleDeleteWorker = async (workerId: number, name: string) => {
     Alert.alert(
-      currentStatus ? 'Suspend Employee' : 'Activate Employee',
-      `Are you sure you want to ${currentStatus ? 'suspend' : 'activate'} ${name}?`,
+      'Remove Personnel',
+      `Are you sure you want to permanently delete ${name}? This will remove them from the dashboard.`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
-          text: currentStatus ? 'Suspend' : 'Activate', 
-          style: currentStatus ? 'destructive' : 'default',
+          text: 'Delete', 
+          style: 'destructive',
           onPress: async () => {
             try {
-              await apiClient.patch(`/api/workers/list/${workerId}/`, { is_active: !currentStatus });
+              await apiClient.delete(`/api/workers/list/${workerId}/`);
               fetchWorkers();
             } catch (e) {
-              Alert.alert('Error', 'Failed to change status.');
+              Alert.alert('Error', 'Failed to delete personnel.');
             }
           }
         }
@@ -134,11 +134,11 @@ export default function Workers({ navigation }: any) {
                     <Text style={styles.actionBtnText}>View Profile</Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
-                    style={[styles.actionBtn, isActive ? styles.suspendBtn : styles.activateBtn]} 
-                    onPress={() => handleToggleStatus(worker.id, isActive, displayName)}
+                    style={[styles.actionBtn, styles.suspendBtn]} 
+                    onPress={() => handleDeleteWorker(worker.id, displayName)}
                   >
-                    <Text style={[styles.actionBtnText, isActive ? styles.suspendBtnText : styles.activateBtnText]}>
-                      {isActive ? 'Suspend' : 'Activate'}
+                    <Text style={[styles.actionBtnText, styles.suspendBtnText]}>
+                      Delete
                     </Text>
                   </TouchableOpacity>
                 </View>
