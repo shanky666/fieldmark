@@ -36,28 +36,9 @@ def check_sync_gps_zone(record):
     Check if the user is in their assigned zone.
     Runs synchronously during record submission.
     """
-    worker = record.worker
-    zone = worker.assigned_zone
-    
-    if not zone:
-        # No zone assigned, cannot perform check
-        return AttendanceRecord.GPSMatchChoices.MATCHED, []
-        
-    distance = haversine(
-        record.latitude, 
-        record.longitude, 
-        zone.center_lat, 
-        zone.center_lng
-    )
-    
-    flags = []
-    if distance > zone.radius_meters:
-        match_status = AttendanceRecord.GPSMatchChoices.MISMATCH
-        flags.append("OUTSIDE_ZONE")
-    else:
-        match_status = AttendanceRecord.GPSMatchChoices.MATCHED
-        
-    return match_status, flags
+    # Zone restriction is completely disabled as per user request.
+    # Employees can take attendance from any location.
+    return AttendanceRecord.GPSMatchChoices.MATCHED, []
 
 
 def run_exif_check(record):
