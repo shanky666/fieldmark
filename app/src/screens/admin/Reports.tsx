@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { apiClient } from '../../api/client';
 import { secureStorage } from '../../utils/secureStorage';
 
-export default function Reports() {
+export default function Reports({ navigation }: any) {
   const [csvRole, setCsvRole] = useState<'All' | 'Employee' | 'Supervisor'>('All');
   const [csvStartDate, setCsvStartDate] = useState('');
   const [csvEndDate, setCsvEndDate] = useState('');
@@ -95,6 +95,14 @@ export default function Reports() {
             )}
           </TouchableOpacity>
         </View>
+      
+
+      <View style={[styles.card, {marginTop: 20}]}>
+        <Text style={styles.cardTitle}>Today's Attendance & Working Hours</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('DailyReport')} style={styles.btn}>
+          <Text style={styles.btnText}>View Today's Report (All Employees)</Text>
+        </TouchableOpacity>
+      </View>
       </ScrollView>
     </SafeAreaView>
   );

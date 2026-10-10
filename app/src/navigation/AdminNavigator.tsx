@@ -14,12 +14,14 @@ import Workers from '../screens/admin/Workers';
 import WorkerDetail from '../screens/admin/WorkerDetail';
 import AddWorker from '../screens/admin/AddWorker';
 import Reports from '../screens/admin/Reports';
+import DailyReport from '../screens/admin/DailyReport';
 import Settings from '../screens/admin/Settings';
 import LeaveReview from '../screens/admin/LeaveReview';
 import AdminGrievances from '../screens/admin/Grievances';
 import AdminGrievanceDetail from '../screens/admin/AdminGrievanceDetail';
 export type AdminStackParamList = {
   AdminTabs: undefined;
+  DailyReport: undefined;
   VerificationDetail: { recordId: number };
   WorkerDetail: { workerId: number };
   AddWorker: { role?: 'WORKER' | 'SUPERVISOR' } | undefined;
@@ -79,6 +81,7 @@ export default function AdminNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="AdminTabs" component={AdminTabNavigator} />
+      <Stack.Screen name="DailyReport" component={DailyReport} />
       <Stack.Screen name="VerificationDetail" component={VerificationDetail} />
       <Stack.Screen name="WorkerDetail" component={WorkerDetail} />
       <Stack.Screen name="AddWorker" component={AddWorker} />
