@@ -29,7 +29,7 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'worker', 'worker_detail', 'worker_name', 'worker_employee_id', 'zone_name',
             'date', 'marked_at', 'check_out_at', 'duration_seconds', 'duration_formatted',
-            'latitude', 'longitude', 'photo_url', 'photo_hash', 
+            'latitude', 'longitude', 'photo_url', 'checkout_photo_url', 'photo_hash', 
             'photo_exif_lat', 'photo_exif_lng', 'exif_gps_delta_meters', 
             'device_id', 'gps_match', 'status', 'liveness_passed', 'verified_by', 
             'verified_by_name', 'verified_at', 'rejection_note', 
