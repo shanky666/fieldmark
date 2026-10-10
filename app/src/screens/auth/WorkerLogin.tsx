@@ -179,7 +179,7 @@ export default function WorkerLogin({ navigation }: Props) {
               {/* Removed Biometric from Login per user request */}
 
               <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 16 }}>
-                <TouchableOpacity style={styles.forgotBtn}>
+                <TouchableOpacity style={styles.forgotBtn} onPress={() => Alert.alert(language === 'te' ? 'పాస్‌వర్డ్ మర్చిపోయారా?' : 'Forgot Password', language === 'te' ? 'దయచేసి మీ పాస్‌వర్డ్‌ని రీసెట్ చేయడానికి అడ్మిన్ లేదా సూపర్వైజర్‌ని సంప్రదించండి.' : 'Please contact your Admin or Supervisor to reset your password.')}>
                   <Text style={styles.forgotText}>{language === 'te' ? 'పాస్‌వర్డ్ మర్చిపోయారా?' : 'Forgot Password?'}</Text>
                 </TouchableOpacity>
               </View>

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Image, Dimensions } from 'react-native';
+import { View, StyleSheet, Animated, Image, Dimensions, Alert } from 'react-native';
+import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window');
 
@@ -8,6 +9,14 @@ export default function SplashScreen() {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Location Required', 'Please enable location services to mark attendance.');
+        }
+      } catch (e) {}
+    })();
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,

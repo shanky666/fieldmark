@@ -140,6 +140,7 @@ export default function Profile() {
             </View>
           </TouchableOpacity>
           <Text style={styles.name}>{userProfile?.name || 'Employee Profile'}</Text>
+          <Text style={{color:'#666', fontSize:16, marginTop:4}}>{userProfile?.designation || 'Employee'}</Text>
           <Text style={styles.roleSub}>
             {userProfile?.role || 'Field Worker'}
           </Text>
