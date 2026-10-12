@@ -1,9 +1,12 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Alert, Modal, KeyboardAvoidingView, TextInput, Platform } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, Alert, Modal, KeyboardAvoidingView, TextInput, Platform, Image, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/auth';
 import { apiClient } from '../../api/client';
 import * as LocalAuthentication from 'expo-local-authentication';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
+import * as Location from 'expo-location';
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -18,6 +21,8 @@ export default function Home({ navigation }: any) {
   const [checkoutRecordId, setCheckoutRecordId] = useState<number | null>(null);
 
   const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
+  const [checkoutPhotoUri, setCheckoutPhotoUri] = useState<string | null>(null);
+  const [submittingCheckout, setSubmittingCheckout] = useState(false);
   const [panchayatVisited, setPanchayatVisited] = useState('');
   const [villageVisited, setVillageVisited] = useState('');
   const [ficVisited, setFicVisited] = useState('');
@@ -68,13 +73,66 @@ export default function Home({ navigation }: any) {
     }, [fetchTodayAttendance])
   );
 
+  // Full-Day Location Tracking: Records breadcrumb pings periodically while worker is checked in
+  useEffect(() => {
+    let interval: any = null;
+    if (isCheckedIn && !isCompletedToday) {
+      const sendPing = async () => {
+        try {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          if (loc?.coords) {
+            await apiClient.post('/api/attendance/location-ping/', {
+              latitude: loc.coords.latitude,
+              longitude: loc.coords.longitude,
+              accuracy: loc.coords.accuracy,
+              speed: loc.coords.speed
+            });
+          }
+        } catch (err) {
+          console.warn('Location tracking ping error', err);
+        }
+      };
+      sendPing();
+      interval = setInterval(sendPing, 10 * 60 * 1000); // Record breadcrumb every 10 minutes
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isCheckedIn, isCompletedToday]);
+
   const handleCheckoutPress = () => {
     setCheckoutModalVisible(true);
+  };
+
+  const handleTakeCheckoutPhoto = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Camera permission is required to take a checkout photo.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        cameraType: ImagePicker.CameraType.front,
+        allowsEditing: false,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setCheckoutPhotoUri(result.assets[0].uri);
+      }
+    } catch (e: any) {
+      Alert.alert('Camera Error', e.message || 'Could not open camera.');
+    }
   };
 
   const performCheckout = async () => {
     if (!panchayatVisited.trim() || !villageVisited.trim() || !ficVisited.trim() || !membersAttended.trim() || !purposeOfVisit.trim()) {
       Alert.alert("Required Fields", "Please fill in all the required field visit details.");
+      return;
+    }
+
+    if (!checkoutPhotoUri) {
+      Alert.alert("Photo Required", "Please take a checkout photo before completing check-out.");
       return;
     }
 
@@ -97,6 +155,39 @@ export default function Home({ navigation }: any) {
       return;
     }
 
+    setSubmittingCheckout(true);
+    let photoPayload: string = checkoutPhotoUri;
+    try {
+      if (checkoutPhotoUri && !checkoutPhotoUri.startsWith('http')) {
+        const presignRes = await apiClient.post('/api/s3/presign/', {
+          filename: `checkout_${Date.now()}.jpg`,
+          content_type: 'image/jpeg'
+        });
+        let { upload_url, s3_key } = presignRes.data;
+        if (upload_url && upload_url.startsWith('http://') && upload_url.includes('onrender.com')) {
+          upload_url = upload_url.replace('http://', 'https://');
+        }
+        await FileSystem.uploadAsync(upload_url, checkoutPhotoUri, {
+          httpMethod: 'PUT',
+          headers: { 'Content-Type': 'image/jpeg' },
+          uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT
+        });
+        if (s3_key) {
+          photoPayload = s3_key;
+        } else if (upload_url) {
+          photoPayload = upload_url.split('?')[0];
+        }
+      }
+    } catch (uploadErr) {
+      console.warn("Direct upload fallback to base64", uploadErr);
+      try {
+        const base64 = await FileSystem.readAsStringAsync(checkoutPhotoUri, { encoding: FileSystem.EncodingType.Base64 });
+        photoPayload = `data:image/jpeg;base64,${base64}`;
+      } catch (e) {
+        console.warn("Base64 read error", e);
+      }
+    }
+
     try {
       const res = await apiClient.post('/api/attendance/checkout/', {
         panchayat_visited: panchayatVisited.trim(),
@@ -104,7 +195,8 @@ export default function Home({ navigation }: any) {
         fic_visited: ficVisited.trim(),
         members_attended: parseInt(membersAttended.trim()) || 0,
         purpose_of_visit: purposeOfVisit.trim(),
-        work_details: workDetailsText.trim()
+        work_details: workDetailsText.trim(),
+        checkout_photo_url: photoPayload
       });
       
       const checkOutDate = new Date(res.data.check_out_at);
@@ -113,11 +205,14 @@ export default function Home({ navigation }: any) {
       setIsCheckedIn(false);
       setIsCompletedToday(true);
       setCheckoutModalVisible(false);
+      setStatus(res.data.status || 'PRESENT');
 
       Alert.alert("Success", "Checked out successfully and details saved.");
     } catch (error: any) {
       const msg = error.response?.data?.message || 'Failed to check out. Please try again.';
       Alert.alert('Checkout Error', msg);
+    } finally {
+      setSubmittingCheckout(false);
     }
   };
 
@@ -246,12 +341,32 @@ export default function Home({ navigation }: any) {
               <Text style={styles.inputLabel}>Additional Notes (Optional)</Text>
               <TextInput style={[styles.textInput, { height: 60, textAlignVertical: 'top' }]} placeholder="Any other details..." multiline value={workDetailsText} onChangeText={setWorkDetailsText} />
 
+              <Text style={styles.inputLabel}>Checkout Photo *</Text>
+              {checkoutPhotoUri ? (
+                <View style={styles.photoPreviewRow}>
+                  <Image source={{ uri: checkoutPhotoUri }} style={styles.photoThumb} />
+                  <TouchableOpacity style={styles.retakeBtn} onPress={handleTakeCheckoutPhoto} disabled={submittingCheckout}>
+                    <MaterialCommunityIcons name="camera-retake" size={20} color="#1F6B42" style={{ marginRight: 6 }} />
+                    <Text style={styles.retakeBtnText}>Retake Photo</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.cameraLaunchBtn} onPress={handleTakeCheckoutPhoto} disabled={submittingCheckout}>
+                  <MaterialCommunityIcons name="camera" size={22} color="#FFF" style={{ marginRight: 8 }} />
+                  <Text style={styles.cameraLaunchText}>Take Checkout Photo</Text>
+                </TouchableOpacity>
+              )}
+
               <View style={styles.modalActions}>
-                <TouchableOpacity style={styles.cancelBtn} onPress={() => setCheckoutModalVisible(false)}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setCheckoutModalVisible(false)} disabled={submittingCheckout}>
                   <Text style={styles.cancelBtnText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.submitBtn} onPress={performCheckout}>
-                  <Text style={styles.submitBtnText}>Submit & Check-Out</Text>
+                <TouchableOpacity style={styles.submitBtn} onPress={performCheckout} disabled={submittingCheckout}>
+                  {submittingCheckout ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Submit & Check-Out</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -365,4 +480,38 @@ const styles = StyleSheet.create({
   cancelBtnText: { color: '#666', fontWeight: '600', fontSize: 16 },
   submitBtn: { flex: 1, paddingVertical: 16, alignItems: 'center', backgroundColor: '#1F6B42', borderRadius: 12 },
   submitBtnText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+
+  cameraLaunchBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1F6B42',
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  cameraLaunchText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
+  photoPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  photoThumb: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#1F6B42',
+  },
+  retakeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#1F6B42',
+  },
+  retakeBtnText: { color: '#1F6B42', fontWeight: '600', fontSize: 13 },
 });

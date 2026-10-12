@@ -19,7 +19,7 @@ import GrievanceThread from '../screens/worker/GrievanceThread';
 import Profile from '../screens/worker/Profile';
 export type WorkerStackParamList = {
   WorkerTabs: undefined;
-  MarkAttendance: undefined;
+  MarkAttendance: { isCheckout?: boolean } | undefined;
   CorrectionRequest: undefined;
   MessagesTab: undefined;
   HistoryDetail: { recordId: number };

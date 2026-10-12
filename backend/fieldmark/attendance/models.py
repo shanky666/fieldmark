@@ -101,3 +101,28 @@ class AttendanceRecord(models.Model):
     def __str__(self):
         return f"{self.worker.name} on {self.date} - Status: {self.status}"
 
+
+class LocationBreadcrumb(models.Model):
+    worker = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='location_breadcrumbs'
+    )
+    date = models.DateField(default=timezone.now)
+    recorded_at = models.DateTimeField(default=timezone.now)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    accuracy = models.FloatField(null=True, blank=True)
+    speed = models.FloatField(null=True, blank=True)
+    battery_level = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['recorded_at']
+        indexes = [
+            models.Index(fields=['worker', 'date']),
+            models.Index(fields=['recorded_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.worker.name} at {self.recorded_at}: ({self.latitude}, {self.longitude})"
+

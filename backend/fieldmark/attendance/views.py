@@ -15,9 +15,10 @@ except ImportError:
 
 from fieldmark.workers.models import Worker, Zone
 from fieldmark.notifications.fcm import send_push_notification
-from .models import AttendanceRecord
-from .serializers import AttendanceRecordSerializer
+from .models import AttendanceRecord, LocationBreadcrumb
+from .serializers import AttendanceRecordSerializer, LocationBreadcrumbSerializer
 from .tasks import run_attendance_async_checks
+from .haversine import haversine
 
 class AttendanceRecordViewSet(viewsets.ModelViewSet):
     queryset = AttendanceRecord.objects.all().order_by('-marked_at')
@@ -353,13 +354,16 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
                 
         record.purpose_of_visit = request.data.get('purpose_of_visit', record.purpose_of_visit)
 
+        checkout_photo = request.data.get('checkout_photo_url') or request.data.get('checkout_photo')
+        if checkout_photo:
+            record.checkout_photo_url = str(checkout_photo)
+
         record.check_out_at = timezone.now()
         
-        # Instead of auto-approving based on 8-hour rule, we keep it PENDING
-        # so the Admin has the option to manually accept or reject it in the verification portal.
-        record.status = 'PENDING'
+        # Auto-mark as PRESENT upon checkout so it doesn't get stuck in PENDING
+        record.status = AttendanceRecord.StatusChoices.PRESENT
             
-        record.save(update_fields=['check_out_at', 'work_details', 'panchayat_visited', 'village_visited', 'fic_visited', 'members_attended', 'purpose_of_visit', 'status'])
+        record.save(update_fields=['check_out_at', 'work_details', 'panchayat_visited', 'village_visited', 'fic_visited', 'members_attended', 'purpose_of_visit', 'status', 'checkout_photo_url'])
 
         return Response(
             AttendanceRecordSerializer(record).data,
@@ -473,4 +477,122 @@ class AttendanceRecordViewSet(viewsets.ModelViewSet):
                 )
 
         return Response({'approved_count': count, 'message': f'Successfully approved {count} records'}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='location-ping')
+    def location_ping(self, request):
+        """Record one or more location breadcrumb points for employee full-day tracking."""
+        user = request.user
+        now_ist = timezone.now().astimezone(ist_tz)
+        today_ist = now_ist.date()
+
+        points_data = request.data.get('points')
+        if not points_data:
+            lat = request.data.get('latitude')
+            lng = request.data.get('longitude')
+            if lat is None or lng is None:
+                return Response({'error': 'latitude and longitude are required'}, status=status.HTTP_400_BAD_REQUEST)
+            points_data = [{
+                'latitude': float(lat),
+                'longitude': float(lng),
+                'accuracy': request.data.get('accuracy'),
+                'speed': request.data.get('speed'),
+                'battery_level': request.data.get('battery_level'),
+                'recorded_at': request.data.get('recorded_at')
+            }]
+
+        created = []
+        for p in points_data:
+            try:
+                lat = float(p.get('latitude'))
+                lng = float(p.get('longitude'))
+                rec_at = timezone.now()
+                if p.get('recorded_at'):
+                    try:
+                        from dateutil.parser import parse
+                        rec_at = parse(p.get('recorded_at'))
+                    except Exception:
+                        pass
+                
+                crumb = LocationBreadcrumb(
+                    worker=user,
+                    date=today_ist,
+                    recorded_at=rec_at,
+                    latitude=lat,
+                    longitude=lng,
+                    accuracy=p.get('accuracy'),
+                    speed=p.get('speed'),
+                    battery_level=p.get('battery_level')
+                )
+                created.append(crumb)
+            except (TypeError, ValueError):
+                continue
+
+        if created:
+            LocationBreadcrumb.objects.bulk_create(created)
+
+        return Response({
+            'status': 'success',
+            'recorded_count': len(created)
+        }, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'], url_path='tracking')
+    def tracking(self, request):
+        """Fetch full-day travel route for an employee or all employees on a given date."""
+        user = request.user
+        target_worker_id = request.query_params.get('worker_id')
+        date_str = request.query_params.get('date')
+
+        if date_str:
+            try:
+                from datetime import datetime
+                query_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({'error': 'Invalid date format, use YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            query_date = timezone.now().astimezone(ist_tz).date()
+
+        queryset = LocationBreadcrumb.objects.filter(date=query_date)
+
+        if not (user.is_superuser or user.is_staff):
+            queryset = queryset.filter(worker=user)
+        elif target_worker_id:
+            queryset = queryset.filter(worker_id=target_worker_id)
+
+        crumbs = queryset.select_related('worker').order_by('recorded_at')
+        
+        total_meters = 0.0
+        prev_point = None
+        points = []
+        for c in crumbs:
+            pt = {
+                'id': c.id,
+                'worker_id': c.worker_id,
+                'worker_name': c.worker.name,
+                'worker_employee_id': c.worker.employee_id,
+                'latitude': c.latitude,
+                'longitude': c.longitude,
+                'accuracy': c.accuracy,
+                'speed': c.speed,
+                'battery_level': c.battery_level,
+                'recorded_at': c.recorded_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'time_formatted': c.recorded_at.astimezone(ist_tz).strftime('%I:%M %p')
+            }
+            if prev_point:
+                dist = haversine(prev_point['latitude'], prev_point['longitude'], c.latitude, c.longitude)
+                total_meters += dist
+            prev_point = pt
+            points.append(pt)
+
+        total_km = round(total_meters / 1000.0, 2)
+        start_time = points[0]['time_formatted'] if points else None
+        last_time = points[-1]['time_formatted'] if points else None
+
+        return Response({
+            'date': str(query_date),
+            'total_points': len(points),
+            'total_distance_km': total_km,
+            'start_time': start_time,
+            'last_time': last_time,
+            'points': points
+        }, status=status.HTTP_200_OK)
 

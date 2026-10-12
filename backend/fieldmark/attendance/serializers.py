@@ -9,7 +9,7 @@ from django.utils import timezone
 from rest_framework import serializers
 from fieldmark.workers.models import Worker, Zone, Shift
 from fieldmark.workers.serializers import WorkerSerializer
-from .models import AttendanceRecord
+from .models import AttendanceRecord, LocationBreadcrumb
 from .anomaly_checks import check_sync_gps_zone
 
 class AttendanceRecordSerializer(serializers.ModelSerializer):
@@ -179,6 +179,20 @@ class AttendanceRecordSerializer(serializers.ModelSerializer):
 
         record.save()
         return record
+
+
+class LocationBreadcrumbSerializer(serializers.ModelSerializer):
+    worker_name = serializers.CharField(source='worker.name', read_only=True)
+    worker_employee_id = serializers.CharField(source='worker.employee_id', read_only=True)
+
+    class Meta:
+        model = LocationBreadcrumb
+        fields = [
+            'id', 'worker', 'worker_name', 'worker_employee_id',
+            'date', 'recorded_at', 'latitude', 'longitude',
+            'accuracy', 'speed', 'battery_level'
+        ]
+        read_only_fields = ['id', 'worker', 'date', 'recorded_at']
 
 
 
