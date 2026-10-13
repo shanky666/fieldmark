@@ -69,6 +69,7 @@ class Worker(AbstractUser):
     phone = models.CharField(max_length=15, unique=True)
     name = models.CharField(max_length=100)
     employee_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
+    designation = models.CharField(max_length=100, default='VCO', null=True, blank=True)
     worker_type = models.CharField(
         max_length=15, 
         choices=WorkerType.choices, 

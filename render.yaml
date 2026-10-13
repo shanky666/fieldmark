@@ -8,7 +8,7 @@ services:
     startCommand: "gunicorn fieldmark.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
       - key: DATABASE_URL
-        value: "postgresql://neondb_owner:npg_3pqDGFmdQN1n@ep-bitter-pond-az2xf4vx.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+        value: "postgresql://neondb_owner:npg_BAg7Jp2xROKc@ep-muddy-sunset-b4erkyt2-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require"
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG

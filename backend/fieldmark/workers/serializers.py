@@ -28,7 +28,7 @@ class WorkerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Worker
         fields = [
-            'id', 'phone', 'name', 'employee_id', 'password', 'worker_type', 
+            'id', 'phone', 'name', 'employee_id', 'designation', 'password', 'worker_type', 
             'assigned_zone', 'zone_detail', 'shift', 'shift_detail', 'supervisor_name',
             'contract_start_date', 'contract_end_date', 'profile_photo_url', 
             'fcm_token', 'preferred_language', 'is_active', 'is_staff', 'created_at',

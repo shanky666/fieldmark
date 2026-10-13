@@ -11,11 +11,17 @@ users = [
 
 for name, role, emp_id in users:
     pwd = 'ATIA@098' if emp_id == 'ATIAADM001' else ('Pass@0001' if emp_id == 'TESTEMP001' else ('Pass@' + emp_id[-4:]))
+    phone = '+919999999001' if emp_id == 'ATIAADM001' else (f'+91999900{emp_id[-4:]}')
     is_admin = role in ['CEO', 'Admin']
     worker = Worker.objects.filter(employee_id=emp_id).first()
     if not worker:
+        worker = Worker.objects.filter(phone=phone).first()
+    
+    if not worker:
         Worker.objects.create(
             name=name,
+            phone=phone,
+            username=emp_id,
             designation=role,
             employee_id=emp_id,
             password=make_password(pwd),
@@ -24,7 +30,10 @@ for name, role, emp_id in users:
         )
     else:
         worker.name = name
+        worker.phone = phone
+        worker.username = emp_id
         worker.designation = role
+        worker.employee_id = emp_id
         worker.is_superuser = is_admin
         worker.is_staff = is_admin
         worker.password = make_password(pwd)

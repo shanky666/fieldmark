@@ -212,6 +212,7 @@ class UserLoginView(APIView):
             'phone': worker.phone,
             'employee_id': worker.employee_id,
             'role': 'ADMIN' if worker.is_superuser else ('SUPERVISOR' if worker.is_staff else 'WORKER'),
+            'designation': getattr(worker, 'designation', None) or 'VCO',
             'assigned_zone': worker.assigned_zone.name if worker.assigned_zone else None,
             'assigned_zone_id': worker.assigned_zone_id
         }
