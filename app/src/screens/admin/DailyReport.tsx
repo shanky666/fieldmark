@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, ActivityIndicator, SafeAreaView,
+  View, Text, StyleSheet, ActivityIndicator, SafeAreaView,
   TouchableOpacity, Modal, ScrollView, Image, Linking, RefreshControl
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -81,7 +81,7 @@ export default function DailyReport({ navigation }: any) {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#1F6B42" />
-        <Text style={{ marginTop: 12, color: '#666' }}>Loading Today's Report...</Text>
+        <Text style={{ marginTop: 12, color: '#666' }}>Loading Today's Attendance Sheet...</Text>
       </View>
     );
   }
@@ -97,8 +97,8 @@ export default function DailyReport({ navigation }: any) {
           <MaterialCommunityIcons name="arrow-left" size={24} color="#FFF" />
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={styles.headerTitle}>Daily Attendance & Hours</Text>
-          <Text style={styles.headerSubtitle}>{todayFormatted}</Text>
+          <Text style={styles.headerTitle}>Daily Attendance Register</Text>
+          <Text style={styles.headerSubtitle}>{todayFormatted} • All Employees</Text>
         </View>
         <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh}>
           <MaterialCommunityIcons name="refresh" size={22} color="#FFF" />
@@ -119,95 +119,142 @@ export default function DailyReport({ navigation }: any) {
           <Text style={[styles.kpiVal, { color: '#E87722' }]}>{inProgressCount}</Text>
           <Text style={styles.kpiLabel}>On Field</Text>
         </View>
+        <View style={styles.scrollHintBox}>
+          <MaterialCommunityIcons name="arrow-left-right" size={14} color="#666" />
+          <Text style={styles.scrollHintText}>Swipe table to scroll</Text>
+        </View>
       </View>
 
-      {/* Employee List */}
-      <FlatList
-        data={records}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.listContent}
+      {/* Main Single Scrollable Table View */}
+      <ScrollView
+        style={styles.verticalScroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="account-clock-outline" size={60} color="#CCC" />
-            <Text style={styles.emptyText}>No attendance recorded today yet.</Text>
-          </View>
-        }
-        renderItem={({ item }) => {
-          const checkInStr = item.marked_at ? new Date(item.marked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
-          const checkOutStr = item.check_out_at ? new Date(item.check_out_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'In Progress';
-
-          return (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.empName}>{item.worker_name || 'Employee'}</Text>
-                  <Text style={styles.empSub}>ID: {item.worker_employee_id || '--'} • {item.zone_name || 'Field'}</Text>
-                </View>
-                <View style={[styles.statusBadge, item.status === 'ABSENT' ? styles.statusBadgeAbsent : styles.statusBadgePresent]}>
-                  <Text style={[styles.statusText, item.status === 'ABSENT' ? styles.statusTextAbsent : styles.statusTextPresent]}>
-                    {item.status || 'PRESENT'}
-                  </Text>
-                </View>
-              </View>
-
-              {/* Attendance Times & Hours Worked */}
-              <View style={styles.timeRow}>
-                <View style={styles.timeCol}>
-                  <Text style={styles.timeLabel}>CHECK-IN</Text>
-                  <Text style={styles.timeVal}>{checkInStr}</Text>
-                </View>
-                <View style={styles.timeCol}>
-                  <Text style={styles.timeLabel}>CHECK-OUT</Text>
-                  <Text style={styles.timeVal}>{checkOutStr}</Text>
-                </View>
-                <View style={[styles.timeCol, styles.hoursCol]}>
-                  <Text style={styles.timeLabel}>HOURS WORKED</Text>
-                  <Text style={styles.hoursVal}>{item.duration_formatted || '--'}</Text>
-                </View>
-              </View>
-
-              {/* Photos Row (Check-in & Checkout Photos) */}
-              <View style={styles.photosRow}>
-                {item.photo_url ? (
-                  <TouchableOpacity style={styles.photoItem} onPress={() => setPhotoViewerUri(item.photo_url)}>
-                    <Image source={{ uri: item.photo_url }} style={styles.photoPreview} />
-                    <Text style={styles.photoCaption}>Check-In Photo</Text>
-                  </TouchableOpacity>
-                ) : null}
-
-                {item.checkout_photo_url ? (
-                  <TouchableOpacity style={styles.photoItem} onPress={() => setPhotoViewerUri(item.checkout_photo_url)}>
-                    <Image source={{ uri: item.checkout_photo_url }} style={styles.photoPreview} />
-                    <Text style={styles.photoCaption}>Checkout Photo</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-
-              {/* Field Visit Summary */}
-              {item.panchayat_visited ? (
-                <View style={styles.fieldVisitBox}>
-                  <Text style={styles.fieldVisitText}>
-                    📍 <Text style={{ fontWeight: '700' }}>{item.panchayat_visited}</Text> ({item.village_visited || 'Village'}) • FIG: {item.fic_visited || '--'}
-                  </Text>
-                  {item.purpose_of_visit ? (
-                    <Text style={styles.purposeText} numberOfLines={2}>Purpose: {item.purpose_of_visit}</Text>
-                  ) : null}
-                </View>
-              ) : null}
-
-              {/* Tracking Button */}
-              <TouchableOpacity
-                style={styles.trackingBtn}
-                onPress={() => handleOpenTracking(item.worker, item.worker_name)}
-              >
-                <MaterialCommunityIcons name="map-marker-path" size={18} color="#1F6B42" style={{ marginRight: 6 }} />
-                <Text style={styles.trackingBtnText}>View Full-Day Travel Route</Text>
-              </TouchableOpacity>
+      >
+        <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.horizontalScroll}>
+          <View style={styles.tableContainer}>
+            {/* Table Header Row */}
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.thText, styles.colIndex]}>#</Text>
+              <Text style={[styles.thText, styles.colEmp]}>EMPLOYEE</Text>
+              <Text style={[styles.thText, styles.colDesig]}>DESIGNATION</Text>
+              <Text style={[styles.thText, styles.colTime]}>CHECK-IN</Text>
+              <Text style={[styles.thText, styles.colTime]}>CHECK-OUT</Text>
+              <Text style={[styles.thText, styles.colHours]}>HOURS WORKED</Text>
+              <Text style={[styles.thText, styles.colStatus]}>STATUS</Text>
+              <Text style={[styles.thText, styles.colPhoto]}>IN PHOTO</Text>
+              <Text style={[styles.thText, styles.colPhoto]}>OUT PHOTO</Text>
+              <Text style={[styles.thText, styles.colVisit]}>FIELD VISIT</Text>
+              <Text style={[styles.thText, styles.colRoute]}>ROUTE</Text>
             </View>
-          );
-        }}
-      />
+
+            {/* Table Body Rows */}
+            {records.length === 0 ? (
+              <View style={styles.tableEmpty}>
+                <MaterialCommunityIcons name="account-clock-outline" size={48} color="#AAA" />
+                <Text style={styles.emptyText}>No attendance records found for today.</Text>
+              </View>
+            ) : (
+              records.map((item, index) => {
+                const checkInStr = item.marked_at
+                  ? new Date(item.marked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : '--:--';
+                const checkOutStr = item.check_out_at
+                  ? new Date(item.check_out_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : 'In Progress';
+
+                const isEven = index % 2 === 0;
+
+                return (
+                  <View key={item.id} style={[styles.tableRow, isEven ? styles.rowEven : styles.rowOdd]}>
+                    {/* Index */}
+                    <Text style={[styles.tdText, styles.colIndex, { color: '#888' }]}>{index + 1}</Text>
+
+                    {/* Employee Name & ID */}
+                    <View style={styles.colEmp}>
+                      <Text style={styles.empNameText} numberOfLines={1}>
+                        {item.worker_name || 'Staff'}
+                      </Text>
+                      <Text style={styles.empIdText}>ID: {item.worker_employee_id || '--'}</Text>
+                    </View>
+
+                    {/* Designation */}
+                    <View style={styles.colDesig}>
+                      <Text style={styles.desigText} numberOfLines={1}>
+                        {item.worker_detail?.designation || item.designation || 'VCO'}
+                      </Text>
+                      <Text style={styles.zoneSubText} numberOfLines={1}>
+                        {item.zone_name || 'Field'}
+                      </Text>
+                    </View>
+
+                    {/* Check In */}
+                    <Text style={[styles.tdText, styles.colTime]}>{checkInStr}</Text>
+
+                    {/* Check Out */}
+                    <Text style={[styles.tdText, styles.colTime, checkOutStr === 'In Progress' && { color: '#E87722', fontWeight: '700' }]}>
+                      {checkOutStr}
+                    </Text>
+
+                    {/* Hours Worked */}
+                    <View style={[styles.colHours, styles.hoursWrap]}>
+                      <Text style={styles.hoursText}>{item.duration_formatted || '--'}</Text>
+                    </View>
+
+                    {/* Status Badge */}
+                    <View style={styles.colStatus}>
+                      <View style={[styles.statusBadge, item.status === 'ABSENT' ? styles.statusBadgeAbsent : styles.statusBadgePresent]}>
+                        <Text style={[styles.statusText, item.status === 'ABSENT' ? styles.statusTextAbsent : styles.statusTextPresent]}>
+                          {item.status || 'PRESENT'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* In Photo */}
+                    <View style={styles.colPhoto}>
+                      {item.photo_url ? (
+                        <TouchableOpacity onPress={() => setPhotoViewerUri(item.photo_url)}>
+                          <Image source={{ uri: item.photo_url }} style={styles.photoThumb} />
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={styles.dashText}>--</Text>
+                      )}
+                    </View>
+
+                    {/* Out Photo */}
+                    <View style={styles.colPhoto}>
+                      {item.checkout_photo_url ? (
+                        <TouchableOpacity onPress={() => setPhotoViewerUri(item.checkout_photo_url)}>
+                          <Image source={{ uri: item.checkout_photo_url }} style={styles.photoThumb} />
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={styles.dashText}>--</Text>
+                      )}
+                    </View>
+
+                    {/* Field Visit */}
+                    <View style={styles.colVisit}>
+                      <Text style={styles.visitText} numberOfLines={2}>
+                        {item.panchayat_visited ? `${item.panchayat_visited} (${item.village_visited || ''})` : '--'}
+                      </Text>
+                    </View>
+
+                    {/* GPS Route Button */}
+                    <View style={styles.colRoute}>
+                      <TouchableOpacity
+                        style={styles.routeBtn}
+                        onPress={() => handleOpenTracking(item.worker, item.worker_name)}
+                      >
+                        <MaterialCommunityIcons name="map-marker-path" size={16} color="#1F6B42" />
+                        <Text style={styles.routeBtnText}>Route</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </View>
+        </ScrollView>
+      </ScrollView>
 
       {/* Full-Day Tracking Modal */}
       <Modal visible={trackingModalVisible} animationType="slide" transparent>
@@ -308,101 +355,127 @@ const styles = StyleSheet.create({
 
   header: {
     backgroundColor: '#1F6B42',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 24,
-    paddingBottom: 16,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
   },
   backBtn: { padding: 6 },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#FFF' },
-  headerSubtitle: { fontSize: 13, color: '#DCEEE2', marginTop: 2 },
+  headerSubtitle: { fontSize: 12, color: '#DCEEE2', marginTop: 2 },
   refreshBtn: { padding: 6 },
 
   kpiContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFF',
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E2EBE5',
-    justifyContent: 'space-around',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   kpiBox: { alignItems: 'center' },
-  kpiVal: { fontSize: 20, fontWeight: '800', color: '#333' },
-  kpiLabel: { fontSize: 12, color: '#666', marginTop: 2, fontWeight: '600' },
+  kpiVal: { fontSize: 18, fontWeight: '800', color: '#333' },
+  kpiLabel: { fontSize: 11, color: '#666', marginTop: 1, fontWeight: '600' },
+  scrollHintBox: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F1F5F2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  scrollHintText: { fontSize: 11, color: '#666', fontWeight: '500' },
 
-  listContent: { padding: 16, paddingBottom: 40 },
-  card: {
+  verticalScroll: { flex: 1 },
+  horizontalScroll: { flex: 1 },
+
+  tableContainer: {
     backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: '#E8F5E9',
+    minWidth: 1020,
   },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  empName: { fontSize: 16, fontWeight: '700', color: '#1F6B42' },
-  empSub: { fontSize: 12, color: '#666', marginTop: 2 },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+
+  // Table Columns Widths
+  colIndex: { width: 45, textAlign: 'center' },
+  colEmp: { width: 170, paddingHorizontal: 8 },
+  colDesig: { width: 110, paddingHorizontal: 6 },
+  colTime: { width: 95, textAlign: 'center' },
+  colHours: { width: 115, alignItems: 'center', justifyContent: 'center' },
+  colStatus: { width: 95, alignItems: 'center', justifyContent: 'center' },
+  colPhoto: { width: 75, alignItems: 'center', justifyContent: 'center' },
+  colVisit: { width: 150, paddingHorizontal: 6 },
+  colRoute: { width: 85, alignItems: 'center', justifyContent: 'center' },
+
+  tableHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#1F6B42',
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: '#175132',
+    alignItems: 'center',
+  },
+  thText: {
+    color: '#FFF',
+    fontWeight: '800',
+    fontSize: 11,
+    letterSpacing: 0.5,
+  },
+
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9EFEA',
+    alignItems: 'center',
+  },
+  rowEven: { backgroundColor: '#FFFFFF' },
+  rowOdd: { backgroundColor: '#F9FBF9' },
+
+  tdText: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '600',
+  },
+
+  empNameText: { fontSize: 13, fontWeight: '700', color: '#1F6B42' },
+  empIdText: { fontSize: 11, color: '#777', marginTop: 2 },
+
+  desigText: { fontSize: 12, fontWeight: '700', color: '#333' },
+  zoneSubText: { fontSize: 10, color: '#888', marginTop: 1 },
+
+  hoursWrap: {
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    alignSelf: 'center',
+  },
+  hoursText: { fontSize: 12, fontWeight: '900', color: '#1F6B42' },
+
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
   statusBadgePresent: { backgroundColor: '#E8F5E9' },
   statusBadgeAbsent: { backgroundColor: '#FFEBEE' },
-  statusText: { fontSize: 11, fontWeight: '700' },
+  statusText: { fontSize: 10, fontWeight: '800' },
   statusTextPresent: { color: '#1F6B42' },
   statusTextAbsent: { color: '#C62828' },
 
-  timeRow: {
-    flexDirection: 'row',
-    backgroundColor: '#F8FAF8',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 12,
-    justifyContent: 'space-between',
-  },
-  timeCol: { flex: 1, alignItems: 'center' },
-  hoursCol: { borderLeftWidth: 1, borderLeftColor: '#E2EBE5' },
-  timeLabel: { fontSize: 10, color: '#888', fontWeight: '700', marginBottom: 2 },
-  timeVal: { fontSize: 13, fontWeight: '700', color: '#333' },
-  hoursVal: { fontSize: 14, fontWeight: '900', color: '#1F6B42' },
+  photoThumb: { width: 36, height: 36, borderRadius: 6, borderWidth: 1, borderColor: '#DCEEE2', backgroundColor: '#EEE' },
+  dashText: { color: '#BBB', fontSize: 12 },
 
-  photosRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
-  photoItem: { alignItems: 'center' },
-  photoPreview: { width: 64, height: 64, borderRadius: 8, backgroundColor: '#EEE' },
-  photoCaption: { fontSize: 10, color: '#666', marginTop: 4, fontWeight: '600' },
+  visitText: { fontSize: 11, color: '#555', lineHeight: 14 },
 
-  fieldVisitBox: {
-    backgroundColor: '#FFF8E1',
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#FFA000',
-  },
-  fieldVisitText: { fontSize: 12, color: '#5D4037' },
-  purposeText: { fontSize: 11, color: '#795548', marginTop: 2, fontStyle: 'italic' },
-
-  trackingBtn: {
+  routeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#E8F5E9',
-    borderRadius: 10,
-    paddingVertical: 10,
-    marginTop: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: '#C8E6C9',
+    gap: 3,
   },
-  trackingBtnText: { color: '#1F6B42', fontSize: 13, fontWeight: '700' },
+  routeBtnText: { fontSize: 11, fontWeight: '700', color: '#1F6B42' },
 
-  emptyContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 60 },
-  emptyText: { fontSize: 15, color: '#888', marginTop: 12, fontWeight: '600' },
+  tableEmpty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, minWidth: 1020 },
+  emptyText: { fontSize: 14, color: '#888', marginTop: 10, fontWeight: '600' },
 
-  // Modal styles
+  // Tracking Modal styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet: {
     backgroundColor: '#FFF',
